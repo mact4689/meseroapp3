@@ -3,7 +3,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView } from '../types';
-import { ArrowLeft, Store, UtensilsCrossed, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -72,7 +72,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
 
     await updateBusiness({
       name: formData.businessName,
-      cuisine: formData.cuisine, // Fix: usage of cuisine property name
+      cuisine: formData.cuisine,
       logo: finalLogoUrl
     });
 
@@ -95,7 +95,6 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
 
   const handleBack = async () => {
     if (isOnboarding) {
-        // En onboarding no permitimos volver atrás fácilmente sin guardar
         return;
     }
     await saveChanges();
@@ -105,17 +104,34 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 px-6 pt-8 pb-6">
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
-        {/* Header with Progress (Only Onboarding) */}
+        
+        {/* Onboarding Header */}
         {isOnboarding ? (
-             <div className="mb-8 flex flex-col items-center">
-                 <div className="flex items-center space-x-2 mb-6">
-                    <div className="w-8 h-1 rounded-full bg-brand-900"></div>
-                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
-                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
-                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
+             <div className="mb-8 flex flex-col items-center animate-in slide-in-from-bottom-4">
+                 <div className="flex items-center space-x-2 mb-8">
+                    {/* Step 1 Indicator - Active */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">1</div>
+                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Perfil</span>
+                    </div>
+                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                    {/* Step 2 Indicator - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                        <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">2</div>
+                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Menú</span>
+                    </div>
+                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                    {/* Step 3 Indicator - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
+                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mesas</span>
+                    </div>
                  </div>
-                 <h2 className="font-serif text-3xl text-brand-900 text-center">Perfil del Negocio</h2>
-                 <p className="text-gray-500 text-center mt-2">Paso 1: Identidad básica</p>
+                 
+                 <h2 className="font-serif text-3xl text-brand-900 text-center mb-2">Tu Identidad</h2>
+                 <p className="text-gray-500 text-center text-sm">
+                   Comencemos por lo básico. ¿Cómo se llama tu increíble lugar?
+                 </p>
              </div>
         ) : (
             <div className="mb-8">
@@ -132,21 +148,36 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
         )}
 
         {/* Card Form */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex-1 flex flex-col">
+        <div className="bg-white p-6 rounded-3xl shadow-xl shadow-brand-900/5 border border-gray-100 flex-1 flex flex-col animate-in slide-in-from-bottom-4" style={{ animationDelay: '0.1s' }}>
             <form onSubmit={handleSubmit} className="space-y-8 flex-1 flex flex-col">
               
-              <div className="space-y-6">
-                <div className="flex justify-center">
-                    <div className="w-32">
-                        <ImageUpload 
-                          label="Logo"
-                          onChange={handleImageChange}
-                          previewUrl={formData.logoUrl}
-                          className="!rounded-full !aspect-square shadow-md border-gray-200"
-                        />
+              <div className="space-y-8">
+                {/* Logo Upload Section */}
+                <div className="flex flex-col items-center">
+                    <div className="relative group">
+                        <div className="w-32 h-32 rounded-full overflow-hidden shadow-md border-4 border-white ring-1 ring-gray-100 bg-gray-50">
+                             {formData.logoUrl ? (
+                                <img src={formData.logoUrl} className="w-full h-full object-cover" alt="Logo" />
+                             ) : (
+                                <div className="w-full h-full flex flex-col items-center justify-center text-gray-300">
+                                    <Store className="w-10 h-10 mb-1" />
+                                    <span className="text-[10px] font-medium uppercase">Sin Logo</span>
+                                </div>
+                             )}
+                        </div>
+                        <div className="absolute -bottom-2 -right-2">
+                             <ImageUpload 
+                                onChange={handleImageChange}
+                                previewUrl={null} // Handled by parent img above
+                                className="!w-10 !h-10 !rounded-full !border-0 bg-brand-900 text-white shadow-lg flex items-center justify-center hover:bg-brand-800 cursor-pointer"
+                                label=""
+                             />
+                        </div>
                     </div>
+                    <p className="mt-3 text-xs text-gray-400">Toca el botón + para subir tu logo</p>
                 </div>
 
+                {/* Inputs */}
                 <div className="space-y-5">
                   <Input 
                     label="Nombre del Restaurante" 
@@ -157,11 +188,11 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                     value={formData.businessName}
                     onChange={handleInputChange}
                     required
-                    className="bg-white border-gray-200 focus:border-brand-900"
+                    className="bg-gray-50 border-transparent focus:bg-white focus:border-brand-900 py-4"
                   />
                   
                   <Input 
-                    label="Especialidad / Cocina" 
+                    label="Tipo de Cocina" 
                     name="cuisine"
                     type="text" 
                     placeholder="Ej. Mexicana, Italiana, Café..."
@@ -169,7 +200,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                     value={formData.cuisine}
                     onChange={handleInputChange}
                     required
-                    className="bg-white border-gray-200 focus:border-brand-900"
+                    className="bg-gray-50 border-transparent focus:bg-white focus:border-brand-900 py-4"
                   />
                 </div>
               </div>
@@ -179,10 +210,10 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                     type="submit" 
                     fullWidth 
                     isLoading={loading}
-                    className="h-12 text-lg"
-                    icon={isOnboarding ? <ChevronRight className="w-5 h-5" /> : undefined}
+                    className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
+                    icon={isOnboarding ? <ChevronRight className="w-5 h-5" /> : <Check className="w-5 h-5" />}
                   >
-                    {isOnboarding ? 'Continuar al Menú' : 'Guardar Cambios'}
+                    {isOnboarding ? 'Siguiente Paso' : 'Guardar Cambios'}
                   </Button>
                </div>
             </form>

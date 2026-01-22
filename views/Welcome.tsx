@@ -20,27 +20,23 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
           {/* Success Icon */}
           <div className="relative inline-block fade-in">
              <div className="absolute inset-0 bg-green-100 rounded-full scale-150 animate-ping opacity-20"></div>
-             <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto relative border-2 border-green-100 shadow-lg shadow-green-900/5">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+             <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto relative shadow-xl shadow-green-900/5">
+                <CheckCircle2 className="w-12 h-12 text-green-500" />
              </div>
              <div className="absolute -top-2 -right-2 text-accent-500 animate-bounce" style={{ animationDuration: '3s' }}>
-               <Sparkles className="w-6 h-6" />
+               <Sparkles className="w-8 h-8" />
              </div>
           </div>
 
           {/* Text Content */}
           <div className="space-y-4 slide-up" style={{ animationDelay: '0.2s' }}>
-            <h1 className="font-serif text-3xl text-brand-900 leading-tight">
-              ¡Cuenta creada! <br/>
-              <span className="text-accent-600">Comencemos</span>
+            <h1 className="font-serif text-4xl text-brand-900 leading-tight">
+              ¡Cuenta creada!
             </h1>
             <p className="text-gray-500 text-lg leading-relaxed">
-              Configura tu restaurante en 3 simples pasos para empezar a recibir pedidos.
+              Vamos a configurar tu restaurante en <span className="font-bold text-brand-900">3 simples pasos</span> para que puedas recibir pedidos hoy mismo.
             </p>
           </div>
-          
-          {/* Divider */}
-          <div className="w-16 h-1 bg-brand-900/10 mx-auto rounded-full slide-up" style={{ animationDelay: '0.3s' }}></div>
 
         </div>
       </div>
@@ -54,7 +50,7 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
             className="text-lg py-4 shadow-xl shadow-brand-900/20"
             icon={<ArrowRight className="w-5 h-5" />}
           >
-            Configurar mi Negocio
+            Comenzar Configuración
           </Button>
         </div>
       </div>

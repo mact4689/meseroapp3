@@ -13,12 +13,11 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   const [showManualButton, setShowManualButton] = useState(false);
 
   useEffect(() => {
-    // Intentar navegación automática
+    // Intentar navegación automática más rápida
     const timer = setTimeout(() => {
       handleRouting();
-    }, 2000);
+    }, 1500);
 
-    // Si tarda más de 5 segundos, mostrar botón manual (por si el navegador bloquea algo)
     const fallbackTimer = setTimeout(() => {
       setShowManualButton(true);
     }, 5000);
@@ -27,23 +26,21 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       clearTimeout(timer);
       clearTimeout(fallbackTimer);
     };
-  }, []);
+  }, [state.user, state.isOnboarding]); // Dependencias para reaccionar si el usuario carga
 
   const handleRouting = () => {
-    // 1. Verificar si es un cliente escaneando un QR (ya manejado en App.tsx, pero por seguridad)
     const params = new URLSearchParams(window.location.search);
     if (params.get('table')) {
       onNavigate(AppView.CUSTOMER_MENU);
       return;
     }
 
-    // 2. Lógica de usuario
     if (!state.user) {
       onNavigate(AppView.LANDING);
       return;
     }
 
-    // 3. Lógica de Onboarding (Resumir donde se quedó)
+    // Lógica de Onboarding estricta
     if (state.isOnboarding) {
        if (!state.business.name) {
          onNavigate(AppView.BUSINESS_SETUP);
@@ -52,14 +49,12 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
        } else if (state.tables.generated.length === 0) {
          onNavigate(AppView.TABLE_SETUP);
        } else {
-         // Si ya completó mesas, el siguiente paso es impresora
          onNavigate(AppView.PRINTER_SETUP);
        }
        return;
     }
 
-    // 4. Flujo normal (Dashboard)
-    // Redundancia de seguridad: si por alguna razón no tiene nombre de negocio, forzar setup
+    // Verificar si falta configuración esencial aunque no esté en modo onboarding explícito
     if (!state.business.name) {
       onNavigate(AppView.BUSINESS_SETUP);
     } else {
@@ -80,7 +75,6 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
           <div className="w-32 h-32 bg-white rounded-3xl shadow-2xl flex items-center justify-center mx-auto relative z-10">
             <UtensilsCrossed className="w-16 h-16 text-brand-900" />
           </div>
-          {/* Floating accent icon */}
           <div className="absolute -bottom-4 -right-4 bg-accent-500 text-white p-3 rounded-2xl shadow-xl transform rotate-12 z-20">
             <ChefHat className="w-8 h-8" />
           </div>
@@ -117,7 +111,6 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
         )}
       </div>
       
-      {/* Footer Version */}
       <div className="absolute bottom-8 text-white/20 text-xs">
         v1.0.0
       </div>
