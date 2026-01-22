@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- Mobile App Config -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="format-detection" content="telephone=no">
+    
+    <title>MeseroApp</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+              serif: ['"Playfair Display"', 'serif'],
+            },
+            colors: {
+              brand: {
+                900: '#1a1a1a', // Deep Black/Charcoal
+                800: '#2d2d2d',
+                100: '#f5f5f5',
+                50: '#fafafa',
+              },
+              accent: {
+                500: '#d4af37', // Gold-ish
+                600: '#b4942d',
+              }
+            },
+            keyframes: {
+              swing: {
+                '0%, 100%': { transform: 'rotate(0deg)' },
+                '20%': { transform: 'rotate(15deg)' },
+                '40%': { transform: 'rotate(-10deg)' },
+                '60%': { transform: 'rotate(5deg)' },
+                '80%': { transform: 'rotate(-5deg)' },
+              },
+              fadeIn: {
+                '0%': { opacity: '0' },
+                '100%': { opacity: '1' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              zoomIn: {
+                 '0%': { opacity: '0', transform: 'scale(0.95)' },
+                 '100%': { opacity: '1', transform: 'scale(1)' },
+              }
+            },
+            animation: {
+              swing: 'swing 1s ease-in-out infinite',
+              fadeIn: 'fadeIn 0.5s ease-out forwards',
+              slideUp: 'slideUp 0.5s ease-out forwards',
+              zoomIn: 'zoomIn 0.3s ease-out forwards',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        -webkit-tap-highlight-color: transparent;
+        overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+      }
+      
+      .fade-in { animation: fadeIn 0.5s ease-out forwards; }
+      .slide-up { animation: slideUp 0.5s ease-out forwards; }
+      
+      .animate-in {
+        animation-duration: 0.5s;
+        animation-fill-mode: forwards;
+        opacity: 0;
+      }
+      .animate-in.fade-in { animation-name: fadeIn; }
+      .animate-in.zoom-in { animation-name: zoomIn; }
+      .animate-in.slide-in-from-bottom-4 { animation-name: slideUp; }
+
+      @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes zoomIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "qrcode": "https://esm.sh/qrcode@^1.5.4",
+    "jspdf": "https://esm.sh/jspdf@^4.0.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@^2.91.0"
+  }
+}
+</script>
+</head>
+  <body class="bg-brand-50 text-brand-900 antialiased selection:bg-accent-500 selection:text-white">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
