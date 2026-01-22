@@ -1,0 +1,38 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
+  }
+}
+
+@layer utilities {
+  .fade-in {
+    @apply animate-fadeIn;
+  }
+  
+  .slide-up {
+    @apply animate-slideUp;
+  }
+  
+  .animate-in {
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+    opacity: 0;
+  }
+  
+  .animate-in.fade-in {
+    @apply animate-fadeIn;
+  }
+  
+  .animate-in.zoom-in {
+    @apply animate-zoomIn;
+  }
+  
+  .animate-in.slide-in-from-bottom-4 {
+    @apply animate-slideUp;
+  }
+}
