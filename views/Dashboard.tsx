@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { useAppStore } from '../store/AppContext';
-import { AppView, Order } from '../types';
+import { AppView } from '../types';
 import { Button } from '../components/Button';
 import { createOrder } from '../services/db';
 import { 

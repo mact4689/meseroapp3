@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Printer, Bluetooth, Wifi, CheckCircle2, AlertCircle, FileText, Search, Signal, Router } from 'lucide-react';
+import { ArrowLeft, Printer, Bluetooth, Wifi, CheckCircle2, FileText, Search, Signal, Router } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface PrinterSetupProps {
@@ -18,7 +19,7 @@ interface DiscoveredDevice {
 type SetupMethod = 'BLUETOOTH' | 'WIFI' | null;
 
 export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
-  const { state, updatePrinter, endOnboarding } = useAppStore();
+  const { state, updatePrinter } = useAppStore();
   const [setupMethod, setSetupMethod] = useState<SetupMethod>(null);
   const [isSearching, setIsSearching] = useState(false);
   const [discoveredDevices, setDiscoveredDevices] = useState<DiscoveredDevice[]>([]);

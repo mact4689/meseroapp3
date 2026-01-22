@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -18,7 +19,6 @@ interface TableData {
 
 export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
   const { state, updateTables } = useAppStore();
-  const [loading, setLoading] = useState(false);
   const [tableCount, setTableCount] = useState<string>(state.tables.count || '');
   const [generatedTables, setGeneratedTables] = useState<TableData[]>(state.tables.generated || []);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -112,13 +112,6 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
     });
 
     doc.save('codigos-qr-mesas.pdf');
-  };
-
-  const handleNextStep = () => {
-    setLoading(true);
-    setTimeout(() => {
-        onNavigate(AppView.PRINTER_SETUP);
-    }, 500);
   };
 
   const handleBack = () => {

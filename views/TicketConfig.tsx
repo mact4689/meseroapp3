@@ -1,8 +1,8 @@
+
 import React, { useState } from 'react';
-import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Check, Type, FileText, Calendar, Hash, MessageSquare, Printer, ChevronRight, Settings2 } from 'lucide-react';
+import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Printer, Settings2 } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface TicketConfigViewProps {
