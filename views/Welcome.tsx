@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { CheckCircle2, Sparkles } from 'lucide-react';
+import { CheckCircle2, Sparkles, ArrowRight } from 'lucide-react';
 
 interface WelcomeProps {
   onNavigate: (view: AppView) => void;
@@ -31,11 +31,11 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
           {/* Text Content */}
           <div className="space-y-4 slide-up" style={{ animationDelay: '0.2s' }}>
             <h1 className="font-serif text-3xl text-brand-900 leading-tight">
-              Bienvenido a <br/>
-              <span className="text-accent-600">MeseroApp</span>
+              ¡Cuenta creada! <br/>
+              <span className="text-accent-600">Comencemos</span>
             </h1>
             <p className="text-gray-500 text-lg leading-relaxed">
-              La app que te ayuda tener tus propios meseros digitales.
+              Configura tu restaurante en 3 simples pasos para empezar a recibir pedidos.
             </p>
           </div>
           
@@ -50,10 +50,11 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
         <div className="max-w-sm mx-auto">
           <Button 
             fullWidth 
-            onClick={() => onNavigate(AppView.DASHBOARD)}
+            onClick={() => onNavigate(AppView.BUSINESS_SETUP)}
             className="text-lg py-4 shadow-xl shadow-brand-900/20"
+            icon={<ArrowRight className="w-5 h-5" />}
           >
-            Siguiente
+            Configurar mi Negocio
           </Button>
         </div>
       </div>

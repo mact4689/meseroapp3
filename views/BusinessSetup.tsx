@@ -3,7 +3,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView } from '../types';
-import { ArrowLeft, Store, UtensilsCrossed } from 'lucide-react';
+import { ArrowLeft, Store, UtensilsCrossed, ChevronRight } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -18,20 +18,22 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
   
   // Local state for immediate input handling
   const [formData, setFormData] = useState({
-    businessName: state.business.name,
-    cuisine: state.business.cuisine,
+    businessName: state.business.name || '',
+    cuisine: state.business.cuisine || '',
     logoUrl: state.business.logo,
     logoFile: null as File | null
   });
 
   // Sync local state if global state changes (e.g. on fetch)
   useEffect(() => {
-    setFormData(prev => ({
-      ...prev,
-      businessName: state.business.name || '',
-      cuisine: state.business.cuisine || '',
-      logoUrl: state.business.logo
-    }));
+    if (!formData.businessName && state.business.name) {
+        setFormData(prev => ({
+            ...prev,
+            businessName: state.business.name,
+            cuisine: state.business.cuisine || '',
+            logoUrl: state.business.logo
+        }));
+    }
   }, [state.business]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,7 +43,6 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
 
   const handleImageChange = (file: File | null) => {
     if (file) {
-        // Crear preview local instantáneo
         const objectUrl = URL.createObjectURL(file);
         setFormData(prev => ({
             ...prev,
@@ -57,13 +58,11 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
     }
   };
 
-  // Lógica centralizada de guardado
   const saveChanges = async () => {
     setLoading(true);
 
     let finalLogoUrl = formData.logoUrl;
 
-    // Si hay un archivo nuevo, subirlo a Supabase Storage
     if (formData.logoFile && state.user) {
         const publicUrl = await uploadImage(formData.logoFile, `logos/${state.user.id}`);
         if (publicUrl) {
@@ -71,11 +70,9 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
         }
     }
 
-    // Save to Global Store (and DB via Context)
-    // Await ensures we don't navigate until DB is updated
     await updateBusiness({
       name: formData.businessName,
-      cuisine: formData.cuisineType,
+      cuisine: formData.cuisine, // Fix: usage of cuisine property name
       logo: finalLogoUrl
     });
 
@@ -84,6 +81,8 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.businessName) return;
+    
     await saveChanges();
     setLoading(false);
     
@@ -95,84 +94,100 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
   };
 
   const handleBack = async () => {
-    // Siempre guardar y volver al dashboard al presionar atrás en esta vista
+    if (isOnboarding) {
+        // En onboarding no permitimos volver atrás fácilmente sin guardar
+        return;
+    }
     await saveChanges();
     onNavigate(AppView.DASHBOARD);
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white px-6 pt-8 pb-6">
+    <div className="flex flex-col min-h-screen bg-gray-50 px-6 pt-8 pb-6">
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
-        {/* Header */}
-        <div className="mb-8">
-          <button 
-            onClick={handleBack}
-            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-            title="Guardar y salir al Dashboard"
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          <div className="mt-6 space-y-2">
-            <h2 className="font-serif text-3xl text-brand-900">Cuéntanos de tu negocio</h2>
-            <p className="text-gray-500">Configura el perfil de tu negocio</p>
-          </div>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-8 flex-1">
-          
-          <div className="space-y-6">
-            <ImageUpload 
-              label="Logo o foto de perfil"
-              onChange={handleImageChange}
-              previewUrl={formData.logoUrl}
-            />
-
-            <div className="space-y-4">
-              <Input 
-                label="Nombre de tu negocio" 
-                name="businessName"
-                type="text" 
-                placeholder="Ej. Restaurante El Sabor"
-                icon={<Store className="w-5 h-5" />}
-                value={formData.businessName}
-                onChange={handleInputChange}
-                required
-              />
-              
-              <Input 
-                label="¿Qué tipo de comida vende?" 
-                name="cuisineType"
-                type="text" 
-                placeholder="Ej. Italiana, Mexicana, Mariscos..."
-                icon={<UtensilsCrossed className="w-5 h-5" />}
-                value={formData.cuisineType}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-          </div>
-          
-           <div className="pt-4">
-              <Button 
-                type="submit" 
-                fullWidth 
-                isLoading={loading}
+        {/* Header with Progress (Only Onboarding) */}
+        {isOnboarding ? (
+             <div className="mb-8 flex flex-col items-center">
+                 <div className="flex items-center space-x-2 mb-6">
+                    <div className="w-8 h-1 rounded-full bg-brand-900"></div>
+                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
+                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
+                    <div className="w-2 h-1 rounded-full bg-gray-300"></div>
+                 </div>
+                 <h2 className="font-serif text-3xl text-brand-900 text-center">Perfil del Negocio</h2>
+                 <p className="text-gray-500 text-center mt-2">Paso 1: Identidad básica</p>
+             </div>
+        ) : (
+            <div className="mb-8">
+              <button 
+                onClick={handleBack}
+                className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-200 transition-colors"
               >
-                {isOnboarding ? 'Continuar' : 'Guardar Cambios'}
-              </Button>
-           </div>
-        </form>
-        
-        {/* Step Indicator (Only in onboarding) */}
-        {isOnboarding && (
-          <div className="mt-6 flex justify-center space-x-2">
-            <div className="w-6 h-2 rounded-full bg-brand-900"></div>
-            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-            <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-          </div>
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <div className="mt-6 space-y-2">
+                <h2 className="font-serif text-3xl text-brand-900">Datos del Negocio</h2>
+              </div>
+            </div>
         )}
+
+        {/* Card Form */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex-1 flex flex-col">
+            <form onSubmit={handleSubmit} className="space-y-8 flex-1 flex flex-col">
+              
+              <div className="space-y-6">
+                <div className="flex justify-center">
+                    <div className="w-32">
+                        <ImageUpload 
+                          label="Logo"
+                          onChange={handleImageChange}
+                          previewUrl={formData.logoUrl}
+                          className="!rounded-full !aspect-square shadow-md border-gray-200"
+                        />
+                    </div>
+                </div>
+
+                <div className="space-y-5">
+                  <Input 
+                    label="Nombre del Restaurante" 
+                    name="businessName"
+                    type="text" 
+                    placeholder="Ej. La Casa del Sabor"
+                    icon={<Store className="w-5 h-5" />}
+                    value={formData.businessName}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-white border-gray-200 focus:border-brand-900"
+                  />
+                  
+                  <Input 
+                    label="Especialidad / Cocina" 
+                    name="cuisine"
+                    type="text" 
+                    placeholder="Ej. Mexicana, Italiana, Café..."
+                    icon={<UtensilsCrossed className="w-5 h-5" />}
+                    value={formData.cuisine}
+                    onChange={handleInputChange}
+                    required
+                    className="bg-white border-gray-200 focus:border-brand-900"
+                  />
+                </div>
+              </div>
+              
+               <div className="mt-auto pt-6">
+                  <Button 
+                    type="submit" 
+                    fullWidth 
+                    isLoading={loading}
+                    className="h-12 text-lg"
+                    icon={isOnboarding ? <ChevronRight className="w-5 h-5" /> : undefined}
+                  >
+                    {isOnboarding ? 'Continuar al Menú' : 'Guardar Cambios'}
+                  </Button>
+               </div>
+            </form>
+        </div>
+        
       </div>
     </div>
   );
