@@ -66,7 +66,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             category: m.category,
                             description: m.description,
                             ingredients: m.ingredients,
-                            image: m.image_url
+                            image: m.image_url,
+                            sold_out: m.sold_out
                         }));
                         setGuestMenu(mappedItems);
                     }
@@ -84,6 +85,9 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
     const groupedItems = useMemo(() => {
         return menu.reduce((acc, item) => {
+            // Filter out sold out items
+            if (item.sold_out) return acc;
+
             if (!acc[item.category]) {
                 acc[item.category] = [];
             }

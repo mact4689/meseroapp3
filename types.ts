@@ -29,6 +29,7 @@ export interface MenuItem {
   ingredients?: string;
   image?: string | null; // URL string for preview
   imageFile?: File | null;
+  sold_out?: boolean;
 }
 
 export interface OrderItem extends MenuItem {

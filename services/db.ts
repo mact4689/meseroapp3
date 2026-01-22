@@ -34,11 +34,11 @@ export const getProfile = async (userId: string) => {
       .select('*')
       .eq('id', userId)
       .maybeSingle();
-      
+
     if (error) {
       // Don't warn for PGRST116 (0 rows) as it's expected for new users
       if (error.code !== 'PGRST116') {
-         console.warn('Error fetching profile:', JSON.stringify(error, null, 2));
+        console.warn('Error fetching profile:', JSON.stringify(error, null, 2));
       }
       return null;
     }
@@ -86,22 +86,23 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
   const { error } = await supabase
     .from('menu_items')
     .insert({
-      id: item.id, 
+      id: item.id,
       user_id: userId,
       name: item.name,
-      price: numericPrice, 
+      price: numericPrice,
       category: item.category,
       description: item.description,
       ingredients: item.ingredients,
-      image_url: item.image
+      image_url: item.image,
+      sold_out: item.sold_out || false
     });
 
   if (error) {
-      console.error('Error inserting item:', JSON.stringify(error, null, 2));
-      // Alert user if table is missing (common setup error)
-      if (error.code === '42P01' || error.message?.includes('Could not find the table')) {
-          console.error("CRITICAL: Table 'menu_items' does not exist in Supabase. Please run the SQL setup script.");
-      }
+    console.error('Error inserting item:', JSON.stringify(error, null, 2));
+    // Alert user if table is missing (common setup error)
+    if (error.code === '42P01' || error.message?.includes('Could not find the table')) {
+      console.error("CRITICAL: Table 'menu_items' does not exist in Supabase. Please run the SQL setup script.");
+    }
   }
   return error;
 };
@@ -117,7 +118,8 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
       category: item.category,
       description: item.description,
       ingredients: item.ingredients,
-      image_url: item.image
+      image_url: item.image,
+      sold_out: item.sold_out
     })
     .eq('id', itemId);
 
@@ -152,18 +154,18 @@ export const createOrder = async (order: Omit<Order, 'id' | 'created_at'>) => {
 
   if (error) {
     console.error('Error creating order:', JSON.stringify(error, null, 2));
-    
+
     // Check for missing table
     if (error.code === '42P01') {
       alert("Error: La tabla 'orders' no existe en Supabase. Ejecuta el script SQL de configuración.");
-    } 
+    }
     // Check for missing column user_id (42703)
     else if (error.code === '42703') {
-        alert("Error de Base de Datos: La tabla 'orders' no tiene la columna 'user_id'. Revisa la consola.");
-        console.error("%c SQL FIX REQUIRED: ", "background: red; color: white; font-size: 14px; font-weight: bold;");
-        console.error("Ejecuta esto en Supabase SQL Editor: ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid references auth.users;");
+      alert("Error de Base de Datos: La tabla 'orders' no tiene la columna 'user_id'. Revisa la consola.");
+      console.error("%c SQL FIX REQUIRED: ", "background: red; color: white; font-size: 14px; font-weight: bold;");
+      console.error("Ejecuta esto en Supabase SQL Editor: ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid references auth.users;");
     }
-    
+
     throw error;
   }
   return data;
@@ -177,17 +179,17 @@ export const getOrders = async (userId: string) => {
     .order('created_at', { ascending: false }); // Newest first
 
   if (error) {
-     // Ignore table not found error for initial load
-     if (error.code !== '42P01') {
-         console.error('Error fetching orders:', JSON.stringify(error, null, 2));
-     }
-     
-     if (error.code === '42703') {
-        console.error("%c CRITICAL DB ERROR: ", "color: red; font-weight: bold;", "Missing 'user_id' in 'orders' table.");
-        console.error("FIX: Run `ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid references auth.users;` in Supabase.");
-     }
-     
-     return [];
+    // Ignore table not found error for initial load
+    if (error.code !== '42P01') {
+      console.error('Error fetching orders:', JSON.stringify(error, null, 2));
+    }
+
+    if (error.code === '42703') {
+      console.error("%c CRITICAL DB ERROR: ", "color: red; font-weight: bold;", "Missing 'user_id' in 'orders' table.");
+      console.error("FIX: Run `ALTER TABLE orders ADD COLUMN IF NOT EXISTS user_id uuid references auth.users;` in Supabase.");
+    }
+
+    return [];
   }
   return data || [];
 };
@@ -197,7 +199,7 @@ export const updateOrderStatusDb = async (orderId: string, status: 'completed' |
     .from('orders')
     .update({ status })
     .eq('id', orderId);
-  
+
   if (error) console.error('Error updating order:', JSON.stringify(error, null, 2));
   return error;
 };

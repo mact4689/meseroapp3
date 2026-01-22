@@ -100,24 +100,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-       if (session?.user) {
-         // Usuario logueado (o re-logueado)
-         const user = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.full_name || 'Usuario'
-         };
-         setState(prev => ({ ...prev, user }));
-         
-         // Evitar recargas innecesarias si el usuario no ha cambiado
-         if (dataLoadedRef.current !== user.id) {
-             loadUserData(user.id);
-         }
-       } else {
-         // Logout
-         setState(baseState);
-         dataLoadedRef.current = null;
-       }
+      if (session?.user) {
+        // Usuario logueado (o re-logueado)
+        const user = {
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.full_name || 'Usuario'
+        };
+        setState(prev => ({ ...prev, user }));
+
+        // Evitar recargas innecesarias si el usuario no ha cambiado
+        if (dataLoadedRef.current !== user.id) {
+          loadUserData(user.id);
+        }
+      } else {
+        // Logout
+        setState(baseState);
+        dataLoadedRef.current = null;
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -128,58 +128,58 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let channel: any;
 
     if (state.user) {
-        // Cargar órdenes existentes
-        getOrders(state.user.id).then(orders => {
-            setState(prev => ({ ...prev, orders }));
-        });
+      // Cargar órdenes existentes
+      getOrders(state.user.id).then(orders => {
+        setState(prev => ({ ...prev, orders }));
+      });
 
-        // Suscribirse a nuevas órdenes
-        channel = supabase
-            .channel('orders-channel')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'orders',
-                    filter: `user_id=eq.${state.user.id}`
-                },
-                (payload) => {
-                    const newOrder = payload.new as Order;
-                    console.log('New Order Received:', newOrder);
-                    setState(prev => ({
-                        ...prev,
-                        orders: [newOrder, ...prev.orders]
-                    }));
-                    
-                    // Simple notification sound (opcional)
-                    try {
-                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Sonido ding genérico
-                        audio.play().catch(e => console.log('Audio autoplay blocked', e));
-                    } catch (e) {}
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'orders',
-                    filter: `user_id=eq.${state.user.id}`
-                },
-                (payload) => {
-                    const updatedOrder = payload.new as Order;
-                    setState(prev => ({
-                        ...prev,
-                        orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
-                    }));
-                }
-            )
-            .subscribe();
+      // Suscribirse a nuevas órdenes
+      channel = supabase
+        .channel('orders-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${state.user.id}`
+          },
+          (payload) => {
+            const newOrder = payload.new as Order;
+            console.log('New Order Received:', newOrder);
+            setState(prev => ({
+              ...prev,
+              orders: [newOrder, ...prev.orders]
+            }));
+
+            // Simple notification sound (opcional)
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Sonido ding genérico
+              audio.play().catch(e => console.log('Audio autoplay blocked', e));
+            } catch (e) { }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${state.user.id}`
+          },
+          (payload) => {
+            const updatedOrder = payload.new as Order;
+            setState(prev => ({
+              ...prev,
+              orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
+            }));
+          }
+        )
+        .subscribe();
     }
 
     return () => {
-        if (channel) supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [state.user?.id]); // Re-suscribir si cambia el usuario
 
@@ -189,7 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getProfile(userId),
         getMenuItems(userId)
       ]);
-      
+
       dataLoadedRef.current = userId;
 
       setState(prev => ({
@@ -201,17 +201,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           logo: profileData.logo_url
         } : prev.business,
         menu: menuData ? menuData.map((m: any) => ({
-            id: m.id,
-            name: m.name,
-            price: m.price.toString(), // Convert from number (DB) to string (UI)
-            category: m.category,
-            description: m.description,
-            ingredients: m.ingredients,
-            image: m.image_url
+          id: m.id,
+          name: m.name,
+          price: m.price.toString(), // Convert from number (DB) to string (UI)
+          category: m.category,
+          description: m.description,
+          ingredients: m.ingredients,
+          image: m.image_url,
+          sold_out: m.sold_out
         })) : [],
-        tables: profileData?.tables_count ? { 
-            count: profileData.tables_count.toString(), 
-            generated: Array.from({length: profileData.tables_count}, (_, i) => ({ id: i+1, qrDataUrl: '' })) 
+        tables: profileData?.tables_count ? {
+          count: profileData.tables_count.toString(),
+          generated: Array.from({ length: profileData.tables_count }, (_, i) => ({ id: i + 1, qrDataUrl: '' }))
         } : prev.tables
       }));
 
@@ -244,7 +245,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       business: { ...prev.business, ...data }
     }));
-    
+
     if (state.user) {
       const payload = {
         name: data.name !== undefined ? data.name : state.business.name,
@@ -258,7 +259,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addMenuItem = async (item: MenuItem) => {
     if (!state.user) {
-        throw new Error("No hay sesión activa. Por favor recarga la página.");
+      throw new Error("No hay sesión activa. Por favor recarga la página.");
     }
 
     // Optimistic update
@@ -272,23 +273,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Manejo de error específico: Llave foránea no presente (Usuario sin perfil)
     // El código 23503 es Foreign Key Violation
     if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
-       console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
-       
-       // Intentamos crear el perfil que falta.
-       const profilePayload = {
-          name: state.business.name || 'Mi Restaurante',
-          cuisine: state.business.cuisine || 'Variada',
-          logo_url: state.business.logo || null
-       };
+      console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
 
-       const profileError = await upsertProfile(state.user.id, profilePayload);
+      // Intentamos crear el perfil que falta.
+      const profilePayload = {
+        name: state.business.name || 'Mi Restaurante',
+        cuisine: state.business.cuisine || 'Variada',
+        logo_url: state.business.logo || null
+      };
 
-       if (!profileError) {
-          // Si se creó el perfil, reintentamos insertar el item
-          error = await insertMenuItem(state.user.id, item);
-       } else {
-          console.error("No se pudo crear el perfil de respaldo:", profileError);
-       }
+      const profileError = await upsertProfile(state.user.id, profilePayload);
+
+      if (!profileError) {
+        // Si se creó el perfil, reintentamos insertar el item
+        error = await insertMenuItem(state.user.id, item);
+      } else {
+        console.error("No se pudo crear el perfil de respaldo:", profileError);
+      }
     }
 
     if (error) {
@@ -305,7 +306,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateMenuItem = async (id: string, updatedItem: MenuItem) => {
     if (!state.user) {
-        throw new Error("No hay sesión activa.");
+      throw new Error("No hay sesión activa.");
     }
 
     const originalItem = state.menu.find(i => i.id === id);
@@ -355,27 +356,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       tables: { count, generated }
     }));
-    
+
     if (state.user) {
-        upsertProfile(state.user.id, { tables_count: parseInt(count) });
+      upsertProfile(state.user.id, { tables_count: parseInt(count) });
     }
   };
 
   const updatePrinter = (id: string, data: Partial<Printer>) => {
     setState(prev => ({
       ...prev,
-      printers: prev.printers.map(p => 
+      printers: prev.printers.map(p =>
         p.id === id ? { ...p, ...data } : p
       )
     }));
   };
 
   const completeOrder = async (orderId: string) => {
-     setState(prev => ({
-         ...prev,
-         orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o)
-     }));
-     await updateOrderStatusDb(orderId, 'completed');
+    setState(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o)
+    }));
+    await updateOrderStatusDb(orderId, 'completed');
   };
 
   const startOnboarding = () => {
@@ -387,20 +388,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ 
-      state, 
-      login, 
-      register, 
+    <AppContext.Provider value={{
+      state,
+      login,
+      register,
       logout,
-      updateBusiness, 
-      addMenuItem, 
-      updateMenuItem, 
-      removeMenuItem, 
-      updateTables, 
-      updatePrinter, 
+      updateBusiness,
+      addMenuItem,
+      updateMenuItem,
+      removeMenuItem,
+      updateTables,
+      updatePrinter,
       completeOrder,
-      startOnboarding, 
-      endOnboarding 
+      startOnboarding,
+      endOnboarding
     }}>
       {children}
     </AppContext.Provider>
