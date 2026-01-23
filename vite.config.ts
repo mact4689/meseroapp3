@@ -12,14 +12,11 @@ export default defineConfig({
     emptyOutDir: true,
     sourcemap: false,
     minify: 'esbuild',
-    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       output: {
         manualChunks: {
           vendor: ['react', 'react-dom'],
           lucide: ['lucide-react'],
-          pdf: ['jspdf'],
-          utils: ['qrcode'],
         },
       },
     },

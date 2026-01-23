@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -13,12 +13,12 @@ interface MenuSetupProps {
 }
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
-  const { state, addMenuItem, updateMenuItem, removeMenuItem } = useAppStore();
+  const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
   const { isOnboarding } = state;
-
+  
   // Use global state for items
   const items = state.menu;
-
+  
   // Form States
   const [category, setCategory] = useState('');
   const [itemName, setItemName] = useState('');
@@ -27,7 +27,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [ingredients, setIngredients] = useState('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-
+  
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
@@ -37,7 +37,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
       return crypto.randomUUID();
     }
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0;
       const v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -46,97 +46,102 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
   const handleImageChange = (file: File | null) => {
     if (file) {
-      const objectUrl = URL.createObjectURL(file);
-      setImagePreview(objectUrl);
-      setImageFile(file);
+        const objectUrl = URL.createObjectURL(file);
+        setImagePreview(objectUrl);
+        setImageFile(file);
     } else {
-      setImagePreview(null);
-      setImageFile(null);
+        setImagePreview(null);
+        setImageFile(null);
     }
   };
 
   const validateForm = () => {
     if (!category.trim()) {
-      alert("Por favor, ingresa una categoría (ej. Bebidas, Entradas).");
-      return false;
+        alert("Por favor, ingresa una categoría (ej. Bebidas, Entradas).");
+        return false;
     }
     if (!itemName.trim()) {
-      alert("Por favor, ingresa el nombre del platillo.");
-      return false;
+        alert("Por favor, ingresa el nombre del platillo.");
+        return false;
     }
     if (!price.trim()) {
-      alert("Por favor, ingresa el precio.");
-      return false;
+        alert("Por favor, ingresa el precio.");
+        return false;
     }
     return true;
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (!validateForm()) return;
     if (!state.user) {
-      alert("Error de sesión: No se ha detectado un usuario activo. Intenta recargar la página.");
-      return;
+        alert("Error de sesión: No se ha detectado un usuario activo. Intenta recargar la página.");
+        return;
     }
 
     setIsSubmittingItem(true);
-
+    
     try {
-      let finalImageUrl = imagePreview;
+        let finalImageUrl = imagePreview;
 
-      // Subir imagen solo si hay un archivo nuevo seleccionado
-      if (imageFile) {
-        const path = `menu/${state.user.id}/${Date.now()}`;
-        const publicUrl = await uploadImage(imageFile, path);
-        if (publicUrl) {
-          finalImageUrl = publicUrl;
-        } else {
-          console.warn("No se pudo subir la imagen, guardando sin imagen.");
-          finalImageUrl = null;
+        // Subir imagen solo si hay un archivo nuevo seleccionado
+        if (imageFile) {
+            const path = `menu/${state.user.id}/${Date.now()}`;
+            const publicUrl = await uploadImage(imageFile, path);
+            if (publicUrl) {
+                finalImageUrl = publicUrl;
+            } else {
+                console.warn("No se pudo subir la imagen, guardando sin imagen.");
+                finalImageUrl = null;
+            }
+        } else if (imagePreview && imagePreview.startsWith('blob:')) {
+            // Limpieza de blob urls huerfanas
+            finalImageUrl = null;
         }
-      } else if (imagePreview && imagePreview.startsWith('blob:')) {
-        // Limpieza de blob urls huerfanas
-        finalImageUrl = null;
-      }
 
-      const newItem: MenuItem = {
-        id: editingId ? editingId : generateId(),
-        name: itemName,
-        price: price,
-        category: category,
-        description: description,
-        ingredients: ingredients,
-        image: finalImageUrl,
-        imageFile: null
-      };
+        const newItem: MenuItem = {
+          id: editingId ? editingId : generateId(),
+          name: itemName,
+          price: price,
+          category: category,
+          description: description,
+          ingredients: ingredients,
+          image: finalImageUrl,
+          imageFile: null,
+          available: true
+        };
 
-      if (editingId) {
-        await updateMenuItem(editingId, newItem);
-        setEditingId(null);
-      } else {
-        await addMenuItem(newItem);
-      }
-
-      // Limpiar formulario excepto categoría para facilitar entrada rápida
-      setItemName('');
-      setPrice('');
-      setDescription('');
-      setIngredients('');
-      setImagePreview(null);
-      setImageFile(null);
-
-      // Scroll suave al listado para confirmar visualmente
-      const listElement = document.getElementById('menu-list');
-      if (listElement) {
-        listElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }
+        if (editingId) {
+          // Mantener disponibilidad previa si se edita
+          const existing = items.find(i => i.id === editingId);
+          newItem.available = existing?.available ?? true;
+          
+          await updateMenuItem(editingId, newItem);
+          setEditingId(null);
+        } else {
+          await addMenuItem(newItem);
+        }
+        
+        // Limpiar formulario excepto categoría para facilitar entrada rápida
+        setItemName('');
+        setPrice('');
+        setDescription('');
+        setIngredients('');
+        setImagePreview(null);
+        setImageFile(null);
+        
+        // Scroll suave al listado para confirmar visualmente
+        const listElement = document.getElementById('menu-list');
+        if (listElement) {
+             listElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
 
     } catch (error: any) {
-      console.error("Error saving item:", error);
-      alert(`No se pudo guardar: ${error.message || 'Error desconocido en la base de datos'}`);
+        console.error("Error saving item:", error);
+        alert(`No se pudo guardar: ${error.message || 'Error desconocido en la base de datos'}`);
     } finally {
-      setIsSubmittingItem(false);
+        setIsSubmittingItem(false);
     }
   };
 
@@ -149,7 +154,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setIngredients(item.ingredients || '');
     setImagePreview(item.image || null);
     setImageFile(null);
-
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -166,9 +171,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const handleLoadSample = () => {
     if (!state.user) return;
     const samples: MenuItem[] = [
-      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null },
-      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null },
-      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null },
+      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true },
+      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true },
+      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true },
     ];
 
     samples.forEach((item) => {
@@ -187,13 +192,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     removeMenuItem(id).catch(e => alert(e.message));
   };
 
-  const handleToggleAvailability = async (item: MenuItem) => {
-    try {
-      const updatedItem = { ...item, sold_out: !item.sold_out };
-      await updateMenuItem(item.id, updatedItem);
-    } catch (error: any) {
-      alert("Error actualizando disponibilidad: " + error.message);
-    }
+  const handleToggleAvailability = async (id: string) => {
+      try {
+          await toggleItemAvailability(id);
+      } catch (error: any) {
+          // If we catch here, it means the DB update failed and the optimistic update was reverted.
+          console.error("Failed to toggle availability:", error);
+          alert("Error de base de datos: No se pudo guardar el cambio de disponibilidad. Verifica que la tabla 'menu_items' tenga la columna 'available'.");
+      }
   };
 
   const groupedItems = items.reduce((acc, item) => {
@@ -210,14 +216,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex justify-between items-start">
-            <button
+            <button 
               onClick={handleBack}
               className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
               title="Volver al Dashboard"
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <button
+            <button 
               onClick={handleLoadSample}
               className="text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-3 py-1.5 rounded-full flex items-center transition-colors"
               type="button"
@@ -234,10 +240,10 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
         {/* Warning if no user */}
         {!state.user && !isOnboarding && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center">
-            <AlertTriangle className="w-4 h-4 mr-2" />
-            Error de sesión. Recarga la página.
-          </div>
+             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center">
+                <AlertTriangle className="w-4 h-4 mr-2" />
+                Error de sesión. Recarga la página.
+             </div>
         )}
 
         {/* Form Section */}
@@ -250,7 +256,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               {editingId ? 'Editando Platillo' : 'Nuevo Platillo'}
             </h3>
             {editingId && (
-              <button
+              <button 
                 onClick={handleCancelEdit}
                 className="text-xs flex items-center text-gray-500 hover:text-red-500 bg-white px-2 py-1 rounded-md border border-gray-200"
               >
@@ -260,85 +266,85 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
           </div>
 
           <form onSubmit={handleAddItem} className="space-y-4">
-            <div className="flex gap-4">
-              <div className="w-24 shrink-0">
-                <ImageUpload
-                  onChange={handleImageChange}
-                  previewUrl={imagePreview}
-                  className="aspect-square !rounded-xl !border-gray-200"
-                />
-              </div>
-              <div className="flex-1 space-y-3">
-                <Input
-                  placeholder="Categoría"
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  icon={<Tag className="w-4 h-4" />}
-                  className="bg-white"
-                  list="categories"
-                />
-                <datalist id="categories">
-                  <option value="Entradas" />
-                  <option value="Platillos" />
-                  <option value="Bebidas" />
-                  <option value="Postres" />
-                </datalist>
-                <Input
-                  placeholder="Precio ($)"
-                  type="number"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  icon={<DollarSign className="w-4 h-4" />}
-                  className="bg-white"
-                  step="0.01"
-                />
-              </div>
-            </div>
+             <div className="flex gap-4">
+                <div className="w-24 shrink-0">
+                  <ImageUpload 
+                    onChange={handleImageChange}
+                    previewUrl={imagePreview}
+                    className="aspect-square !rounded-xl !border-gray-200"
+                  />
+                </div>
+                <div className="flex-1 space-y-3">
+                   <Input 
+                      placeholder="Categoría"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                      icon={<Tag className="w-4 h-4" />}
+                      className="bg-white"
+                      list="categories" 
+                    />
+                    <datalist id="categories">
+                        <option value="Entradas" />
+                        <option value="Platillos" />
+                        <option value="Bebidas" />
+                        <option value="Postres" />
+                    </datalist>
+                     <Input 
+                      placeholder="Precio ($)"
+                      type="number"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      icon={<DollarSign className="w-4 h-4" />}
+                      className="bg-white"
+                      step="0.01"
+                    />
+                </div>
+             </div>
 
-            <Input
-              placeholder="Nombre del platillo"
-              value={itemName}
-              onChange={(e) => setItemName(e.target.value)}
-              icon={<Utensils className="w-4 h-4" />}
-              className="bg-white"
-            />
+             <Input 
+                placeholder="Nombre del platillo"
+                value={itemName}
+                onChange={(e) => setItemName(e.target.value)}
+                icon={<Utensils className="w-4 h-4" />}
+                className="bg-white"
+              />
 
-            <Input
-              placeholder="Descripción (¿Qué es?)"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              icon={<AlignLeft className="w-4 h-4" />}
-              className="bg-white"
-            />
+              <Input 
+                placeholder="Descripción (¿Qué es?)"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                icon={<AlignLeft className="w-4 h-4" />}
+                className="bg-white"
+              />
 
-            <Input
-              placeholder="Ingredientes (Opcional)"
-              value={ingredients}
-              onChange={(e) => setIngredients(e.target.value)}
-              icon={<Carrot className="w-4 h-4" />}
-              className="bg-white"
-            />
-
-            <Button
-              type="submit"
-              variant={editingId ? 'secondary' : 'primary'}
-              fullWidth
-              isLoading={isSubmittingItem}
-              icon={editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-              className={`py-2.5 text-sm mt-2 ${editingId ? 'border-accent-300 bg-white text-accent-700 hover:bg-accent-50' : ''}`}
-            >
-              {editingId ? 'Actualizar Platillo' : 'Agregar Platillo'}
-            </Button>
+              <Input 
+                placeholder="Ingredientes (Opcional)"
+                value={ingredients}
+                onChange={(e) => setIngredients(e.target.value)}
+                icon={<Carrot className="w-4 h-4" />}
+                className="bg-white"
+              />
+              
+              <Button 
+                type="submit" 
+                variant={editingId ? 'secondary' : 'primary'}
+                fullWidth 
+                isLoading={isSubmittingItem}
+                icon={editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+                className={`py-2.5 text-sm mt-2 ${editingId ? 'border-accent-300 bg-white text-accent-700 hover:bg-accent-50' : ''}`}
+              >
+                {editingId ? 'Actualizar Platillo' : 'Agregar Platillo'}
+              </Button>
           </form>
         </div>
 
         {/* Menu List */}
         <div id="menu-list" className="flex-1 overflow-y-auto pr-1 scrollbar-thin mb-4">
           {Object.keys(groupedItems).length === 0 ? (
-            <div className="text-center py-10 opacity-50 border-2 border-dashed border-gray-200 rounded-xl">
-              <Coffee className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-              <p className="text-sm text-gray-500">Tu menú está vacío</p>
-            </div>
+             <div className="text-center py-10 opacity-50 border-2 border-dashed border-gray-200 rounded-xl">
+               <Coffee className="w-10 h-10 mx-auto mb-2 text-gray-400" />
+               <p className="text-sm text-gray-500">Tu menú está vacío</p>
+             </div>
           ) : (
             <div className="space-y-6 pb-4">
               {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
@@ -348,71 +354,96 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                     {cat}
                   </h3>
                   <div className="space-y-3">
-                    {catItems.map((item) => (
-                      <div
-                        key={item.id}
+                    {catItems.map((item) => {
+                      const isAvailable = item.available !== false;
+                      return (
+                      <div 
+                        key={item.id} 
                         className={`
                           relative flex gap-3 bg-white p-3 rounded-xl border shadow-sm transition-all
                           ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200'}
-                          ${item.sold_out ? 'opacity-70 bg-gray-50' : ''}
+                          ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
                         `}
                       >
-                        <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100">
-                          {item.image ? (
-                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center text-gray-300">
-                              <ImageIcon className="w-6 h-6" />
-                            </div>
-                          )}
+                        <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
+                           {item.image ? (
+                             <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
+                           ) : (
+                             <div className="w-full h-full flex items-center justify-center text-gray-300">
+                               <ImageIcon className="w-6 h-6" />
+                             </div>
+                           )}
+                           
+                           {/* Sold Out Overlay Badge */}
+                           {!isAvailable && (
+                             <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
+                               <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
+                             </div>
+                           )}
                         </div>
 
                         <div className="flex-1 min-w-0 pr-8">
                           <div className="flex justify-between items-start">
-                            <h4 className="font-bold text-gray-900 truncate">{item.name}</h4>
-                            <span className="font-bold text-brand-900 text-sm">${item.price}</span>
+                            <h4 className={`font-bold truncate ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
+                            <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
                           </div>
-
+                          
                           {item.description && (
                             <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
                           )}
-
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleToggleAvailability(item); }}
-                            className={`mt-2 w-full text-[10px] font-bold px-2 py-1.5 rounded border transition-colors 
-                                ${item.sold_out
-                                ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-brand-900'}`}
-                          >
-                            {item.sold_out ? 'AGOTADO (Click para activar)' : 'MARCAR COMO AGOTADO'}
-                          </button>
                         </div>
 
                         {/* Action Buttons */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-1">
-                          <button
+                        <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                          <button 
                             onClick={() => handleRemoveItem(item.id)}
                             className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                             title="Eliminar"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
-
-                          <button
+                          
+                          <button 
                             onClick={() => handleEditItem(item)}
                             className={`
-                              p-1.5 rounded-full transition-colors
-                              ${editingId === item.id
-                                ? 'text-accent-600 bg-accent-50'
+                              p-1.5 rounded-full transition-colors mb-1
+                              ${editingId === item.id 
+                                ? 'text-accent-600 bg-accent-50' 
                                 : 'text-gray-300 hover:text-brand-900 hover:bg-gray-100'}
                             `}
                             title="Editar"
                           >
                             <Pencil className="w-4 h-4" />
                           </button>
+
+                          {/* Toggle Availability Button */}
+                          <button
+                            onClick={() => handleToggleAvailability(item.id)}
+                            className={`
+                                flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
+                                ${isAvailable 
+                                    ? 'bg-white border-red-100 text-red-500 hover:bg-red-50' 
+                                    : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
+                                }
+                            `}
+                            title={isAvailable ? "Marcar como Agotado" : "Marcar como Disponible"}
+                          >
+                            {isAvailable ? (
+                                <>
+                                    <Ban className="w-3 h-3" /> 
+                                    <span>Agotar</span>
+                                </>
+                            ) : (
+                                <>
+                                    <CheckCircle className="w-3 h-3" />
+                                    <span>Activ</span>
+                                </>
+                            )}
+                          </button>
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               ))}
@@ -422,14 +453,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
         {/* Footer Actions - Solo visible en onboarding */}
         {isOnboarding && (
-          <div className="mt-auto pt-4 border-t border-gray-100 bg-white">
-            <div className="mt-6 flex justify-center space-x-2">
-              <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-              <div className="w-6 h-2 rounded-full bg-brand-900"></div>
-              <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-              <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-            </div>
-          </div>
+           <div className="mt-auto pt-4 border-t border-gray-100 bg-white">
+               <div className="mt-6 flex justify-center space-x-2">
+                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                <div className="w-6 h-2 rounded-full bg-brand-900"></div>
+                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
+              </div>
+           </div>
         )}
       </div>
     </div>

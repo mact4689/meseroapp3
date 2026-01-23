@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { UtensilsCrossed, ChefHat, ArrowRight } from 'lucide-react';
 import { AppView } from '../types';
@@ -36,7 +37,8 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
     }
 
     if (!state.user) {
-      onNavigate(AppView.LANDING);
+      // Cambio: Redirigir al WEBSITE (Landing Page de Marketing) en lugar de la selección de auth
+      onNavigate(AppView.WEBSITE);
       return;
     }
 

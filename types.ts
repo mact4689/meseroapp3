@@ -1,6 +1,7 @@
 
 export enum AppView {
   SPLASH = 'SPLASH',
+  WEBSITE = 'WEBSITE',
   LANDING = 'LANDING',
   LOGIN = 'LOGIN',
   REGISTER = 'REGISTER',
@@ -29,7 +30,7 @@ export interface MenuItem {
   ingredients?: string;
   image?: string | null; // URL string for preview
   imageFile?: File | null;
-  sold_out?: boolean;
+  available?: boolean; // New field for stock status
 }
 
 export interface OrderItem extends MenuItem {
