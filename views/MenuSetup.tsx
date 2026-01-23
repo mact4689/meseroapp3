@@ -379,10 +379,10 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
                           <button
                             onClick={(e) => { e.stopPropagation(); handleToggleAvailability(item); }}
-                            className={`mt-2 text-[10px] font-bold px-2 py-1 rounded border transition-colors 
+                            className={`mt-2 w-full text-[10px] font-bold px-2 py-1.5 rounded border transition-colors 
                                 ${item.sold_out
                                 ? 'bg-red-50 text-red-600 border-red-200 hover:bg-red-100'
-                                : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-brand-900'}`}
+                                : 'bg-gray-50 text-gray-600 border-gray-200 hover:bg-gray-100 hover:text-brand-900'}`}
                           >
                             {item.sold_out ? 'AGOTADO (Click para activar)' : 'MARCAR COMO AGOTADO'}
                           </button>

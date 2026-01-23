@@ -42,11 +42,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const mainPrinter = printers[0];
 
     // Filter orders
+    // Filter orders
     const pendingOrders = orders.filter(o => o.status === 'pending');
-    const completedOrders = orders.filter(o => o.status === 'completed');
 
-    // Calculate stats - ensure o.total exists
-    const todayTotal = completedOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+    // Daily Stats Logic
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const completedOrdersToday = orders.filter(o => {
+        if (o.status !== 'completed') return false;
+        const orderDate = new Date(o.created_at);
+        return orderDate >= today;
+    });
+
+    const todayTotal = completedOrdersToday.reduce((acc, o) => acc + (o.total || 0), 0);
 
     const handleLogout = () => {
         logout();
@@ -185,7 +194,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <Users className="w-4 h-4" />
                             <span className="text-xs font-bold uppercase tracking-wider">Órdenes</span>
                         </div>
-                        <p className="text-2xl font-bold text-brand-900">{completedOrders.length}</p>
+                        <p className="text-2xl font-bold text-brand-900">{completedOrdersToday.length}</p>
                         <p className="text-xs text-gray-500">Completadas</p>
                     </div>
                 </div>
