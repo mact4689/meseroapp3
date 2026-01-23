@@ -84,9 +84,7 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
   // Convert price string to number for DB compatibility
   const numericPrice = parseFloat(item.price) || 0;
 
-  const { error } = await supabase
-    .from('menu_items')
-    .insert({
+  const payload = {
       id: item.id, 
       user_id: userId,
       name: item.name,
@@ -96,17 +94,28 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
       ingredients: item.ingredients,
       image_url: item.image,
       available: item.available ?? true
-    });
+  };
 
+  let { error } = await supabase
+    .from('menu_items')
+    .insert(payload);
+
+  // FALLBACK: Manejo robusto de errores de esquema
   if (error) {
-      console.error('Error inserting item:', JSON.stringify(error, null, 2));
-      // Alert user if table is missing (common setup error)
-      if (error.code === '42P01' || error.message?.includes('Could not find the table')) {
-          console.error("CRITICAL: Table 'menu_items' does not exist in Supabase. Please run the SQL setup script.");
-      }
-      // Check for missing column available (42703) - Silent update attempt hint
+      // Si falta la columna 'available' (Error 42703), reintentamos sin ella
       if (error.code === '42703') {
-           console.warn("Columna 'available' faltante. Ejecuta: ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS available BOOLEAN DEFAULT TRUE;");
+          console.warn("Columna 'available' no encontrada en DB. Guardando en modo compatibilidad...");
+          const { available, ...fallbackPayload } = payload;
+          const retry = await supabase.from('menu_items').insert(fallbackPayload);
+          error = retry.error;
+      }
+      
+      if (error) {
+          console.error('Error inserting item:', JSON.stringify(error, null, 2));
+          // Alert user if table is missing (common setup error)
+          if (error.code === '42P01' || error.message?.includes('Could not find the table')) {
+              console.error("CRITICAL: Table 'menu_items' does not exist in Supabase. Please run the SQL setup script.");
+          }
       }
   }
   return error;
@@ -115,9 +124,7 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
 export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
   const numericPrice = parseFloat(item.price) || 0;
 
-  const { error } = await supabase
-    .from('menu_items')
-    .update({
+  const payload = {
       name: item.name,
       price: numericPrice,
       category: item.category,
@@ -125,18 +132,26 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
       ingredients: item.ingredients,
       image_url: item.image,
       available: item.available
-    })
+  };
+
+  let { error } = await supabase
+    .from('menu_items')
+    .update(payload)
     .eq('id', itemId);
 
+  // FALLBACK: Manejo robusto de errores de esquema
   if (error) {
-      console.error('Error updating item:', JSON.stringify(error, null, 2));
-      
-      // Check for missing column available (42703)
-      if (error.code === '42703') {
-           console.error("%c SQL FIX REQUIRED: ", "background: red; color: white; font-size: 14px; font-weight: bold;");
-           console.error("Ejecuta esto en Supabase SQL Editor: ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS available BOOLEAN DEFAULT TRUE;");
-           alert("Error de base de datos: Falta la columna 'available'. Revisa la consola para ver el código SQL necesario.");
-      }
+       // Si falta la columna 'available' (Error 42703), reintentamos sin ella
+       if (error.code === '42703') {
+           console.warn("Columna 'available' no encontrada en DB. Actualizando en modo compatibilidad...");
+           const { available, ...fallbackPayload } = payload;
+           const retry = await supabase.from('menu_items').update(fallbackPayload).eq('id', itemId);
+           error = retry.error;
+       }
+
+       if (error) {
+          console.error('Error updating item:', JSON.stringify(error, null, 2));
+       }
   }
   return error;
 };

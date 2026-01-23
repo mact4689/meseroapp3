@@ -32,11 +32,17 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
 
-  // Helper seguro para generar UUID v4 compatible con Supabase (Postgres)
+  // Helper seguro para generar UUID v4 compatible con Supabase
   const generateId = () => {
-    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return crypto.randomUUID();
+    try {
+        if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+            return crypto.randomUUID();
+        }
+    } catch (e) {
+        // Fallback en caso de error en crypto
     }
+    
+    // Polyfill robusto para navegadores antiguos o contextos no seguros (HTTP)
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
       const r = Math.random() * 16 | 0;
       const v = c === 'x' ? r : (r & 0x3 | 0x8);
@@ -76,7 +82,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     
     if (!validateForm()) return;
     if (!state.user) {
-        alert("Error de sesión: No se ha detectado un usuario activo. Intenta recargar la página.");
+        alert("Error de sesión: No se ha detectado un usuario activo. Por favor recarga la página e inicia sesión nuevamente.");
         return;
     }
 
@@ -93,10 +99,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                 finalImageUrl = publicUrl;
             } else {
                 console.warn("No se pudo subir la imagen, guardando sin imagen.");
-                finalImageUrl = null;
+                // No detenemos el proceso, permitimos guardar sin imagen
+                // finalImageUrl se queda como estaba (si era local) o null
+                if (imagePreview && imagePreview.startsWith('blob:')) {
+                     finalImageUrl = null;
+                }
             }
         } else if (imagePreview && imagePreview.startsWith('blob:')) {
-            // Limpieza de blob urls huerfanas
+            // Limpieza de blob urls huerfanas si no se subió
             finalImageUrl = null;
         }
 
@@ -139,7 +149,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
     } catch (error: any) {
         console.error("Error saving item:", error);
-        alert(`No se pudo guardar: ${error.message || 'Error desconocido en la base de datos'}`);
+        alert(`No se pudo guardar: ${error.message || 'Error desconocido'}. Si el error persiste, verifica tu conexión.`);
     } finally {
         setIsSubmittingItem(false);
     }
@@ -176,9 +186,21 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true },
     ];
 
-    samples.forEach((item) => {
-      addMenuItem(item).catch(e => console.error("Error loading sample:", e));
-    });
+    // Cargar secuencialmente para evitar condiciones de carrera en conexiones lentas
+    const loadAll = async () => {
+        setIsSubmittingItem(true);
+        try {
+            for (const item of samples) {
+                await addMenuItem(item);
+            }
+        } catch(e: any) {
+            console.error("Error loading sample:", e);
+            alert("Error al cargar ejemplos: " + e.message);
+        } finally {
+            setIsSubmittingItem(false);
+        }
+    };
+    loadAll();
   };
 
   const handleBack = () => {
@@ -186,10 +208,12 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   };
 
   const handleRemoveItem = (id: string) => {
-    if (editingId === id) {
-      handleCancelEdit();
+    if (confirm("¿Estás seguro de eliminar este platillo?")) {
+        if (editingId === id) {
+          handleCancelEdit();
+        }
+        removeMenuItem(id).catch(e => alert(e.message));
     }
-    removeMenuItem(id).catch(e => alert(e.message));
   };
 
   const handleToggleAvailability = async (id: string) => {
@@ -198,7 +222,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       } catch (error: any) {
           // If we catch here, it means the DB update failed and the optimistic update was reverted.
           console.error("Failed to toggle availability:", error);
-          alert("Error de base de datos: No se pudo guardar el cambio de disponibilidad. Verifica que la tabla 'menu_items' tenga la columna 'available'.");
+          alert("Error: No se pudo cambiar la disponibilidad. Revisa la consola o recarga la página.");
       }
   };
 
@@ -225,8 +249,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             </button>
             <button 
               onClick={handleLoadSample}
-              className="text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-3 py-1.5 rounded-full flex items-center transition-colors"
+              className="text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-3 py-1.5 rounded-full flex items-center transition-colors disabled:opacity-50"
               type="button"
+              disabled={isSubmittingItem}
             >
               <Sparkles className="w-3 h-3 mr-1.5" />
               Simular Menú
@@ -240,9 +265,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
         {/* Warning if no user */}
         {!state.user && !isOnboarding && (
-             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center">
+             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center animate-pulse">
                 <AlertTriangle className="w-4 h-4 mr-2" />
-                Error de sesión. Recarga la página.
+                <span>Error de sesión. <strong>Recarga la página</strong>.</span>
              </div>
         )}
 
@@ -282,6 +307,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                       icon={<Tag className="w-4 h-4" />}
                       className="bg-white"
                       list="categories" 
+                      required
                     />
                     <datalist id="categories">
                         <option value="Entradas" />
@@ -292,11 +318,13 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                      <Input 
                       placeholder="Precio ($)"
                       type="number"
+                      step="0.01"
+                      inputMode="decimal"
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       icon={<DollarSign className="w-4 h-4" />}
                       className="bg-white"
-                      step="0.01"
+                      required
                     />
                 </div>
              </div>
@@ -307,6 +335,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                 onChange={(e) => setItemName(e.target.value)}
                 icon={<Utensils className="w-4 h-4" />}
                 className="bg-white"
+                required
               />
 
               <Input 
@@ -349,7 +378,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             <div className="space-y-6 pb-4">
               {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
                 <div key={cat} className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                  <h3 className="font-serif text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10">
+                  <h3 className="font-serif text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10 shadow-sm px-2 -mx-2 rounded-lg">
                     <span className="w-1.5 h-1.5 bg-accent-500 rounded-full mr-2"></span>
                     {cat}
                   </h3>
