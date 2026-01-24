@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
-import { ImageUpload } from '../components/ImageUpload';
 import { AppView } from '../types';
-import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check, Plus, Camera } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -15,6 +14,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
   const { state, updateBusiness } = useAppStore();
   const [loading, setLoading] = useState(false);
   const { isOnboarding } = state;
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Local state for immediate input handling
   const [formData, setFormData] = useState({
@@ -41,19 +41,18 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleImageChange = (file: File | null) => {
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
     if (file) {
         const objectUrl = URL.createObjectURL(file);
         setFormData(prev => ({
             ...prev,
             logoUrl: objectUrl,
             logoFile: file
-        }));
-    } else {
-        setFormData(prev => ({
-            ...prev,
-            logoUrl: null,
-            logoFile: null
         }));
     }
   };
@@ -95,10 +94,15 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
 
   const handleBack = async () => {
     if (isOnboarding) {
+        // En onboarding paso 1 no hay "atrás", el usuario debe seguir o cerrar la app
         return;
     }
     await saveChanges();
     onNavigate(AppView.DASHBOARD);
+  };
+
+  const handleSkip = () => {
+    onNavigate(AppView.MENU_SETUP);
   };
 
   return (
@@ -108,23 +112,35 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
         {/* Onboarding Header */}
         {isOnboarding ? (
              <div className="mb-8 flex flex-col items-center animate-in slide-in-from-bottom-4">
-                 <div className="flex items-center space-x-2 mb-8">
+                 <div className="flex items-center justify-center space-x-2 mb-8 w-full">
                     {/* Step 1 Indicator - Active */}
                     <div className="flex flex-col items-center gap-1">
                         <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">1</div>
                         <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Perfil</span>
                     </div>
-                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+                    
                     {/* Step 2 Indicator - Inactive */}
                     <div className="flex flex-col items-center gap-1 opacity-40">
                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">2</div>
-                        <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Menú</span>
                     </div>
-                    <div className="w-8 h-0.5 bg-gray-200"></div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
                     {/* Step 3 Indicator - Inactive */}
                     <div className="flex flex-col items-center gap-1 opacity-40">
                          <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
-                         <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Mesas</span>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 4 Indicator - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 5 Indicator - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
                     </div>
                  </div>
                  
@@ -154,8 +170,11 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
               <div className="space-y-8">
                 {/* Logo Upload Section */}
                 <div className="flex flex-col items-center">
-                    <div className="relative group">
-                        <div className="w-32 h-32 rounded-full overflow-hidden shadow-md border-4 border-white ring-1 ring-gray-100 bg-gray-50">
+                    <div 
+                        className="relative group cursor-pointer"
+                        onClick={handleFileClick}
+                    >
+                        <div className="w-32 h-32 rounded-full overflow-hidden shadow-md border-4 border-white ring-1 ring-gray-100 bg-gray-50 relative">
                              {formData.logoUrl ? (
                                 <img src={formData.logoUrl} className="w-full h-full object-cover" alt="Logo" />
                              ) : (
@@ -164,17 +183,33 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                                     <span className="text-[10px] font-medium uppercase">Sin Logo</span>
                                 </div>
                              )}
+                             
+                             {/* Hover Overlay */}
+                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <Camera className="w-8 h-8 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                             </div>
                         </div>
-                        <div className="absolute -bottom-2 -right-2">
-                             <ImageUpload 
-                                onChange={handleImageChange}
-                                previewUrl={null} // Handled by parent img above
-                                className="!w-10 !h-10 !rounded-full !border-0 bg-brand-900 text-white shadow-lg flex items-center justify-center hover:bg-brand-800 cursor-pointer"
-                                label=""
-                             />
+
+                        {/* Plus Button Badge */}
+                        <div className="absolute -bottom-1 -right-1 bg-brand-900 text-white w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-white group-hover:scale-110 transition-transform">
+                             <Plus className="w-5 h-5" />
                         </div>
+                        
+                        <input 
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/png, image/jpeg, image/jpg"
+                            onChange={handleFileChange}
+                        />
                     </div>
-                    <p className="mt-3 text-xs text-gray-400">Toca el botón + para subir tu logo</p>
+                    <button 
+                        type="button" 
+                        onClick={handleFileClick}
+                        className="mt-3 text-xs font-medium text-gray-500 hover:text-brand-900 transition-colors"
+                    >
+                        Toca para subir tu logo
+                    </button>
                 </div>
 
                 {/* Inputs */}
@@ -205,7 +240,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                 </div>
               </div>
               
-               <div className="mt-auto pt-6">
+               <div className="mt-auto pt-6 flex flex-col gap-3">
                   <Button 
                     type="submit" 
                     fullWidth 
@@ -215,6 +250,16 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                   >
                     {isOnboarding ? 'Siguiente Paso' : 'Guardar Cambios'}
                   </Button>
+                  
+                  {isOnboarding && (
+                    <button 
+                      type="button" 
+                      onClick={handleSkip}
+                      className="text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+                    >
+                      Omitir por ahora
+                    </button>
+                  )}
                </div>
             </form>
         </div>

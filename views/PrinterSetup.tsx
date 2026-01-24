@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Printer, Bluetooth, Wifi, CheckCircle2, FileText, Search, Signal, Router } from 'lucide-react';
+import { ArrowLeft, Printer, Bluetooth, Wifi, CheckCircle2, FileText, Search, Signal, Router, CheckCircle, ChevronRight, Receipt } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface PrinterSetupProps {
@@ -27,6 +27,10 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
   const { isOnboarding } = state;
 
   // Use the first printer (Main/Kitchen) for the setup flow
+  // In a real scenario, we might iterate over multiple printers.
+  // For this mock, we are just configuring the first one in the onboarding,
+  // or allowing selection in a full list if not onboarding.
+  // NOTE: This logic assumes updating the FIRST printer in the array.
   const printerToSetup = state.printers[0]; 
   const isConnected = printerToSetup.isConnected;
 
@@ -81,15 +85,28 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
     }, 1500);
   };
 
+  const handleToggleBillPrinter = () => {
+      updatePrinter(printerToSetup.id, {
+          isBillPrinter: !printerToSetup.isBillPrinter
+      });
+  };
+
   const handleBack = () => {
     if (setupMethod !== null && !isConnected) {
       setSetupMethod(null);
       setDiscoveredDevices([]);
       setIsSearching(false);
     } else {
-      // Guardar configuración (implícito en updatePrinter) y salir al Dashboard
-      onNavigate(AppView.DASHBOARD);
+        if (isOnboarding) {
+             onNavigate(AppView.TABLE_SETUP);
+        } else {
+             onNavigate(AppView.DASHBOARD);
+        }
     }
+  };
+
+  const handleNextStep = () => {
+      onNavigate(AppView.TICKET_CONFIG);
   };
 
   return (
@@ -100,21 +117,60 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
           <button 
             onClick={handleBack}
             className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-            title="Guardar y volver al Dashboard"
+            title={isOnboarding ? "Volver" : "Guardar y volver al Dashboard"}
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
-          <div className="mt-4 space-y-2">
-            <h2 className="font-serif text-3xl text-brand-900">Configurar Impresora</h2>
-            <p className="text-gray-500">
-                {isConnected 
-                    ? `Configurando ${printerToSetup.name}`
-                    : setupMethod 
-                      ? `Buscando por ${setupMethod === 'BLUETOOTH' ? 'Bluetooth' : 'WiFi'}...`
-                      : 'Elige cómo conectar tu impresora'
-                }
-            </p>
-          </div>
+          
+          {isOnboarding ? (
+            <div className="mt-4 flex flex-col items-center">
+                 <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                    {/* Step 1 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                    {/* Step 2 - Done */}
+                     <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                    {/* Step 3 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                    {/* Step 4 - Active */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">4</div>
+                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Impr.</span>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 5 - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                    </div>
+                 </div>
+                 <h2 className="font-serif text-3xl text-brand-900 text-center">Paso 4</h2>
+                 <p className="text-gray-500 text-center text-sm mt-1">Conecta tu impresora de tickets.</p>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+                <h2 className="font-serif text-3xl text-brand-900">Configurar Impresora</h2>
+                <p className="text-gray-500">
+                    {isConnected 
+                        ? `Configurando ${printerToSetup.name}`
+                        : setupMethod 
+                        ? `Buscando por ${setupMethod === 'BLUETOOTH' ? 'Bluetooth' : 'WiFi'}...`
+                        : 'Elige cómo conectar tu impresora'
+                    }
+                </p>
+            </div>
+          )}
         </div>
 
         {/* Content Area */}
@@ -122,7 +178,7 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
           
           {/* STATE 1: Connected */}
           {isConnected ? (
-             <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl relative overflow-hidden animate-in fade-in zoom-in">
+             <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl relative overflow-hidden animate-in fade-in zoom-in space-y-6">
                 <div className="relative z-10 flex flex-col items-center text-center">
                     <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm border border-green-100">
                         <Printer className="w-8 h-8 text-green-600" />
@@ -151,6 +207,28 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
                             Desconectar
                         </Button>
                     </div>
+                 </div>
+
+                 {/* Bill Printer Role Toggle */}
+                 <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
+                             <Receipt className="w-5 h-5" />
+                        </div>
+                        <div className="text-left">
+                            <p className="font-bold text-sm text-gray-900">Imprimir Cuentas</p>
+                            <p className="text-xs text-gray-500">Usar para tickets de cobro</p>
+                        </div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            className="sr-only peer" 
+                            checked={printerToSetup.isBillPrinter}
+                            onChange={handleToggleBillPrinter}
+                        />
+                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-900"></div>
+                    </label>
                  </div>
              </div>
           ) : (
@@ -272,13 +350,23 @@ export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
 
         {/* Footer Actions - Solo en onboarding */}
         {isOnboarding && (
-            <div className="mt-6 pt-6 border-t border-gray-100">
-                <div className="mt-6 flex justify-center space-x-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                    <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                    <div className="w-6 h-2 rounded-full bg-brand-900"></div>
-                </div>
+            <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3">
+                <Button 
+                 fullWidth 
+                 onClick={handleNextStep}
+                 className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
+                 icon={<ChevronRight className="w-5 h-5" />}
+               >
+                 Siguiente Paso
+               </Button>
+               
+               <button 
+                  type="button" 
+                  onClick={handleNextStep}
+                  className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+                >
+                  Omitir por ahora
+                </button>
             </div>
         )}
       </div>

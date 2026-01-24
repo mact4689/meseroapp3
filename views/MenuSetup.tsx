@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, Printer } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -14,7 +14,7 @@ interface MenuSetupProps {
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
-  const { isOnboarding } = state;
+  const { isOnboarding, printers } = state;
   
   // Use global state for items
   const items = state.menu;
@@ -25,6 +25,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState('');
+  const [selectedPrinterId, setSelectedPrinterId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   
@@ -119,7 +120,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
           ingredients: ingredients,
           image: finalImageUrl,
           imageFile: null,
-          available: true
+          available: true,
+          printerId: selectedPrinterId || undefined
         };
 
         if (editingId) {
@@ -138,6 +140,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         setPrice('');
         setDescription('');
         setIngredients('');
+        // No limpiamos printerId para facilitar entrada en batch
         setImagePreview(null);
         setImageFile(null);
         
@@ -162,6 +165,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setPrice(item.price);
     setDescription(item.description || '');
     setIngredients(item.ingredients || '');
+    setSelectedPrinterId(item.printerId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
     
@@ -174,6 +178,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setPrice('');
     setDescription('');
     setIngredients('');
+    setSelectedPrinterId('');
     setImagePreview(null);
     setImageFile(null);
   };
@@ -181,9 +186,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const handleLoadSample = () => {
     if (!state.user) return;
     const samples: MenuItem[] = [
-      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true },
-      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true },
-      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true },
+      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true, printerId: printers[0]?.id },
+      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true, printerId: printers[0]?.id },
+      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true, printerId: printers[0]?.id },
     ];
 
     // Cargar secuencialmente para evitar condiciones de carrera en conexiones lentas
@@ -204,7 +209,15 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   };
 
   const handleBack = () => {
-    onNavigate(AppView.DASHBOARD);
+    if (isOnboarding) {
+        onNavigate(AppView.BUSINESS_SETUP);
+    } else {
+        onNavigate(AppView.DASHBOARD);
+    }
+  };
+  
+  const handleNextStep = () => {
+    onNavigate(AppView.TABLE_SETUP);
   };
 
   const handleRemoveItem = (id: string) => {
@@ -243,7 +256,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             <button 
               onClick={handleBack}
               className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-              title="Volver al Dashboard"
+              title={isOnboarding ? "Volver" : "Volver al Dashboard"}
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
@@ -257,10 +270,48 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               Simular Menú
             </button>
           </div>
-          <div className="mt-4 space-y-2">
-            <h2 className="font-serif text-3xl text-brand-900">Tu Menú Digital</h2>
-            <p className="text-gray-500">Agrega fotos y detalles a tus platillos.</p>
-          </div>
+          
+          {isOnboarding ? (
+            <div className="mt-4 flex flex-col items-center">
+                 <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                    {/* Step 1 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                        <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                    {/* Step 2 - Active */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">2</div>
+                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Menú</span>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 3 - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 4 - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-gray-200"></div>
+
+                    {/* Step 5 - Inactive */}
+                    <div className="flex flex-col items-center gap-1 opacity-40">
+                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                    </div>
+                 </div>
+                 <h2 className="font-serif text-3xl text-brand-900 text-center">Arma tu Menú</h2>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-2">
+                <h2 className="font-serif text-3xl text-brand-900">Tu Menú Digital</h2>
+                <p className="text-gray-500">Agrega fotos y detalles a tus platillos.</p>
+            </div>
+          )}
         </div>
 
         {/* Warning if no user */}
@@ -338,6 +389,34 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                 required
               />
 
+              {/* Printer Selection Dropdown */}
+              <div className="w-full space-y-1.5">
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                        <Printer className="w-4 h-4" />
+                    </div>
+                    <select
+                        value={selectedPrinterId}
+                        onChange={(e) => setSelectedPrinterId(e.target.value)}
+                        className={`
+                            block w-full rounded-xl border-gray-200 bg-white 
+                            focus:border-brand-900 focus:ring-1 focus:ring-brand-900 
+                            text-gray-900 py-3.5 pl-10 border appearance-none
+                        `}
+                    >
+                        <option value="">-- Seleccionar Impresora (Opcional) --</option>
+                        {printers.map(printer => (
+                            <option key={printer.id} value={printer.id}>
+                                {printer.name} ({printer.location})
+                            </option>
+                        ))}
+                    </select>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                        <ChevronRight className="w-4 h-4 rotate-90" />
+                    </div>
+                  </div>
+              </div>
+
               <Input 
                 placeholder="Descripción (¿Qué es?)"
                 value={description}
@@ -385,6 +464,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                   <div className="space-y-3">
                     {catItems.map((item) => {
                       const isAvailable = item.available !== false;
+                      const assignedPrinter = printers.find(p => p.id === item.printerId);
+
                       return (
                       <div 
                         key={item.id} 
@@ -419,6 +500,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                           
                           {item.description && (
                             <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
+                          )}
+
+                          {/* Printer indicator */}
+                          {assignedPrinter && (
+                              <div className="flex items-center mt-1.5 text-[10px] text-gray-400 gap-1">
+                                  <Printer className="w-3 h-3" />
+                                  <span>{assignedPrinter.location}</span>
+                              </div>
                           )}
                         </div>
 
@@ -480,16 +569,37 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
           )}
         </div>
 
-        {/* Footer Actions - Solo visible en onboarding */}
-        {isOnboarding && (
-           <div className="mt-auto pt-4 border-t border-gray-100 bg-white">
-               <div className="mt-6 flex justify-center space-x-2">
-                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                <div className="w-6 h-2 rounded-full bg-brand-900"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-200"></div>
-              </div>
+        {/* Footer Actions */}
+        {isOnboarding ? (
+           <div className="mt-auto pt-4 border-t border-gray-100 bg-white space-y-3">
+               <Button 
+                 fullWidth 
+                 onClick={handleNextStep}
+                 className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
+                 icon={<ChevronRight className="w-5 h-5" />}
+               >
+                 Continuar a Mesas
+               </Button>
+               
+               <button 
+                  type="button" 
+                  onClick={handleNextStep}
+                  className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+                >
+                  Omitir por ahora
+                </button>
            </div>
+        ) : (
+             <div className="mt-6 pt-6 border-t border-gray-100">
+                <Button 
+                    fullWidth 
+                    onClick={handleBack}
+                    className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
+                    icon={<Check className="w-5 h-5" />}
+                >
+                    Guardar Cambios
+                </Button>
+             </div>
         )}
       </div>
     </div>

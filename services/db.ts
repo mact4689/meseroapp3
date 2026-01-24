@@ -93,7 +93,8 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
       description: item.description,
       ingredients: item.ingredients,
       image_url: item.image,
-      available: item.available ?? true
+      available: item.available ?? true,
+      printer_id: item.printerId || null
   };
 
   let { error } = await supabase
@@ -104,9 +105,16 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
   if (error) {
       // Si falta la columna 'available' (Error 42703), reintentamos sin ella
       if (error.code === '42703') {
-          console.warn("Columna 'available' no encontrada en DB. Guardando en modo compatibilidad...");
-          const { available, ...fallbackPayload } = payload;
-          const retry = await supabase.from('menu_items').insert(fallbackPayload);
+          console.warn("Columna faltante en DB. Guardando en modo compatibilidad...");
+          // Try removing printer_id first as it is newer
+          const { printer_id, ...payloadNoPrinter } = payload;
+          let retry = await supabase.from('menu_items').insert(payloadNoPrinter);
+          
+          // If still failing, try removing available
+          if (retry.error && retry.error.code === '42703') {
+             const { available, ...payloadNoAvailable } = payloadNoPrinter;
+             retry = await supabase.from('menu_items').insert(payloadNoAvailable);
+          }
           error = retry.error;
       }
       
@@ -131,7 +139,8 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
       description: item.description,
       ingredients: item.ingredients,
       image_url: item.image,
-      available: item.available
+      available: item.available,
+      printer_id: item.printerId
   };
 
   let { error } = await supabase
@@ -141,10 +150,10 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
 
   // FALLBACK: Manejo robusto de errores de esquema
   if (error) {
-       // Si falta la columna 'available' (Error 42703), reintentamos sin ella
+       // Si falta la columna (Error 42703)
        if (error.code === '42703') {
-           console.warn("Columna 'available' no encontrada en DB. Actualizando en modo compatibilidad...");
-           const { available, ...fallbackPayload } = payload;
+           console.warn("Columna faltante en DB. Actualizando en modo compatibilidad...");
+           const { printer_id, ...fallbackPayload } = payload;
            const retry = await supabase.from('menu_items').update(fallbackPayload).eq('id', itemId);
            error = retry.error;
        }

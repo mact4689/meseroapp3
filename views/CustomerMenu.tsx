@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare } from 'lucide-react';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
@@ -20,6 +20,10 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
   const [activeCategory, setActiveCategory] = useState<string>('');
   const [orderSent, setOrderSent] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  // BILL REQUEST STATE
+  const [isRequestingBill, setIsRequestingBill] = useState(false);
+  const [billRequested, setBillRequested] = useState(false);
 
   // GUEST MODE STATE
   const [guestBusiness, setGuestBusiness] = useState<{name: string, cuisine: string, logo: string | null} | null>(null);
@@ -43,10 +47,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
   useEffect(() => {
     // Si hay UID y es diferente al usuario logueado, O si es el mismo usuario pero queremos recargar datos frescos
     // Simplificación: Si hay UID en URL, cargamos datos específicos para esa UID para asegurar consistencia
+    // Para optimizar: si uid == state.user.id, usamos state.
     if (uid) {
-        // Si el UID coincide con el usuario local, podemos usar los datos del estado para ser más rápidos,
-        // pero cargar de DB asegura que vemos lo que ve el cliente.
-        // Para optimizar: si uid == state.user.id, usamos state.
         if (uid === state.user?.id) {
              setIsLoading(false);
              // Ya tenemos los datos en state, no necesitamos fetch
@@ -76,7 +78,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             description: m.description,
                             ingredients: m.ingredients,
                             image: m.image_url,
-                            available: m.available !== false
+                            available: m.available !== false,
+                            printerId: m.printer_id
                         }));
                         setGuestMenu(mappedItems);
                     }
@@ -196,6 +199,50 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }
   };
 
+  const handleRequestBill = async () => {
+      if (isAdminPreview) {
+          alert("Vista Previa: Solicitud de cuenta simulada.");
+          setBillRequested(true);
+          setTimeout(() => setBillRequested(false), 3000);
+          return;
+      }
+
+      const restaurantId = uid || state.user?.id;
+      if (!restaurantId) return;
+      
+      setIsRequestingBill(true);
+
+      try {
+          // Creating a special order representing a Bill Request
+          // We assume the system configures a specific printer for this "item" if needed,
+          // or the dashboard recognizes the item name.
+          // In a real app, this would be a separate API endpoint or event type.
+          const billItem: any = {
+              id: 'bill-req',
+              name: '🧾 SOLICITUD DE CUENTA',
+              price: '0',
+              quantity: 1,
+              category: 'System',
+              printerId: 'BILL_PRINTER' // Logical ID that backend/dashboard resolves to the printer marked isBillPrinter
+          };
+
+          await createOrder({
+              user_id: restaurantId,
+              table_number: tableId || 'S/N',
+              status: 'pending',
+              total: 0,
+              items: [billItem]
+          });
+
+          setBillRequested(true);
+          setTimeout(() => setBillRequested(false), 4000);
+      } catch (e) {
+          alert("Error al pedir la cuenta.");
+      } finally {
+          setIsRequestingBill(false);
+      }
+  };
+
   if (isLoading) {
       return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -253,8 +300,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                         </div>
                     )}
                  </div>
-                 <div className="mb-1 flex flex-col items-end">
-                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-bold border border-accent-100 shadow-sm mb-1">
+                 <div className="mb-1 flex flex-col items-end gap-2">
+                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-bold border border-accent-100 shadow-sm">
                         Mesa {tableId || '1'}
                      </span>
                  </div>
@@ -364,14 +411,37 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         ))}
       </main>
 
-      {/* Floating Action Button (Call Waiter) - Always visible if cart is empty */}
-      {!isCartOpen && cartCount === 0 && (
-        <div className="fixed bottom-6 right-6 z-40">
+      {/* Floating Actions */}
+      <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
+          
+          {/* Bill Request Button (Always visible if table is set, effectively replaces 'Call Waiter' or sits above it) */}
+          <button 
+            onClick={handleRequestBill}
+            disabled={isRequestingBill || billRequested}
+            className={`
+                shadow-xl transition-all flex items-center gap-2 pr-4 pl-3 py-3 rounded-full font-bold text-sm group
+                ${billRequested 
+                    ? 'bg-green-500 text-white cursor-default' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
+            `}
+          >
+              {isRequestingBill ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+              ) : billRequested ? (
+                  <CheckCircle className="w-5 h-5" />
+              ) : (
+                  <CreditCard className="w-5 h-5 text-gray-500 group-hover:text-brand-900" />
+              )}
+              <span>{billRequested ? 'Cuenta Pedida' : 'Pedir Cuenta'}</span>
+          </button>
+
+          {/* Call Waiter Button */}
+          {!isCartOpen && cartCount === 0 && (
             <button className="bg-white text-brand-900 p-4 rounded-full shadow-xl hover:scale-105 transition-transform flex items-center justify-center group border border-gray-100">
                 <Bell className="w-6 h-6 group-hover:animate-swing" />
             </button>
-        </div>
-      )}
+          )}
+      </div>
 
       {/* Bottom Cart Bar */}
       {cartCount > 0 && !isCartOpen && (

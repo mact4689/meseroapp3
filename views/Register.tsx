@@ -178,8 +178,8 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
           </div>
         </form>
 
-        <div className="mt-auto pt-6 text-center">
-             <p className="text-sm text-gray-500">
+        <div className="mt-8 pt-6 border-t border-gray-100">
+             <p className="text-sm text-center text-gray-500 mb-6">
               ¿Ya tienes cuenta?{' '}
               <button 
                 type="button"

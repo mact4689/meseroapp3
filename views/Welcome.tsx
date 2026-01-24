@@ -31,10 +31,10 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
           {/* Text Content */}
           <div className="space-y-4 slide-up" style={{ animationDelay: '0.2s' }}>
             <h1 className="font-serif text-4xl text-brand-900 leading-tight">
-              ¡Cuenta creada!
+              ¡Bienvenido a MeseroApp!
             </h1>
             <p className="text-gray-500 text-lg leading-relaxed">
-              Vamos a configurar tu restaurante en <span className="font-bold text-brand-900">3 simples pasos</span> para que puedas recibir pedidos hoy mismo.
+              Tu cuenta está lista. Vamos a configurar tu restaurante en <span className="font-bold text-brand-900">5 simples pasos</span> para que digitalices tu menú y empieces a recibir pedidos hoy mismo.
             </p>
           </div>
 

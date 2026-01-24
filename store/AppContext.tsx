@@ -17,8 +17,9 @@ interface AppState {
     generated: any[];
   };
   printers: Printer[];
-  orders: Order[]; // Nueva propiedad para órdenes
+  orders: Order[];
   isOnboarding: boolean;
+  isLoading: boolean; // Nuevo flag de carga
 }
 
 interface AppContextType {
@@ -30,10 +31,10 @@ interface AppContextType {
   addMenuItem: (item: MenuItem) => Promise<void>;
   updateMenuItem: (id: string, item: MenuItem) => Promise<void>;
   removeMenuItem: (id: string) => Promise<void>;
-  toggleItemAvailability: (id: string) => Promise<void>; // Nuevo método
+  toggleItemAvailability: (id: string) => Promise<void>;
   updateTables: (count: string, generated: any[]) => void;
   updatePrinter: (id: string, data: Partial<Printer>) => void;
-  completeOrder: (id: string) => Promise<void>; // Nuevo método
+  completeOrder: (id: string) => Promise<void>;
   startOnboarding: () => void;
   endOnboarding: () => void;
 }
@@ -63,7 +64,8 @@ const baseState: AppState = {
       hardwareName: null,
       type: null,
       paperWidth: '80mm',
-      ticketConfig: { ...defaultTicketConfig, title: 'ORDEN COCINA' }
+      ticketConfig: { ...defaultTicketConfig, title: 'ORDEN COCINA' },
+      isBillPrinter: false
     },
     {
       id: '2',
@@ -73,11 +75,13 @@ const baseState: AppState = {
       hardwareName: null,
       type: null,
       paperWidth: '58mm',
-      ticketConfig: { ...defaultTicketConfig, title: 'TICKET BARRA', textSize: 'normal' }
+      ticketConfig: { ...defaultTicketConfig, title: 'TICKET BARRA', textSize: 'normal' },
+      isBillPrinter: true // Default bar printer as bill printer for example
     }
   ],
-  orders: [], // Inicializar vacío
-  isOnboarding: false
+  orders: [],
+  isOnboarding: false,
+  isLoading: true // Inicia cargando
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -98,6 +102,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // Inicializar estado con usuario y luego cargar datos
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
+      } else {
+        // Si no hay sesión, terminamos de cargar
+        setState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
@@ -117,7 +124,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
          }
        } else {
          // Logout
-         setState(baseState);
+         setState({ ...baseState, isLoading: false }); // Reset state and stop loading
          dataLoadedRef.current = null;
        }
     });
@@ -154,9 +161,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                         orders: [newOrder, ...prev.orders]
                     }));
                     
-                    // Simple notification sound (opcional)
                     try {
-                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); // Sonido ding genérico
+                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
                         audio.play().catch(e => console.log('Audio autoplay blocked', e));
                     } catch (e) {}
                 }
@@ -183,7 +189,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => {
         if (channel) supabase.removeChannel(channel);
     };
-  }, [state.user?.id]); // Re-suscribir si cambia el usuario
+  }, [state.user?.id]);
 
   const loadUserData = async (userId: string) => {
     try {
@@ -196,7 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setState(prev => ({
         ...prev,
-        isOnboarding: !profileData, // Si no hay perfil, activar onboarding
+        isOnboarding: !profileData, 
         business: profileData ? {
           name: profileData.name,
           cuisine: profileData.cuisine,
@@ -205,21 +211,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         menu: menuData ? menuData.map((m: any) => ({
             id: m.id,
             name: m.name,
-            price: m.price.toString(), // Convert from number (DB) to string (UI)
+            price: m.price.toString(),
             category: m.category,
             description: m.description,
             ingredients: m.ingredients,
             image: m.image_url,
-            available: m.available !== false // Default true if null or undefined
+            available: m.available !== false,
+            printerId: m.printer_id // Mapeo de la base de datos
         })) : [],
         tables: profileData?.tables_count ? { 
             count: profileData.tables_count.toString(), 
             generated: Array.from({length: profileData.tables_count}, (_, i) => ({ id: i+1, qrDataUrl: '' })) 
-        } : prev.tables
+        } : prev.tables,
+        isLoading: false // Marcamos carga como completa
       }));
 
     } catch (e) {
       console.error("Error loading user data", e);
+      setState(prev => ({ ...prev, isLoading: false })); // En caso de error, también terminamos carga
     }
   };
 
@@ -238,7 +247,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = async () => {
     await supabase.auth.signOut();
-    setState(baseState);
+    setState({ ...baseState, isLoading: false });
     dataLoadedRef.current = null;
   };
 
@@ -264,7 +273,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         throw new Error("No hay sesión activa. Por favor recarga la página.");
     }
 
-    // Optimistic update
     setState(prev => ({
       ...prev,
       menu: [...prev.menu, item]
@@ -272,12 +280,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let error = await insertMenuItem(state.user.id, item);
 
-    // Manejo de error específico: Llave foránea no presente (Usuario sin perfil)
-    // El código 23503 es Foreign Key Violation
     if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
        console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
        
-       // Intentamos crear el perfil que falta.
        const profilePayload = {
           name: state.business.name || 'Mi Restaurante',
           cuisine: state.business.cuisine || 'Variada',
@@ -287,7 +292,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
        const profileError = await upsertProfile(state.user.id, profilePayload);
 
        if (!profileError) {
-          // Si se creó el perfil, reintentamos insertar el item
           error = await insertMenuItem(state.user.id, item);
        } else {
           console.error("No se pudo crear el perfil de respaldo:", profileError);
@@ -296,12 +300,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     if (error) {
       console.error("Error adding item:", error);
-      // Revertir si hay error
       setState(prev => ({
         ...prev,
         menu: prev.menu.filter(i => i.id !== item.id)
       }));
-      // Lanzamos el error con mensaje para que la UI lo muestre
       throw new Error(error.message || "Error al guardar el platillo");
     }
   };
@@ -322,7 +324,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const error = await updateMenuItemDb(id, updatedItem);
     if (error) {
       console.error("Error updating item:", error);
-      // Revertir si hay error
       setState(prev => ({
         ...prev,
         menu: prev.menu.map(item => item.id === id ? originalItem : item)
@@ -337,8 +338,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const item = state.menu.find(i => i.id === id);
       if (!item) return;
 
-      // Ensure explicit boolean value
-      // If undefined (defaults to true), treat as true.
       const isCurrentlyAvailable = item.available !== false;
       const newStatus = !isCurrentlyAvailable;
 
@@ -348,7 +347,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeMenuItem = async (id: string) => {
-    if (!state.user) return; // No podemos borrar si no hay usuario
+    if (!state.user) return;
 
     const originalItem = state.menu.find(i => i.id === id);
 
@@ -359,7 +358,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const error = await deleteMenuItemDb(id);
     if (error && originalItem) {
-      // Revertir si hay error
       setState(prev => ({
         ...prev,
         menu: [...prev.menu, originalItem]

@@ -1,8 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '../components/Input';
+import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Printer, Settings2 } from 'lucide-react';
+import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Printer, Settings2, CheckCircle, Rocket } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface TicketConfigViewProps {
@@ -10,7 +10,8 @@ interface TicketConfigViewProps {
 }
 
 export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }) => {
-  const { state, updatePrinter } = useAppStore();
+  const { state, updatePrinter, endOnboarding } = useAppStore();
+  const { isOnboarding } = state;
   
   // Local state to track which printer is being edited. If null, show list.
   const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
@@ -19,8 +20,15 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
   const selectedPrinter = state.printers.find(p => p.id === selectedPrinterId);
   const [localConfig, setLocalConfig] = useState(selectedPrinter?.ticketConfig);
 
+  // For onboarding: Auto-select the first printer (usually Main/Kitchen)
+  useEffect(() => {
+    if (isOnboarding && !selectedPrinterId) {
+        setSelectedPrinterId(state.printers[0].id);
+    }
+  }, [isOnboarding]);
+
   // Update local config when selection changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (selectedPrinter) {
       setLocalConfig(selectedPrinter.ticketConfig);
     }
@@ -43,12 +51,27 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
         // Guardar automáticamente al regresar
         updatePrinter(selectedPrinterId, { ticketConfig: localConfig });
     }
-    setSelectedPrinterId(null);
+    
+    if (isOnboarding) {
+        // Si estamos en onboarding, NO regresamos a la lista, regresamos a la pantalla anterior (Printer Setup)
+        // Pero en este flujo, este es el ultimo paso, asi que deberia ser "finalizar"
+        // Como este metodo es llamado por "Back Arrow" (si existe), lo manejamos:
+        onNavigate(AppView.PRINTER_SETUP);
+    } else {
+        setSelectedPrinterId(null);
+    }
   };
   
   const handleBackToDashboard = () => {
-      // Guardar configuración (implícito en el estado global) y salir al Dashboard
       onNavigate(AppView.DASHBOARD);
+  };
+
+  const handleFinishOnboarding = () => {
+     if (selectedPrinterId && localConfig) {
+        updatePrinter(selectedPrinterId, { ticketConfig: localConfig });
+    }
+    endOnboarding();
+    onNavigate(AppView.DASHBOARD);
   };
 
   // Mock data for preview
@@ -57,8 +80,8 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
     { qty: 1, name: 'Coca Cola', notes: '' },
   ];
 
-  // VIEW 1: PRINTER LIST SELECTION
-  if (!selectedPrinterId || !localConfig) {
+  // VIEW 1: PRINTER LIST SELECTION (Skipped in Onboarding)
+  if (!isOnboarding && (!selectedPrinterId || !localConfig)) {
     return (
       <div className="flex flex-col min-h-screen bg-gray-50">
         <header className="bg-white px-6 py-4 shadow-sm sticky top-0 z-50">
@@ -119,24 +142,65 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
     );
   }
 
-  // VIEW 2: EDITOR (Existing Logic adapted)
+  // Ensure localConfig exists for rendering editor (during onboarding initial render it might be undefined briefly)
+  if (!localConfig) return <div className="min-h-screen bg-gray-50"></div>;
+
+  // VIEW 2: EDITOR (Used for Onboarding and Edit Mode)
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Navbar */}
-      <header className="bg-white px-6 py-4 shadow-sm sticky top-0 z-50">
-        <div className="flex items-center space-x-3 max-w-4xl mx-auto w-full">
-            <button 
-                onClick={handleSaveAndBack}
-                className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-                title="Guardar y Regresar"
-            >
-                <ArrowLeft className="w-6 h-6" />
-            </button>
-            <div>
-              <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">Editando: {selectedPrinter?.name}</h1>
-              <p className="text-xs text-gray-500">{selectedPrinter?.location}</p>
+      <header className={`bg-white px-6 py-4 shadow-sm sticky top-0 z-50 ${isOnboarding ? 'pt-8' : ''}`}>
+         {isOnboarding ? (
+            <div className="w-full max-w-sm mx-auto">
+                 <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                    {/* Step 1 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                     {/* Step 2 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                     {/* Step 3 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                    <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                     {/* Step 4 - Done */}
+                    <div className="flex flex-col items-center gap-1 opacity-60">
+                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
+                    </div>
+                     <div className="w-3 h-0.5 bg-brand-900"></div>
+
+                    {/* Step 5 - Active */}
+                    <div className="flex flex-col items-center gap-1">
+                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">5</div>
+                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Ticket</span>
+                    </div>
+                 </div>
+                 <h2 className="font-serif text-3xl text-brand-900 text-center">Diseño de Ticket</h2>
+                 <p className="text-gray-500 text-center text-sm mt-1">Personaliza cómo se ven tus pedidos en cocina.</p>
             </div>
-        </div>
+         ) : (
+            <div className="flex items-center space-x-3 max-w-4xl mx-auto w-full">
+                <button 
+                    onClick={handleSaveAndBack}
+                    className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
+                    title="Guardar y Regresar"
+                >
+                    <ArrowLeft className="w-6 h-6" />
+                </button>
+                <div>
+                <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">Editando: {selectedPrinter?.name}</h1>
+                <p className="text-xs text-gray-500">{selectedPrinter?.location}</p>
+                </div>
+            </div>
+         )}
       </header>
 
       <main className="flex-1 p-6 max-w-4xl mx-auto w-full grid md:grid-cols-2 gap-8">
@@ -311,6 +375,28 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
             </div>
             <p className="text-xs text-gray-400 mt-4">Simulación ancho: {selectedPrinter?.paperWidth}</p>
         </div>
+
+        {/* Footer Actions - Solo en onboarding */}
+        {isOnboarding && (
+            <div className="md:col-span-2 mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3 max-w-sm mx-auto w-full">
+                <Button 
+                 fullWidth 
+                 onClick={handleFinishOnboarding}
+                 className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20 bg-green-600 hover:bg-green-700 focus:ring-green-600"
+                 icon={<Rocket className="w-5 h-5" />}
+               >
+                 Finalizar Configuración
+               </Button>
+               
+               <button 
+                  type="button" 
+                  onClick={handleFinishOnboarding}
+                  className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+                >
+                  Omitir por ahora
+                </button>
+            </div>
+        )}
 
       </main>
     </div>

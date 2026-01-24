@@ -31,6 +31,7 @@ export interface MenuItem {
   image?: string | null; // URL string for preview
   imageFile?: File | null;
   available?: boolean; // New field for stock status
+  printerId?: string; // ID of the printer where this item should be printed
 }
 
 export interface OrderItem extends MenuItem {
@@ -67,4 +68,5 @@ export interface Printer {
   type: 'BLUETOOTH' | 'USB' | 'NETWORK' | null;
   paperWidth: '58mm' | '80mm';
   ticketConfig: TicketConfig;
+  isBillPrinter?: boolean; // Determines if this printer handles bill requests
 }

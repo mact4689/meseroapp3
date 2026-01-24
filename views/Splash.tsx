@@ -11,12 +11,14 @@ interface SplashProps {
 
 export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   const { state } = useAppStore();
+  const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [showManualButton, setShowManualButton] = useState(false);
 
   useEffect(() => {
     // Intentar navegación automática más rápida
+    // Solo marcamos que el tiempo mínimo ha pasado
     const timer = setTimeout(() => {
-      handleRouting();
+      setMinTimeElapsed(true);
     }, 1500);
 
     const fallbackTimer = setTimeout(() => {
@@ -27,7 +29,14 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       clearTimeout(timer);
       clearTimeout(fallbackTimer);
     };
-  }, [state.user, state.isOnboarding]); // Dependencias para reaccionar si el usuario carga
+  }, []);
+
+  // Efecto que monitorea tanto el tiempo como la carga de datos
+  useEffect(() => {
+    if (minTimeElapsed && !state.isLoading) {
+      handleRouting();
+    }
+  }, [minTimeElapsed, state.isLoading, state.user, state.isOnboarding]);
 
   const handleRouting = () => {
     const params = new URLSearchParams(window.location.search);

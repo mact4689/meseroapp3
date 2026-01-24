@@ -1,9 +1,7 @@
-
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView } from '../types';
 import { Button } from '../components/Button';
-import { createOrder } from '../services/db';
 import { 
   Store, 
   UtensilsCrossed, 
@@ -11,54 +9,151 @@ import {
   Edit2, 
   LogOut, 
   TrendingUp, 
-  Users,
-  Bell,
-  ChefHat,
-  Printer,
-  CheckCircle2,
-  FileText,
-  Copy,
-  Check,
-  Clock,
-  ChevronDown,
-  ChevronUp,
-  Zap,
-  Eye,
-  ExternalLink
+  Users, 
+  Bell, 
+  ChefHat, 
+  Printer, 
+  CheckCircle2, 
+  FileText, 
+  Check, 
+  Clock, 
+  ChevronDown, 
+  ChevronUp, 
+  Eye, 
+  ExternalLink, 
+  BarChart3, 
+  AlertCircle, 
+  X, 
+  Calendar,
+  Filter,
+  Trophy,
+  ArrowRight,
+  Settings
 } from 'lucide-react';
 
 interface DashboardProps {
   onNavigate: (view: AppView) => void;
 }
 
+type TimeRange = 'today' | '7days' | '30days' | 'all';
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { state, logout, completeOrder } = useAppStore();
   const { business, menu, tables, user, printers, orders } = state;
-  const [copiedUid, setCopiedUid] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [isTesting, setIsTesting] = useState(false);
+  const [showSalesModal, setShowSalesModal] = useState(false);
+  const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
 
   const connectedPrintersCount = printers.filter(p => p.isConnected).length;
   const mainPrinter = printers[0];
 
-  // Filter orders
+  // Filter orders by status
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const completedOrders = orders.filter(o => o.status === 'completed');
   
-  // Calculate stats - ensure o.total exists
-  const todayTotal = completedOrders.reduce((acc, o) => acc + (o.total || 0), 0);
+  // Calculate total stats - ensure o.total exists
+  const todayTotal = completedOrders.reduce((acc, o) => {
+      // Filtrar solo las de hoy para la tarjeta principal de Ventas
+      const orderDate = new Date(o.created_at);
+      const today = new Date();
+      const isToday = orderDate.getDate() === today.getDate() &&
+                      orderDate.getMonth() === today.getMonth() &&
+                      orderDate.getFullYear() === today.getFullYear();
+      
+      return isToday ? acc + (o.total || 0) : acc;
+  }, 0);
+
+  // --- FILTRADO DE ÓRDENES PARA ESTADÍSTICAS ---
+  const filteredOrdersForStats = useMemo(() => {
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+
+    return completedOrders.filter(o => {
+        if (!o.created_at) return false;
+        const orderTime = new Date(o.created_at).getTime();
+        
+        switch (statsTimeRange) {
+            case 'today': return orderTime >= todayStart;
+            case '7days': return orderTime >= sevenDaysAgo;
+            case '30days': return orderTime >= thirtyDaysAgo;
+            default: return true;
+        }
+    });
+  }, [completedOrders, statsTimeRange]);
+
+  // --- LOGICA DE ESTADÍSTICAS DE PRODUCTOS ---
+  const itemStats = useMemo(() => {
+    const stats: Record<string, { count: number, revenue: number }> = {};
+    
+    // 1. Inicializar todos los items del menú en 0
+    menu.forEach(item => {
+        stats[item.id] = { count: 0, revenue: 0 };
+    });
+
+    // 2. Sumar cantidades e ingresos de órdenes FILTRADAS
+    filteredOrdersForStats.forEach(order => {
+        order.items.forEach(item => {
+            const key = menu.find(m => m.id === item.id)?.id || item.id;
+            if (stats[key]) {
+                stats[key].count += item.quantity;
+                stats[key].revenue += (parseFloat(item.price) || 0) * item.quantity;
+            }
+        });
+    });
+
+    // 3. Convertir a array y ordenar
+    const sortedStats = menu.map(item => ({
+        ...item,
+        soldCount: stats[item.id]?.count || 0,
+        revenue: stats[item.id]?.revenue || 0
+    })).sort((a, b) => b.soldCount - a.soldCount);
+
+    const topItems = sortedStats.slice(0, 5).filter(i => i.soldCount > 0);
+    
+    // Items con 0 ventas o ventas muy bajas en el periodo seleccionado
+    const bottomItems = sortedStats.filter(i => i.soldCount === 0).slice(0, 5);
+    
+    const maxSales = topItems.length > 0 ? topItems[0].soldCount : 1;
+
+    return { topItems, bottomItems, maxSales };
+  }, [filteredOrdersForStats, menu]);
+
+  // --- LÓGICA DE VENTAS POR DÍA (HISTORIAL MODAL) ---
+  const salesByDay = useMemo(() => {
+    type DayData = { total: number; count: number; rawDate: number };
+    const grouped = completedOrders.reduce((acc, order) => {
+        if (!order.created_at) return acc;
+        
+        const dateObj = new Date(order.created_at);
+        if (isNaN(dateObj.getTime())) return acc;
+
+        const dateKey = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+        
+        if (!acc[dateKey]) {
+            acc[dateKey] = { total: 0, count: 0, rawDate: dateObj.getTime() };
+        }
+        
+        acc[dateKey].total += (order.total || 0);
+        acc[dateKey].count += 1;
+        return acc;
+    }, {} as Record<string, DayData>);
+
+    return Object.entries(grouped)
+        .map(([date, data]: [string, DayData]) => ({ 
+            date, 
+            total: data.total, 
+            count: data.count, 
+            rawDate: data.rawDate 
+        }))
+        .sort((a, b) => b.rawDate - a.rawDate);
+  }, [completedOrders]);
+
 
   const handleLogout = () => {
     logout();
     onNavigate(AppView.LANDING);
-  };
-
-  const copyUidToClipboard = () => {
-    if (user?.id) {
-        navigator.clipboard.writeText(user.id);
-        setCopiedUid(true);
-        setTimeout(() => setCopiedUid(false), 2000);
-    }
   };
 
   const toggleOrder = (id: string) => {
@@ -70,31 +165,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     await completeOrder(id);
   };
 
-  const handleTestNotification = async () => {
-    if (!user) return;
-    setIsTesting(true);
-    try {
-        await createOrder({
-            user_id: user.id,
-            table_number: 'TEST',
-            status: 'pending',
-            total: 0.00,
-            items: [{
-                id: 'test-item',
-                name: 'Hamburguesa de Prueba',
-                price: '0',
-                category: 'Test',
-                quantity: 1,
-                ingredients: 'Carne, Queso, Pan, Test'
-            }]
-        });
-    } catch (e) {
-        console.error("Test order failed", e);
-    } finally {
-        setIsTesting(false);
-    }
-  };
-
   const scrollToOrders = () => {
     const element = document.getElementById('active-orders');
     if (element) {
@@ -102,7 +172,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  // Obtener URL base para el menú público
   const baseUrl = localStorage.getItem('mesero_base_url') || window.location.origin;
   const publicMenuUrl = `${baseUrl.replace(/\/$/, '')}/?table=1&uid=${user?.id}`;
 
@@ -172,28 +241,257 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 <p className="text-2xl font-bold text-brand-900">{tables.count || 0}</p>
                 <p className="text-xs text-gray-500">Códigos QR</p>
             </div>
-             <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+             
+             {/* VENTAS CARD - CLICKABLE */}
+             <div 
+                onClick={() => setShowSalesModal(true)}
+                className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
+             >
                 <div className="flex items-center space-x-2 text-green-600 mb-2">
                     <TrendingUp className="w-4 h-4" />
-                    <span className="text-xs font-bold uppercase tracking-wider">Ventas</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Ventas Hoy</span>
                 </div>
                 <p className="text-2xl font-bold text-brand-900">${todayTotal.toFixed(2)}</p>
-                <p className="text-xs text-gray-500">Hoy</p>
+                <div className="flex justify-between items-center mt-1">
+                    <p className="text-xs text-gray-500">Ver historial completo</p>
+                    <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                </div>
             </div>
+
              <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
                 <div className="flex items-center space-x-2 text-purple-600 mb-2">
                     <Users className="w-4 h-4" />
                     <span className="text-xs font-bold uppercase tracking-wider">Órdenes</span>
                 </div>
                 <p className="text-2xl font-bold text-brand-900">{completedOrders.length}</p>
-                <p className="text-xs text-gray-500">Completadas</p>
+                <p className="text-xs text-gray-500">Completadas Total</p>
             </div>
+        </div>
+
+        {/* SALES HISTORY MODAL */}
+        {showSalesModal && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
+                <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                    <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                                <Calendar className="w-4 h-4" />
+                            </div>
+                            <h3 className="font-bold text-brand-900">Historial de Ventas</h3>
+                        </div>
+                        <button 
+                            onClick={() => setShowSalesModal(false)}
+                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                    
+                    <div className="overflow-y-auto p-2">
+                        {salesByDay.length === 0 ? (
+                            <div className="text-center py-8 px-4">
+                                <p className="text-gray-400 text-sm">No hay registros de ventas anteriores.</p>
+                            </div>
+                        ) : (
+                            <div className="space-y-1">
+                                {salesByDay.map((day, idx) => (
+                                    <div key={day.date} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex flex-col items-center justify-center w-10 h-10 bg-gray-100 rounded-lg text-gray-500">
+                                                <span className="text-[10px] font-bold uppercase leading-none">{day.date.split(' ')[0]}</span>
+                                                <span className="text-xs font-bold leading-none mt-0.5">{day.date.split(' ')[1]}</span>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-bold text-brand-900 capitalize">{day.date}</p>
+                                                <p className="text-xs text-gray-500">{day.count} órdenes</p>
+                                            </div>
+                                        </div>
+                                        <span className="text-base font-bold text-brand-900">
+                                            ${day.total.toFixed(2)}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-400">
+                        Mostrando ventas totales (incluye propinas si aplica)
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* ANALYTICS SECTION (REDESIGNED) */}
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                 <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
+                        <BarChart3 className="w-5 h-5" />
+                    </div>
+                    <h3 className="font-serif font-bold text-brand-900 text-lg">Rendimiento del Menú</h3>
+                </div>
+                
+                {/* Time Filter */}
+                <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
+                    <button 
+                        onClick={() => setStatsTimeRange('today')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'today' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Hoy
+                    </button>
+                    <button 
+                        onClick={() => setStatsTimeRange('7days')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '7days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        7 Días
+                    </button>
+                    <button 
+                        onClick={() => setStatsTimeRange('30days')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '30days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        30 Días
+                    </button>
+                    <button 
+                        onClick={() => setStatsTimeRange('all')}
+                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'all' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    >
+                        Todo
+                    </button>
+                </div>
+            </div>
+
+            {completedOrders.length === 0 ? (
+                <div className="text-center py-12 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                    <TrendingUp className="w-10 h-10 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-900 font-medium">Aún no hay datos suficientes</p>
+                    <p className="text-sm text-gray-500 mt-1">Completa órdenes para ver las estadísticas.</p>
+                </div>
+            ) : (
+                <div className="grid md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
+                    
+                    {/* Top Sellers Column */}
+                    <div className="pr-0 md:pr-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-green-600 mb-5 flex items-center">
+                            <Trophy className="w-4 h-4 mr-2" /> Los más populares
+                        </h4>
+                        
+                        {itemStats.topItems.length > 0 ? (
+                            <div className="space-y-4">
+                                {itemStats.topItems.map((item, idx) => (
+                                    <div key={item.id} className="flex items-center gap-3 group">
+                                        <div className="font-serif font-bold text-gray-300 w-4 text-center text-lg group-hover:text-brand-900 transition-colors">
+                                            {idx + 1}
+                                        </div>
+                                        
+                                        <div className="relative w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                    <UtensilsCrossed className="w-5 h-5" />
+                                                </div>
+                                            )}
+                                            {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-400 text-[8px] px-1 font-bold text-yellow-900 rounded-bl">#1</div>}
+                                        </div>
+
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-baseline mb-1">
+                                                <span className="font-bold text-brand-900 truncate pr-2">{item.name}</span>
+                                                <span className="font-bold text-green-600 text-sm whitespace-nowrap">${item.revenue.toFixed(2)}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                                                    <div 
+                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-yellow-400' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-brand-900'}`} 
+                                                        style={{ width: `${(item.soldCount / itemStats.maxSales) * 100}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs font-medium text-gray-500 whitespace-nowrap">{item.soldCount} u.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center py-8 text-gray-400 text-sm italic">
+                                No hay ventas en este periodo.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Low Movers Column */}
+                    <div className="pt-8 md:pt-0 pl-0 md:pl-8">
+                        <div className="flex justify-between items-center mb-5">
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-orange-500 flex items-center">
+                                <AlertCircle className="w-4 h-4 mr-2" /> Oportunidades
+                            </h4>
+                            <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">
+                                Sin ventas
+                            </span>
+                        </div>
+                        
+                        {itemStats.bottomItems.length > 0 ? (
+                            <div className="space-y-3">
+                                {itemStats.bottomItems.map((item) => (
+                                    <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all group">
+                                        <div className="flex items-center gap-3 overflow-hidden">
+                                            <div className="w-8 h-8 rounded bg-white flex items-center justify-center text-gray-300 border border-gray-100 shrink-0">
+                                                {item.image ? (
+                                                     <img src={item.image} alt="" className="w-full h-full object-cover rounded" />
+                                                ) : (
+                                                    <UtensilsCrossed className="w-4 h-4" />
+                                                )}
+                                            </div>
+                                            <div className="flex flex-col min-w-0">
+                                                <span className="text-sm font-medium text-gray-700 truncate group-hover:text-brand-900 transition-colors">{item.name}</span>
+                                                <span className="text-[10px] text-gray-400">
+                                                    {item.category}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <button 
+                                            className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2"
+                                            onClick={() => onNavigate(AppView.MENU_SETUP)}
+                                        >
+                                            Promocionar
+                                        </button>
+                                    </div>
+                                ))}
+                                <div className="mt-4 p-3 bg-blue-50 rounded-lg flex gap-3 items-start">
+                                    <div className="bg-blue-100 p-1.5 rounded-full text-blue-600 mt-0.5">
+                                        <TrendingUp className="w-3 h-3" />
+                                    </div>
+                                    <div>
+                                        <p className="text-xs font-bold text-blue-800 mb-0.5">Tip de venta</p>
+                                        <p className="text-xs text-blue-600 leading-relaxed">
+                                            Prueba cambiando la foto o descripción de estos productos para hacerlos más atractivos.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center py-8 text-center h-full">
+                                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 mb-2">
+                                    <Check className="w-6 h-6" />
+                                </div>
+                                <p className="text-sm font-bold text-gray-900">¡Todo se vende!</p>
+                                <p className="text-xs text-gray-500">No tienes productos sin movimiento en este periodo.</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
 
         {/* ACTIVE ORDERS SECTION */}
         <div id="active-orders" className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
+                        <Bell className="w-5 h-5" />
+                    </div>
                     <h3 className="font-serif font-bold text-brand-900 text-lg">Órdenes Activas</h3>
                     {pendingOrders.length > 0 && (
                         <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">
@@ -205,15 +503,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <span className="hidden sm:inline-block text-xs font-medium text-accent-600 bg-accent-50 px-2 py-1 rounded-full animate-pulse">
                         ● En tiempo real
                     </span>
-                    <button
-                        onClick={handleTestNotification}
-                        disabled={isTesting}
-                        className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-1.5 rounded-lg transition-colors"
-                        title="Crear orden de prueba para verificar notificaciones"
-                    >
-                        <Zap className={`w-3 h-3 ${isTesting ? 'text-yellow-500 fill-yellow-500' : ''}`} />
-                        {isTesting ? 'Enviando...' : 'Probar Notificación'}
-                    </button>
                 </div>
              </div>
              
@@ -301,7 +590,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         {/* Configuration Sections */}
         <div className="space-y-4">
-            <h2 className="text-lg font-serif font-bold text-brand-900">Configuración</h2>
+            <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                    <Settings className="w-5 h-5" />
+                </div>
+                <h2 className="text-lg font-serif font-bold text-brand-900">Configuración</h2>
+            </div>
             
             <div className="grid md:grid-cols-2 gap-4">
                 {/* PREVIEW MENU CARD (NUEVA) */}
@@ -431,19 +725,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </Button>
                 </div>
             </div>
-        </div>
-
-        {/* UID Footer */}
-        <div className="flex flex-col items-center justify-center pt-8 pb-4 opacity-50 hover:opacity-100 transition-opacity">
-            <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">ID del Restaurante (UID)</p>
-            <button 
-                onClick={copyUidToClipboard}
-                className="flex items-center gap-2 bg-gray-200 hover:bg-gray-300 px-3 py-1.5 rounded-lg text-xs font-mono text-gray-600 transition-colors"
-                title="Copiar ID"
-            >
-                {user?.id}
-                {copiedUid ? <Check className="w-3 h-3 text-green-600" /> : <Copy className="w-3 h-3" />}
-            </button>
         </div>
 
       </main>
