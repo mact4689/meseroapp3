@@ -205,8 +205,8 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
       setTimeout(() => setCopyFeedback(false), 2000);
   };
 
-  // Fix: Use window.location.href to support subdirectories
-  const baseUrl = localStorage.getItem('mesero_base_url') || window.location.href.split('?')[0].replace(/\/$/, '');
+  // Safe Base URL Calculation - strictly use origin
+  const baseUrl = window.location.origin;
   const publicMenuUrl = `${baseUrl}/?table=1&uid=${user?.id}`;
 
   return (
