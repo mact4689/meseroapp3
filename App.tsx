@@ -19,7 +19,8 @@ const App: React.FC = () => {
   // Use lazy initialization to check URL params immediately and avoid Splash flash on QR scan
   const [currentView, setCurrentView] = useState<AppView>(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('table') && params.get('uid')) {
+    // Prioritize table parameter detection for QR codes
+    if (params.get('table')) {
       return AppView.CUSTOMER_MENU;
     }
     return AppView.SPLASH;

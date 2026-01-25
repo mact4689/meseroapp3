@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
@@ -22,8 +23,12 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
   const [generatedTables, setGeneratedTables] = useState<TableData[]>(state.tables.generated || []);
   const [isGenerating, setIsGenerating] = useState(false);
   
-  // En una app unificada, la URL base siempre es el origen actual.
-  const baseUrl = window.location.origin;
+  // Función robusta para obtener la URL base correcta, soportando subdirectorios
+  const getBaseUrl = () => {
+    // Toma la URL actual completa (ej: https://dominio.com/app/dashboard)
+    // Elimina los query params (?...) y el trailing slash
+    return window.location.href.split('?')[0].replace(/\/$/, '');
+  };
   
   const { isOnboarding } = state;
 
@@ -44,7 +49,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
 
         if (needsRegeneration && state.user?.id) {
             setIsGenerating(true);
-            const cleanBaseUrl = window.location.origin.replace(/\/$/, '');
+            const cleanBaseUrl = getBaseUrl();
             const newTables: TableData[] = [];
 
             try {
@@ -81,7 +86,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
       const userId = state.user?.id;
       if (!userId) return [];
       
-      const cleanBaseUrl = baseUrl.replace(/\/$/, '');
+      const cleanBaseUrl = getBaseUrl();
       const newTables: TableData[] = [];
 
       for (let i = 1; i <= count; i++) {
@@ -289,7 +294,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                             <span className="text-sm font-bold text-brand-900">Mesa {table.id}</span>
                             
                             <a 
-                            href={`${baseUrl.replace(/\/$/, '')}/?table=${table.id}&uid=${state.user?.id}`} 
+                            href={`${getBaseUrl()}/?table=${table.id}&uid=${state.user?.id}`} 
                             target="_blank" 
                             rel="noopener noreferrer"
                             className="mt-2 text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-2.5 py-1.5 rounded-full flex items-center transition-colors border border-accent-100"

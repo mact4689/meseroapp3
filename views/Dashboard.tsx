@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView } from '../types';
@@ -28,7 +29,10 @@ import {
   Filter,
   Trophy,
   ArrowRight,
-  Settings
+  Settings,
+  ShieldCheck,
+  Copy,
+  Terminal
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -42,7 +46,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const { business, menu, tables, user, printers, orders } = state;
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [showSalesModal, setShowSalesModal] = useState(false);
+  const [showSqlModal, setShowSqlModal] = useState(false);
   const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
+  const [copyFeedback, setCopyFeedback] = useState(false);
 
   const connectedPrintersCount = printers.filter(p => p.isConnected).length;
   const mainPrinter = printers[0];
@@ -51,9 +57,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const pendingOrders = orders.filter(o => o.status === 'pending');
   const completedOrders = orders.filter(o => o.status === 'completed');
   
-  // Calculate total stats - ensure o.total exists
+  // Calculate total stats
   const todayTotal = completedOrders.reduce((acc, o) => {
-      // Filtrar solo las de hoy para la tarjeta principal de Ventas
       const orderDate = new Date(o.created_at);
       const today = new Date();
       const isToday = orderDate.getDate() === today.getDate() &&
@@ -111,10 +116,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     })).sort((a, b) => b.soldCount - a.soldCount);
 
     const topItems = sortedStats.slice(0, 5).filter(i => i.soldCount > 0);
-    
-    // Items con 0 ventas o ventas muy bajas en el periodo seleccionado
     const bottomItems = sortedStats.filter(i => i.soldCount === 0).slice(0, 5);
-    
     const maxSales = topItems.length > 0 ? topItems[0].soldCount : 1;
 
     return { topItems, bottomItems, maxSales };
@@ -172,8 +174,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }
   };
 
-  const baseUrl = localStorage.getItem('mesero_base_url') || window.location.origin;
-  const publicMenuUrl = `${baseUrl.replace(/\/$/, '')}/?table=1&uid=${user?.id}`;
+  const handleCopySql = () => {
+      const sql = `-- CORREGIR PERMISOS (RLS)
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+-- 1. Permisos Públicos (Lectura de Menú y Creación de Órdenes)
+DROP POLICY IF EXISTS "Public Read Menu" ON menu_items;
+CREATE POLICY "Public Read Menu" ON menu_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Profiles" ON profiles;
+CREATE POLICY "Public Read Profiles" ON profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Create Orders" ON orders;
+CREATE POLICY "Public Create Orders" ON orders FOR INSERT WITH CHECK (true);
+
+-- 2. Permisos de Dueño (Gestión Total de su propia data)
+DROP POLICY IF EXISTS "Owner Manage Menu" ON menu_items;
+CREATE POLICY "Owner Manage Menu" ON menu_items FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Owner Manage Profile" ON profiles;
+CREATE POLICY "Owner Manage Profile" ON profiles FOR ALL USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Owner Manage Orders" ON orders;
+CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_id);`;
+
+      navigator.clipboard.writeText(sql);
+      setCopyFeedback(true);
+      setTimeout(() => setCopyFeedback(false), 2000);
+  };
+
+  // Fix: Use window.location.href to support subdirectories
+  const baseUrl = localStorage.getItem('mesero_base_url') || window.location.href.split('?')[0].replace(/\/$/, '');
+  const publicMenuUrl = `${baseUrl}/?table=1&uid=${user?.id}`;
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
@@ -268,7 +302,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
         </div>
 
-        {/* SALES HISTORY MODAL */}
+        {/* MODAL: SALES HISTORY */}
         {showSalesModal && (
             <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
@@ -323,7 +357,99 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
         )}
 
-        {/* ANALYTICS SECTION (REDESIGNED) */}
+        {/* MODAL: SQL DIAGNOSTIC */}
+        {showSqlModal && (
+            <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+                <div className="absolute inset-0 bg-brand-900/60 backdrop-blur-sm" onClick={() => setShowSqlModal(false)}></div>
+                <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[90vh]">
+                    <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+                        <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
+                                <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-brand-900 text-lg">Permisos de Base de Datos</h3>
+                                <p className="text-xs text-gray-500">Solución para errores de carga o "0 items"</p>
+                            </div>
+                        </div>
+                        <button 
+                            onClick={() => setShowSqlModal(false)}
+                            className="p-1.5 rounded-full hover:bg-gray-200 text-gray-400 transition-colors"
+                        >
+                            <X className="w-6 h-6" />
+                        </button>
+                    </div>
+                    
+                    <div className="p-6 overflow-y-auto space-y-4">
+                        <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 items-start">
+                             <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
+                             <div className="text-sm text-yellow-800">
+                                 <p className="font-bold mb-1">¿Por qué veo esto?</p>
+                                 <p>Si tus platillos no aparecen en el celular o ves errores de conexión, es probable que falten los permisos de seguridad (RLS) en Supabase.</p>
+                             </div>
+                        </div>
+
+                        <div className="space-y-2">
+                             <p className="text-sm font-bold text-gray-700">Instrucciones:</p>
+                             <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1 ml-1">
+                                 <li>Copia el código de abajo.</li>
+                                 <li>Ve a tu proyecto en <strong>Supabase</strong> {'>'} <strong>SQL Editor</strong>.</li>
+                                 <li>Pega el código y haz clic en <strong>Run</strong>.</li>
+                             </ol>
+                        </div>
+
+                        <div className="relative group">
+                            <div className="absolute top-2 right-2 flex gap-2">
+                                {copyFeedback && (
+                                    <span className="text-xs bg-green-500 text-white px-2 py-1 rounded animate-in fade-in">¡Copiado!</span>
+                                )}
+                                <button 
+                                    onClick={handleCopySql}
+                                    className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10"
+                                    title="Copiar SQL"
+                                >
+                                    <Copy className="w-4 h-4" />
+                                </button>
+                            </div>
+                            <pre className="bg-brand-900 text-gray-300 p-4 rounded-xl text-xs overflow-x-auto font-mono leading-relaxed border border-gray-800">
+{`-- CORREGIR PERMISOS (RLS)
+ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+
+-- 1. Permisos Públicos
+DROP POLICY IF EXISTS "Public Read Menu" ON menu_items;
+CREATE POLICY "Public Read Menu" ON menu_items FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Profiles" ON profiles;
+CREATE POLICY "Public Read Profiles" ON profiles FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Create Orders" ON orders;
+CREATE POLICY "Public Create Orders" ON orders FOR INSERT WITH CHECK (true);
+
+-- 2. Permisos de Dueño
+DROP POLICY IF EXISTS "Owner Manage Menu" ON menu_items;
+CREATE POLICY "Owner Manage Menu" ON menu_items FOR ALL USING (auth.uid() = user_id);
+
+DROP POLICY IF EXISTS "Owner Manage Profile" ON profiles;
+CREATE POLICY "Owner Manage Profile" ON profiles FOR ALL USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Owner Manage Orders" ON orders;
+CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_id);`}
+                            </pre>
+                        </div>
+                    </div>
+                    
+                    <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                        <Button onClick={() => setShowSqlModal(false)}>
+                            Entendido
+                        </Button>
+                    </div>
+                </div>
+            </div>
+        )}
+
+        {/* ANALYTICS SECTION */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                  <div className="flex items-center gap-2">
@@ -333,32 +459,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <h3 className="font-serif font-bold text-brand-900 text-lg">Rendimiento del Menú</h3>
                 </div>
                 
-                {/* Time Filter */}
                 <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
-                    <button 
-                        onClick={() => setStatsTimeRange('today')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'today' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Hoy
-                    </button>
-                    <button 
-                        onClick={() => setStatsTimeRange('7days')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '7days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        7 Días
-                    </button>
-                    <button 
-                        onClick={() => setStatsTimeRange('30days')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '30days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        30 Días
-                    </button>
-                    <button 
-                        onClick={() => setStatsTimeRange('all')}
-                        className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'all' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-                    >
-                        Todo
-                    </button>
+                    <button onClick={() => setStatsTimeRange('today')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'today' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Hoy</button>
+                    <button onClick={() => setStatsTimeRange('7days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '7days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>7 Días</button>
+                    <button onClick={() => setStatsTimeRange('30days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '30days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>30 Días</button>
+                    <button onClick={() => setStatsTimeRange('all')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'all' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Todo</button>
                 </div>
             </div>
 
@@ -370,32 +475,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
             ) : (
                 <div className="grid md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                    
-                    {/* Top Sellers Column */}
                     <div className="pr-0 md:pr-4">
                         <h4 className="text-xs font-bold uppercase tracking-wider text-green-600 mb-5 flex items-center">
                             <Trophy className="w-4 h-4 mr-2" /> Los más populares
                         </h4>
-                        
                         {itemStats.topItems.length > 0 ? (
                             <div className="space-y-4">
                                 {itemStats.topItems.map((item, idx) => (
                                     <div key={item.id} className="flex items-center gap-3 group">
-                                        <div className="font-serif font-bold text-gray-300 w-4 text-center text-lg group-hover:text-brand-900 transition-colors">
-                                            {idx + 1}
-                                        </div>
-                                        
+                                        <div className="font-serif font-bold text-gray-300 w-4 text-center text-lg group-hover:text-brand-900 transition-colors">{idx + 1}</div>
                                         <div className="relative w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                    <UtensilsCrossed className="w-5 h-5" />
-                                                </div>
-                                            )}
+                                            {item.image ? (<img src={item.image} alt={item.name} className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center text-gray-300"><UtensilsCrossed className="w-5 h-5" /></div>)}
                                             {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-400 text-[8px] px-1 font-bold text-yellow-900 rounded-bl">#1</div>}
                                         </div>
-
                                         <div className="flex-1 min-w-0">
                                             <div className="flex justify-between items-baseline mb-1">
                                                 <span className="font-bold text-brand-900 truncate pr-2">{item.name}</span>
@@ -403,10 +495,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                                                    <div 
-                                                        className={`h-full rounded-full ${idx === 0 ? 'bg-yellow-400' : idx === 1 ? 'bg-gray-400' : idx === 2 ? 'bg-orange-400' : 'bg-brand-900'}`} 
-                                                        style={{ width: `${(item.soldCount / itemStats.maxSales) * 100}%` }}
-                                                    />
+                                                    <div className={`h-full rounded-full ${idx === 0 ? 'bg-yellow-400' : 'bg-brand-900'}`} style={{ width: `${(item.soldCount / itemStats.maxSales) * 100}%` }} />
                                                 </div>
                                                 <span className="text-xs font-medium text-gray-500 whitespace-nowrap">{item.soldCount} u.</span>
                                             </div>
@@ -415,69 +504,35 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 ))}
                             </div>
                         ) : (
-                            <div className="text-center py-8 text-gray-400 text-sm italic">
-                                No hay ventas en este periodo.
-                            </div>
+                            <div className="text-center py-8 text-gray-400 text-sm italic">No hay ventas en este periodo.</div>
                         )}
                     </div>
-
-                    {/* Low Movers Column */}
                     <div className="pt-8 md:pt-0 pl-0 md:pl-8">
                         <div className="flex justify-between items-center mb-5">
-                            <h4 className="text-xs font-bold uppercase tracking-wider text-orange-500 flex items-center">
-                                <AlertCircle className="w-4 h-4 mr-2" /> Oportunidades
-                            </h4>
-                            <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">
-                                Sin ventas
-                            </span>
+                            <h4 className="text-xs font-bold uppercase tracking-wider text-orange-500 flex items-center"><AlertCircle className="w-4 h-4 mr-2" /> Oportunidades</h4>
+                            <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">Sin ventas</span>
                         </div>
-                        
                         {itemStats.bottomItems.length > 0 ? (
                             <div className="space-y-3">
                                 {itemStats.bottomItems.map((item) => (
                                     <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 hover:bg-white hover:shadow-sm transition-all group">
                                         <div className="flex items-center gap-3 overflow-hidden">
                                             <div className="w-8 h-8 rounded bg-white flex items-center justify-center text-gray-300 border border-gray-100 shrink-0">
-                                                {item.image ? (
-                                                     <img src={item.image} alt="" className="w-full h-full object-cover rounded" />
-                                                ) : (
-                                                    <UtensilsCrossed className="w-4 h-4" />
-                                                )}
+                                                {item.image ? (<img src={item.image} alt="" className="w-full h-full object-cover rounded" />) : (<UtensilsCrossed className="w-4 h-4" />)}
                                             </div>
                                             <div className="flex flex-col min-w-0">
                                                 <span className="text-sm font-medium text-gray-700 truncate group-hover:text-brand-900 transition-colors">{item.name}</span>
-                                                <span className="text-[10px] text-gray-400">
-                                                    {item.category}
-                                                </span>
+                                                <span className="text-[10px] text-gray-400">{item.category}</span>
                                             </div>
                                         </div>
-                                        <button 
-                                            className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2"
-                                            onClick={() => onNavigate(AppView.MENU_SETUP)}
-                                        >
-                                            Promocionar
-                                        </button>
+                                        <button className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2" onClick={() => onNavigate(AppView.MENU_SETUP)}>Promocionar</button>
                                     </div>
                                 ))}
-                                <div className="mt-4 p-3 bg-blue-50 rounded-lg flex gap-3 items-start">
-                                    <div className="bg-blue-100 p-1.5 rounded-full text-blue-600 mt-0.5">
-                                        <TrendingUp className="w-3 h-3" />
-                                    </div>
-                                    <div>
-                                        <p className="text-xs font-bold text-blue-800 mb-0.5">Tip de venta</p>
-                                        <p className="text-xs text-blue-600 leading-relaxed">
-                                            Prueba cambiando la foto o descripción de estos productos para hacerlos más atractivos.
-                                        </p>
-                                    </div>
-                                </div>
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-8 text-center h-full">
-                                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 mb-2">
-                                    <Check className="w-6 h-6" />
-                                </div>
+                                <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center text-green-500 mb-2"><Check className="w-6 h-6" /></div>
                                 <p className="text-sm font-bold text-gray-900">¡Todo se vende!</p>
-                                <p className="text-xs text-gray-500">No tienes productos sin movimiento en este periodo.</p>
                             </div>
                         )}
                     </div>
@@ -598,7 +653,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             </div>
             
             <div className="grid md:grid-cols-2 gap-4">
-                {/* PREVIEW MENU CARD (NUEVA) */}
+                {/* PREVIEW MENU CARD */}
                 <div className="bg-brand-900 rounded-2xl p-5 shadow-xl border border-brand-900 flex items-center justify-between group hover:scale-[1.02] transition-all md:col-span-2 relative overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
                     <div className="flex items-center space-x-4 relative z-10">
@@ -629,6 +684,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             Abrir Preview
                         </Button>
                     </div>
+                </div>
+
+                {/* DIAGNOSTIC CARD (NEW) */}
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-500/30 transition-all md:col-span-2">
+                    <div className="flex items-center space-x-4">
+                        <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:bg-blue-100 transition-colors">
+                            <ShieldCheck className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-brand-900">Diagnóstico y Permisos</h3>
+                            <p className="text-xs text-gray-500">Arreglar problemas de conexión (0 items)</p>
+                        </div>
+                    </div>
+                    <Button 
+                        variant="secondary" 
+                        onClick={() => setShowSqlModal(true)} 
+                        className="!px-3 !py-2 shadow-none border-blue-200 text-blue-700 hover:bg-blue-50"
+                    >
+                        <Terminal className="w-4 h-4 mr-2" />
+                        Ver SQL
+                    </Button>
                 </div>
 
                 {/* Business Card */}

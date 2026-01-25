@@ -14,6 +14,14 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [showManualButton, setShowManualButton] = useState(false);
 
+  // Immediate check for QR codes to bypass splash animation
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('table')) {
+      onNavigate(AppView.CUSTOMER_MENU);
+    }
+  }, [onNavigate]);
+
   useEffect(() => {
     // Intentar navegación automática más rápida
     // Solo marcamos que el tiempo mínimo ha pasado
