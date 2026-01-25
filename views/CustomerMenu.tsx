@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle } from 'lucide-react';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
@@ -29,6 +29,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
   const [guestBusiness, setGuestBusiness] = useState<{name: string, cuisine: string, logo: string | null} | null>(null);
   const [guestMenu, setGuestMenu] = useState<MenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   // URL Params
   const query = new URLSearchParams(window.location.search);
@@ -44,56 +45,59 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
   const business = uid ? (guestBusiness || { name: '', cuisine: '', logo: null }) : state.business;
   const menu = uid ? guestMenu : state.menu;
 
-  useEffect(() => {
-    // Si hay UID y es diferente al usuario logueado, O si es el mismo usuario pero queremos recargar datos frescos
-    // Simplificación: Si hay UID en URL, cargamos datos específicos para esa UID para asegurar consistencia
-    // Para optimizar: si uid == state.user.id, usamos state.
+  const loadData = async () => {
     if (uid) {
         if (uid === state.user?.id) {
              setIsLoading(false);
              // Ya tenemos los datos en state, no necesitamos fetch
         } else {
              setIsLoading(true);
-             const fetchData = async () => {
-                try {
-                    const [profileData, menuData] = await Promise.all([
-                        getProfile(uid),
-                        getMenuItems(uid)
-                    ]);
+             setFetchError(null);
+             try {
+                const [profileData, menuData] = await Promise.all([
+                    getProfile(uid),
+                    getMenuItems(uid)
+                ]);
 
-                    if (profileData) {
-                        setGuestBusiness({
-                            name: profileData.name,
-                            cuisine: profileData.cuisine,
-                            logo: profileData.logo_url
-                        });
-                    }
-
-                    if (menuData) {
-                        const mappedItems = menuData.map((m: any) => ({
-                            id: m.id,
-                            name: m.name,
-                            price: m.price,
-                            category: m.category,
-                            description: m.description,
-                            ingredients: m.ingredients,
-                            image: m.image_url,
-                            available: m.available !== false,
-                            printerId: m.printer_id
-                        }));
-                        setGuestMenu(mappedItems);
-                    }
-                } catch (error) {
-                    console.error("Error fetching guest data:", error);
-                } finally {
-                    setIsLoading(false);
+                if (profileData) {
+                    setGuestBusiness({
+                        name: profileData.name,
+                        cuisine: profileData.cuisine,
+                        logo: profileData.logo_url
+                    });
+                } else {
+                    // Si no llega perfil, es probable que sea error de RLS
+                    console.warn("No se pudo cargar el perfil del restaurante (posible error RLS o ID inválido)");
                 }
-            };
-            fetchData();
+
+                if (menuData) {
+                    const mappedItems = menuData.map((m: any) => ({
+                        id: m.id,
+                        name: m.name,
+                        price: m.price,
+                        category: m.category,
+                        description: m.description,
+                        ingredients: m.ingredients,
+                        image: m.image_url,
+                        available: m.available !== false,
+                        printerId: m.printer_id
+                    }));
+                    setGuestMenu(mappedItems);
+                }
+            } catch (error: any) {
+                console.error("Error fetching guest data:", error);
+                setFetchError(error.message || "Error desconocido");
+            } finally {
+                setIsLoading(false);
+            }
         }
     } else {
         setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
+    loadData();
   }, [uid, state.user?.id]);
 
   const groupedItems = useMemo(() => {
@@ -213,17 +217,13 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
       setIsRequestingBill(true);
 
       try {
-          // Creating a special order representing a Bill Request
-          // We assume the system configures a specific printer for this "item" if needed,
-          // or the dashboard recognizes the item name.
-          // In a real app, this would be a separate API endpoint or event type.
           const billItem: any = {
               id: 'bill-req',
               name: '🧾 SOLICITUD DE CUENTA',
               price: '0',
               quantity: 1,
               category: 'System',
-              printerId: 'BILL_PRINTER' // Logical ID that backend/dashboard resolves to the printer marked isBillPrinter
+              printerId: 'BILL_PRINTER' 
           };
 
           await createOrder({
@@ -246,20 +246,60 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
   if (isLoading) {
       return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-              <Loader2 className="w-8 h-8 text-brand-900 animate-spin" />
+              <div className="text-center">
+                  <Loader2 className="w-8 h-8 text-brand-900 animate-spin mx-auto mb-2" />
+                  <p className="text-sm text-gray-500">Cargando menú...</p>
+              </div>
           </div>
       );
   }
 
+  // ERROR SCREEN WITH DIAGNOSTICS
   if (!business.name && menu.length === 0) {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-            <AlertCircle className="w-12 h-12 text-gray-400 mb-4" />
+            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+            </div>
             <h1 className="text-xl font-bold text-gray-900 mb-2">Menú no disponible</h1>
-            <p className="text-gray-500">No se encontró el menú para este restaurante.</p>
-            {isAdminPreview && (
-                 <Button onClick={() => onNavigate(AppView.DASHBOARD)} className="mt-6">Volver al Panel</Button>
-            )}
+            <p className="text-gray-500 mb-6 max-w-xs mx-auto">
+                No pudimos cargar la información de este restaurante.
+            </p>
+            
+            <div className="flex gap-3">
+                <Button onClick={loadData} variant="outline" className="h-10 text-sm">
+                    <RefreshCw className="w-4 h-4 mr-2" /> Reintentar
+                </Button>
+                {isAdminPreview && (
+                    <Button onClick={() => onNavigate(AppView.DASHBOARD)} className="h-10 text-sm">
+                        Volver al Panel
+                    </Button>
+                )}
+            </div>
+
+            {/* DIAGNOSTIC INFORMATION */}
+            <div className="mt-12 w-full max-w-sm bg-white p-4 rounded-xl border border-gray-200 text-left shadow-sm">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-100 pb-2">
+                    Diagnóstico Técnico
+                </h3>
+                <div className="space-y-2 text-xs font-mono text-gray-600">
+                    <p><span className="font-bold text-gray-400">UID:</span> <span className="break-all">{uid || 'No definido'}</span></p>
+                    <p><span className="font-bold text-gray-400">Table:</span> {tableId || 'N/A'}</p>
+                    <p><span className="font-bold text-gray-400">Menu Items:</span> {menu.length}</p>
+                    <p><span className="font-bold text-gray-400">Business:</span> {business.name ? 'Loaded' : 'Null'}</p>
+                    <p><span className="font-bold text-gray-400">Error:</span> <span className="text-red-500">{fetchError || 'None'}</span></p>
+                </div>
+                
+                {uid && !business.name && (
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                         <p className="text-xs text-red-600 font-bold mb-1">⚠️ Posible problema de Permisos (RLS)</p>
+                         <p className="text-[10px] text-gray-500 leading-relaxed">
+                            Si eres el dueño: Es probable que la base de datos esté bloqueando el acceso público. 
+                            Ve a tu panel de administrador, abre <strong>Configuración {'>'} Diagnóstico</strong> y ejecuta el comando SQL mostrado.
+                         </p>
+                    </div>
+                )}
+            </div>
         </div>
     )
   }
@@ -414,7 +454,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
       {/* Floating Actions */}
       <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
           
-          {/* Bill Request Button (Always visible if table is set, effectively replaces 'Call Waiter' or sits above it) */}
           <button 
             onClick={handleRequestBill}
             disabled={isRequestingBill || billRequested}
@@ -435,7 +474,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
               <span>{billRequested ? 'Cuenta Pedida' : 'Pedir Cuenta'}</span>
           </button>
 
-          {/* Call Waiter Button */}
           {!isCartOpen && cartCount === 0 && (
             <button className="bg-white text-brand-900 p-4 rounded-full shadow-xl hover:scale-105 transition-transform flex items-center justify-center group border border-gray-100">
                 <Bell className="w-6 h-6 group-hover:animate-swing" />
@@ -470,16 +508,13 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
       {/* Cart Modal */}
       {isCartOpen && (
           <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center pointer-events-none">
-              {/* Backdrop */}
               <div 
                 className="absolute inset-0 bg-brand-900/60 backdrop-blur-sm pointer-events-auto transition-opacity" 
                 onClick={() => setIsCartOpen(false)}
               />
               
-              {/* Modal Content */}
               <div className="bg-white w-full max-w-lg sm:rounded-3xl rounded-t-3xl shadow-2xl pointer-events-auto animate-in slide-in-from-bottom-4 flex flex-col max-h-[90vh]">
                   
-                  {/* Modal Header */}
                   <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-white rounded-t-3xl relative z-10">
                       <div>
                           <h2 className="font-serif text-2xl font-bold text-brand-900">Tu Orden</h2>
@@ -493,7 +528,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                       </button>
                   </div>
 
-                  {/* Modal Body (Scrollable) */}
                   <div className="flex-1 overflow-y-auto p-6 space-y-6">
                       {orderSent ? (
                            <div className="py-12 text-center">
@@ -539,7 +573,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                         </div>
                                     </div>
 
-                                    {/* Instrucciones Especiales */}
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <MessageSquare className="w-3.5 h-3.5 text-gray-400" />
@@ -558,7 +591,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                       )}
                   </div>
 
-                  {/* Modal Footer */}
                   {!orderSent && (
                       <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-3xl">
                           <div className="flex justify-between items-center mb-4 text-sm">
