@@ -109,24 +109,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-       if (session?.user) {
-         // Usuario logueado (o re-logueado)
-         const user = {
-            id: session.user.id,
-            email: session.user.email!,
-            name: session.user.user_metadata?.full_name || 'Usuario'
-         };
-         setState(prev => ({ ...prev, user }));
-         
-         // Evitar recargas innecesarias si el usuario no ha cambiado
-         if (dataLoadedRef.current !== user.id) {
-             loadUserData(user.id);
-         }
-       } else {
-         // Logout
-         setState({ ...baseState, isLoading: false }); // Reset state and stop loading
-         dataLoadedRef.current = null;
-       }
+      if (session?.user) {
+        // Usuario logueado (o re-logueado)
+        const user = {
+          id: session.user.id,
+          email: session.user.email!,
+          name: session.user.user_metadata?.full_name || 'Usuario'
+        };
+        setState(prev => ({ ...prev, user }));
+
+        // Evitar recargas innecesarias si el usuario no ha cambiado
+        if (dataLoadedRef.current !== user.id) {
+          loadUserData(user.id);
+        }
+      } else {
+        // Logout
+        setState({ ...baseState, isLoading: false }); // Reset state and stop loading
+        dataLoadedRef.current = null;
+      }
     });
 
     return () => subscription.unsubscribe();
@@ -137,98 +137,123 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let channel: any;
 
     if (state.user) {
-        // Cargar órdenes existentes
-        getOrders(state.user.id).then(orders => {
-            setState(prev => ({ ...prev, orders }));
-        });
+      // Cargar órdenes existentes
+      getOrders(state.user.id).then(orders => {
+        setState(prev => ({ ...prev, orders }));
+      });
 
-        // Suscribirse a nuevas órdenes
-        channel = supabase
-            .channel('orders-channel')
-            .on(
-                'postgres_changes',
-                {
-                    event: 'INSERT',
-                    schema: 'public',
-                    table: 'orders',
-                    filter: `user_id=eq.${state.user.id}`
-                },
-                (payload) => {
-                    const newOrder = payload.new as Order;
-                    console.log('New Order Received:', newOrder);
-                    setState(prev => ({
-                        ...prev,
-                        orders: [newOrder, ...prev.orders]
-                    }));
-                    
-                    try {
-                        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'); 
-                        audio.play().catch(e => console.log('Audio autoplay blocked', e));
-                    } catch (e) {}
-                }
-            )
-            .on(
-                'postgres_changes',
-                {
-                    event: 'UPDATE',
-                    schema: 'public',
-                    table: 'orders',
-                    filter: `user_id=eq.${state.user.id}`
-                },
-                (payload) => {
-                    const updatedOrder = payload.new as Order;
-                    setState(prev => ({
-                        ...prev,
-                        orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
-                    }));
-                }
-            )
-            .subscribe();
+      // Suscribirse a nuevas órdenes
+      channel = supabase
+        .channel('orders-channel')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${state.user.id}`
+          },
+          (payload) => {
+            const newOrder = payload.new as Order;
+            console.log('New Order Received:', newOrder);
+            setState(prev => ({
+              ...prev,
+              orders: [newOrder, ...prev.orders]
+            }));
+
+            try {
+              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+              audio.play().catch(e => console.log('Audio autoplay blocked', e));
+            } catch (e) { }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'orders',
+            filter: `user_id=eq.${state.user.id}`
+          },
+          (payload) => {
+            const updatedOrder = payload.new as Order;
+            setState(prev => ({
+              ...prev,
+              orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
+            }));
+          }
+        )
+        .subscribe();
     }
 
     return () => {
-        if (channel) supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
   }, [state.user?.id]);
 
   const loadUserData = async (userId: string) => {
     try {
-      const [profileData, menuData] = await Promise.all([
+      let [profileData, menuData] = await Promise.all([
         getProfile(userId),
         getMenuItems(userId)
       ]);
-      
+
+      // --- AUTO-CORRECCIÓN / CREACIÓN AUTOMÁTICA ---
+      // Si el usuario existe pero no tiene perfil en la DB (falló el trigger o es antiguo),
+      // lo creamos automáticamente aquí mismo.
+      if (!profileData) {
+        console.log("⚠️ Perfil no encontrado. Creando perfil por defecto automáticamente...");
+        const defaultProfile = {
+          name: state.user?.name || 'Nuevo Restaurante',
+          cuisine: 'General',
+          tables_count: 10 // Empezar con 10 mesas por defecto
+        };
+
+        await upsertProfile(userId, defaultProfile);
+
+        // Usamos los datos por defecto para continuar sin errores
+        profileData = {
+          id: userId,
+          logo_url: null,
+          ...defaultProfile
+        };
+      }
+      // ---------------------------------------------
+
       dataLoadedRef.current = userId;
 
       setState(prev => ({
         ...prev,
-        isOnboarding: !profileData, 
-        business: profileData ? {
+        // Si acabamos de auto-crear el perfil, isOnboarding será false para ir directo al dashboard.
+        // O puedes ponerlo en true si prefieres forzar que revisen sus datos.
+        // Aquí lo pondremos en false para cumplir con "todo automático".
+        isOnboarding: false,
+        business: {
           name: profileData.name,
           cuisine: profileData.cuisine,
           logo: profileData.logo_url
-        } : prev.business,
+        },
         menu: menuData ? menuData.map((m: any) => ({
-            id: m.id,
-            name: m.name,
-            price: m.price.toString(),
-            category: m.category,
-            description: m.description,
-            ingredients: m.ingredients,
-            image: m.image_url,
-            available: m.available !== false,
-            printerId: m.printer_id // Mapeo de la base de datos
+          id: m.id,
+          name: m.name,
+          price: m.price.toString(),
+          category: m.category,
+          description: m.description,
+          ingredients: m.ingredients,
+          image: m.image_url,
+          available: m.available !== false,
+          printerId: m.printer_id
         })) : [],
-        tables: profileData?.tables_count ? { 
-            count: profileData.tables_count.toString(), 
-            generated: Array.from({length: profileData.tables_count}, (_, i) => ({ id: i+1, qrDataUrl: '' })) 
+        tables: profileData?.tables_count ? {
+          count: profileData.tables_count.toString(),
+          generated: Array.from({ length: profileData.tables_count }, (_, i) => ({ id: i + 1, qrDataUrl: '' }))
         } : prev.tables,
-        isLoading: false // Marcamos carga como completa
+        isLoading: false
       }));
 
     } catch (e) {
       console.error("Error loading user data", e);
-      setState(prev => ({ ...prev, isLoading: false })); // En caso de error, también terminamos carga
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -256,7 +281,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       business: { ...prev.business, ...data }
     }));
-    
+
     if (state.user) {
       const payload = {
         name: data.name !== undefined ? data.name : state.business.name,
@@ -270,7 +295,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const addMenuItem = async (item: MenuItem) => {
     if (!state.user) {
-        throw new Error("No hay sesión activa. Por favor recarga la página.");
+      throw new Error("No hay sesión activa. Por favor recarga la página.");
     }
 
     setState(prev => ({
@@ -281,21 +306,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let error = await insertMenuItem(state.user.id, item);
 
     if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
-       console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
-       
-       const profilePayload = {
-          name: state.business.name || 'Mi Restaurante',
-          cuisine: state.business.cuisine || 'Variada',
-          logo_url: state.business.logo || null
-       };
+      console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
 
-       const profileError = await upsertProfile(state.user.id, profilePayload);
+      const profilePayload = {
+        name: state.business.name || 'Mi Restaurante',
+        cuisine: state.business.cuisine || 'Variada',
+        logo_url: state.business.logo || null
+      };
 
-       if (!profileError) {
-          error = await insertMenuItem(state.user.id, item);
-       } else {
-          console.error("No se pudo crear el perfil de respaldo:", profileError);
-       }
+      const profileError = await upsertProfile(state.user.id, profilePayload);
+
+      if (!profileError) {
+        error = await insertMenuItem(state.user.id, item);
+      } else {
+        console.error("No se pudo crear el perfil de respaldo:", profileError);
+      }
     }
 
     if (error) {
@@ -310,7 +335,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const updateMenuItem = async (id: string, updatedItem: MenuItem) => {
     if (!state.user) {
-        throw new Error("No hay sesión activa.");
+      throw new Error("No hay sesión activa.");
     }
 
     const originalItem = state.menu.find(i => i.id === id);
@@ -333,17 +358,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleItemAvailability = async (id: string) => {
-      if (!state.user) return;
-      
-      const item = state.menu.find(i => i.id === id);
-      if (!item) return;
+    if (!state.user) return;
 
-      const isCurrentlyAvailable = item.available !== false;
-      const newStatus = !isCurrentlyAvailable;
+    const item = state.menu.find(i => i.id === id);
+    if (!item) return;
 
-      const updatedItem = { ...item, available: newStatus };
+    const isCurrentlyAvailable = item.available !== false;
+    const newStatus = !isCurrentlyAvailable;
 
-      await updateMenuItem(id, updatedItem);
+    const updatedItem = { ...item, available: newStatus };
+
+    await updateMenuItem(id, updatedItem);
   };
 
   const removeMenuItem = async (id: string) => {
@@ -372,27 +397,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...prev,
       tables: { count, generated }
     }));
-    
+
     if (state.user) {
-        upsertProfile(state.user.id, { tables_count: parseInt(count) });
+      upsertProfile(state.user.id, { tables_count: parseInt(count) });
     }
   };
 
   const updatePrinter = (id: string, data: Partial<Printer>) => {
     setState(prev => ({
       ...prev,
-      printers: prev.printers.map(p => 
+      printers: prev.printers.map(p =>
         p.id === id ? { ...p, ...data } : p
       )
     }));
   };
 
   const completeOrder = async (orderId: string) => {
-     setState(prev => ({
-         ...prev,
-         orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o)
-     }));
-     await updateOrderStatusDb(orderId, 'completed');
+    setState(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o)
+    }));
+    await updateOrderStatusDb(orderId, 'completed');
   };
 
   const startOnboarding = () => {
@@ -404,21 +429,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   return (
-    <AppContext.Provider value={{ 
-      state, 
-      login, 
-      register, 
+    <AppContext.Provider value={{
+      state,
+      login,
+      register,
       logout,
-      updateBusiness, 
-      addMenuItem, 
-      updateMenuItem, 
+      updateBusiness,
+      addMenuItem,
+      updateMenuItem,
       removeMenuItem,
       toggleItemAvailability,
-      updateTables, 
-      updatePrinter, 
+      updateTables,
+      updatePrinter,
       completeOrder,
-      startOnboarding, 
-      endOnboarding 
+      startOnboarding,
+      endOnboarding
     }}>
       {children}
     </AppContext.Provider>
