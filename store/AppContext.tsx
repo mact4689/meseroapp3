@@ -19,7 +19,7 @@ interface AppState {
   printers: Printer[];
   orders: Order[];
   isOnboarding: boolean;
-  isLoading: boolean; // Nuevo flag de carga
+  isLoading: boolean;
 }
 
 interface AppContextType {
@@ -76,12 +76,12 @@ const baseState: AppState = {
       type: null,
       paperWidth: '58mm',
       ticketConfig: { ...defaultTicketConfig, title: 'TICKET BARRA', textSize: 'normal' },
-      isBillPrinter: true // Default bar printer as bill printer for example
+      isBillPrinter: true
     }
   ],
   orders: [],
   isOnboarding: false,
-  isLoading: true // Inicia cargando
+  isLoading: true
 };
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -99,32 +99,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario'
         };
-        // Inicializar estado con usuario y luego cargar datos
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
       } else {
-        // Si no hay sesión, terminamos de cargar
         setState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        // Usuario logueado (o re-logueado)
         const user = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario'
         };
+        // Update user state immediately
         setState(prev => ({ ...prev, user }));
 
-        // Evitar recargas innecesarias si el usuario no ha cambiado
+        // Only reload data if it's a different user
         if (dataLoadedRef.current !== user.id) {
           loadUserData(user.id);
         }
       } else {
-        // Logout
-        setState({ ...baseState, isLoading: false }); // Reset state and stop loading
+        setState({ ...baseState, isLoading: false });
         dataLoadedRef.current = null;
       }
     });
@@ -137,12 +134,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let channel: any;
 
     if (state.user) {
-      // Cargar órdenes existentes
       getOrders(state.user.id).then(orders => {
         setState(prev => ({ ...prev, orders }));
       });
 
-      // Suscribirse a nuevas órdenes
       channel = supabase
         .channel('orders-channel')
         .on(
@@ -198,39 +193,41 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getMenuItems(userId)
       ]);
 
-      // --- AUTO-CORRECCIÓN / CREACIÓN AUTOMÁTICA ---
-      // Si el usuario existe pero no tiene perfil en la DB (falló el trigger o es antiguo),
-      // lo creamos automáticamente aquí mismo.
       if (!profileData) {
         console.log("⚠️ Perfil no encontrado. Creando perfil por defecto automáticamente...");
         const defaultProfile = {
           name: state.user?.name || 'Nuevo Restaurante',
           cuisine: 'General',
-          tables_count: 10 // Empezar con 10 mesas por defecto
+          tables_count: 0
         };
 
         await upsertProfile(userId, defaultProfile);
 
-        // Usamos los datos por defecto para continuar sin errores
         profileData = {
           id: userId,
           logo_url: null,
           ...defaultProfile
         };
       }
-      // ---------------------------------------------
 
       dataLoadedRef.current = userId;
 
+      // Determine onboarding state properly
+      const hasBusinessName = !!profileData.name && profileData.name !== 'Nuevo Restaurante';
+      const hasMenu = menuData && menuData.length > 0;
+      const hasTables = profileData.tables_count > 0;
+
+      // If we have data, we assume onboarding is done, unless explicitly in an empty state
+      // But to fix the "Redirect loop", let's trust the data.
+      const shouldBeOnboarding = !hasBusinessName || (!hasMenu && !hasTables);
+
       setState(prev => ({
         ...prev,
-        // Si acabamos de auto-crear el perfil, isOnboarding será false para ir directo al dashboard.
-        // O puedes ponerlo en true si prefieres forzar que revisen sus datos.
-        // Aquí lo pondremos en false para cumplir con "todo automático".
-        isOnboarding: false,
+        // Only force onboarding if we are significantly lacking data, otherwise let the user navigate
+        isOnboarding: shouldBeOnboarding,
         business: {
-          name: profileData.name,
-          cuisine: profileData.cuisine,
+          name: profileData.name || '',
+          cuisine: profileData.cuisine || '',
           logo: profileData.logo_url
         },
         menu: menuData ? menuData.map((m: any) => ({
@@ -258,7 +255,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const login = (user: User) => {
-    setState(prev => ({ ...prev, user }));
+    setState(prev => ({ ...prev, user, isLoading: true }));
     loadUserData(user.id);
   };
 
@@ -266,7 +263,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => ({
       ...prev,
       user,
-      isOnboarding: true
+      isOnboarding: true,
+      isLoading: false
     }));
   };
 
@@ -298,38 +296,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw new Error("No hay sesión activa. Por favor recarga la página.");
     }
 
+    // Optimistic update
+    const previousMenu = [...state.menu];
     setState(prev => ({
       ...prev,
       menu: [...prev.menu, item]
     }));
 
-    let error = await insertMenuItem(state.user.id, item);
+    // Ensure profile exists before inserting menu item (Fix for BUG-001)
+    try {
+      // We first try to perform the insert directly
+      let error = await insertMenuItem(state.user.id, item);
 
-    if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
-      console.log("Perfil no encontrado (Error 23503). Intentando crear perfil por defecto...");
+      // If it fails with ForeignKey violation, it means Profile is missing
+      if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
+        console.log("Fixing missing profile before adding menu item...");
+        const profilePayload = {
+          name: state.business.name || 'Mi Restaurante',
+          cuisine: state.business.cuisine || 'Variada',
+          logo_url: state.business.logo || null,
+          tables_count: parseInt(state.tables.count) || 0
+        };
 
-      const profilePayload = {
-        name: state.business.name || 'Mi Restaurante',
-        cuisine: state.business.cuisine || 'Variada',
-        logo_url: state.business.logo || null
-      };
+        // Force create profile
+        const profileError = await upsertProfile(state.user.id, profilePayload);
+        if (profileError) {
+          console.error("Failed to recover profile:", profileError);
+          throw profileError; // Validate failure
+        }
 
-      const profileError = await upsertProfile(state.user.id, profilePayload);
-
-      if (!profileError) {
+        // Retry insert
         error = await insertMenuItem(state.user.id, item);
-      } else {
-        console.error("No se pudo crear el perfil de respaldo:", profileError);
       }
-    }
 
-    if (error) {
-      console.error("Error adding item:", error);
-      setState(prev => ({
-        ...prev,
-        menu: prev.menu.filter(i => i.id !== item.id)
-      }));
-      throw new Error(error.message || "Error al guardar el platillo");
+      if (error) {
+        throw error;
+      }
+
+    } catch (err: any) {
+      console.error("Error adding item (All attempts failed):", err);
+      // Revert optimistic update
+      setState(prev => ({ ...prev, menu: previousMenu }));
+      throw new Error(err.message || "Error al guardar el platillo en la base de datos.");
     }
   };
 
