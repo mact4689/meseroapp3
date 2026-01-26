@@ -78,7 +78,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
         // CRÍTICO: Crear perfil inicial en la base de datos inmediatamente
         // Esto previene el error 23503 (FK Violation) al crear items después
-        const profileError = await upsertProfile(data.user.id, {
+        const profileError = await upsertProfile(data.user!.id, {
           name: formData.fullName || 'Nuevo Usuario',
           cuisine: 'Variada', // Valor por defecto
           logo_url: null
@@ -92,8 +92,8 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
 
         // Inicializar estado nuevo para este usuario
         register({
-          id: data.user.id,
-          email: data.user.email!,
+          id: data.user!.id,
+          email: data.user!.email!,
           name: formData.fullName
         });
 
