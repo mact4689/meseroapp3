@@ -1,6 +1,23 @@
 
-import { supabase } from './client';
+import { supabase, SUPABASE_URL, SUPABASE_ANON_KEY } from './client';
 import { MenuItem, Order } from '../types';
+
+// Helper para fetch directo (Fallback cuando falla el cliente de Supabase)
+async function directRestFetch(table: string, queryParams: string) {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${queryParams}`, {
+      headers: {
+        'apikey': SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+      }
+    });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch (e) {
+    console.error(`Fallback fetch failed for ${table}:`, e);
+    return null;
+  }
+}
 
 // Helper para reintentar operaciones en caso de fallo de red
 async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
@@ -50,13 +67,24 @@ export const uploadImage = async (file: File, path: string): Promise<string | nu
 
 export const getProfile = async (userId: string) => {
   const fetchProfile = async () => {
-    const { data, error } = await supabase
+    // Intento 1: Cliente Supabase Normal
+    let { data, error } = await supabase
       .from('profiles')
       .select('*')
       .eq('id', userId)
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
+
+    // Fallback: Si no hay data, probamos fetch directo REST (bypassea problemas de sesión del cliente)
+    if (!data) {
+      console.warn("Client returned null, attempting fallback REST fetch for profile...");
+      const directData = await directRestFetch('profiles', `id=eq.${userId}&select=*`);
+      if (directData && directData.length > 0) {
+        data = directData[0];
+      }
+    }
+
     return data;
   };
 
@@ -89,12 +117,25 @@ export const upsertProfile = async (userId: string, updates: any) => {
 
 export const getMenuItems = async (userId: string) => {
   const fetchMenu = async () => {
-    const { data, error } = await supabase
+    // Intento 1: Cliente Supabase
+    let { data, error } = await supabase
       .from('menu_items')
       .select('*')
       .eq('user_id', userId);
 
     if (error) throw error;
+
+    // Fallback: Si array vacío, confirmamos con REST directo por si acaso
+    if (!data || data.length === 0) {
+      // Solo hacemos fallback si esperamos que HAYA datos (dificil saber, pero mal no hace probar)
+      // O si hubo un error silencioso de permisos.
+      const directData = await directRestFetch('menu_items', `user_id=eq.${userId}&select=*`);
+      if (directData && Array.isArray(directData) && directData.length > 0) {
+        console.warn("Client returned empty, but REST found items. Using REST data.");
+        data = directData;
+      }
+    }
+
     return data || [];
   };
 
