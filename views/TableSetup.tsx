@@ -23,10 +23,9 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
   const [generatedTables, setGeneratedTables] = useState<TableData[]>(state.tables.generated || []);
   const [isGenerating, setIsGenerating] = useState(false);
 
-  // Use origin only for root deployments (standard for Vercel)
-  // This avoids issues with pathnames like /index.html or /dashboard interfering with the QR link
+  // Force production URL for QR codes to avoid localhost/preview issues
   const getBaseUrl = () => {
-    return window.location.origin;
+    return 'https://meseroapp3.vercel.app';
   };
 
   const { isOnboarding } = state;
