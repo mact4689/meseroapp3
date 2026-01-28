@@ -134,7 +134,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let channel: any;
 
     if (state.user) {
+      console.log('🔌 Setting up realtime subscription for user:', state.user.id);
+
       getOrders(state.user.id).then(orders => {
+        console.log('📋 Initial orders loaded:', orders.length);
         setState(prev => ({ ...prev, orders }));
       });
 
@@ -150,7 +153,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
           (payload) => {
             const newOrder = payload.new as Order;
-            console.log('New Order Received:', newOrder);
+            console.log('🔔 NEW ORDER RECEIVED via Realtime:', newOrder);
             setState(prev => ({
               ...prev,
               orders: [newOrder, ...prev.orders]
@@ -172,17 +175,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           },
           (payload) => {
             const updatedOrder = payload.new as Order;
+            console.log('🔄 Order updated via Realtime:', updatedOrder);
             setState(prev => ({
               ...prev,
               orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
             }));
           }
         )
-        .subscribe();
+        .subscribe((status: string) => {
+          console.log('📡 Realtime subscription status:', status);
+          if (status === 'SUBSCRIBED') {
+            console.log('✅ Realtime is ACTIVE - listening for new orders');
+          } else if (status === 'CHANNEL_ERROR') {
+            console.error('❌ Realtime connection error - orders may not update automatically');
+          }
+        });
     }
 
     return () => {
-      if (channel) supabase.removeChannel(channel);
+      if (channel) {
+        console.log('🔌 Cleaning up realtime subscription');
+        supabase.removeChannel(channel);
+      }
     };
   }, [state.user?.id]);
 

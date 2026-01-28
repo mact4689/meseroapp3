@@ -257,6 +257,13 @@ export const deleteMenuItemDb = async (itemId: string) => {
 
 export const createOrder = async (order: Omit<Order, 'id' | 'created_at'>) => {
   const attemptCreateOrder = async () => {
+    console.log('📤 Attempting to create order:', {
+      user_id: order.user_id,
+      table_number: order.table_number,
+      total: order.total,
+      itemsCount: order.items?.length
+    });
+
     const { data, error } = await supabase
       .from('orders')
       .insert({
@@ -265,9 +272,16 @@ export const createOrder = async (order: Omit<Order, 'id' | 'created_at'>) => {
         status: 'pending',
         total: order.total,
         items: order.items
-      });
+      })
+      .select()
+      .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Order creation failed:', error);
+      throw error;
+    }
+
+    console.log('✅ Order created successfully:', data);
     return data;
   };
 
