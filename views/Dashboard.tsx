@@ -183,7 +183,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         setPrintingOrderId(orderId);
         try {
-            await printOrder(order, printers, business.name || 'Mi Restaurante');
+            // Si es una solicitud de cuenta, combinar todas las órdenes de la mesa
+            if (isBillRequest(order)) {
+                // Obtener todas las órdenes de esta mesa (excepto la solicitud de cuenta)
+                const tableOrders = pendingOrders.filter(
+                    o => o.table_number === order.table_number && !isBillRequest(o)
+                );
+
+                // Combinar todos los items
+                const allItems = tableOrders.flatMap(o =>
+                    o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA'))
+                );
+
+                // Calcular el total
+                const totalAmount = tableOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+                // Crear una orden virtual para imprimir
+                const billOrder = {
+                    ...order,
+                    items: allItems,
+                    total: totalAmount
+                };
+
+                await printOrder(billOrder, printers, business.name || 'Mi Restaurante');
+            } else {
+                await printOrder(order, printers, business.name || 'Mi Restaurante');
+            }
         } catch (error) {
             console.error('Error al imprimir:', error);
         } finally {
