@@ -33,7 +33,8 @@ import {
     Settings,
     ShieldCheck,
     Copy,
-    Terminal
+    Terminal,
+    Receipt
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -59,6 +60,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     // Filter orders by status
     const pendingOrders = orders.filter(o => o.status === 'pending');
     const completedOrders = orders.filter(o => o.status === 'completed');
+
+    // Helper: Detectar si una orden es solicitud de cuenta cerrada
+    const isBillRequest = (order: typeof orders[0]) => {
+        return order.items.some(item => item.id === 'bill-req' || item.name?.includes('SOLICITUD DE CUENTA'));
+    };
 
     // Calculate total stats
     const todayTotal = completedOrders.reduce((acc, o) => {
@@ -613,82 +619,116 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                         </div>
                     ) : (
                         <div className="space-y-4">
-                            {pendingOrders.map((order) => (
-                                <div
-                                    key={order.id}
-                                    onClick={() => toggleOrder(order.id)}
-                                    className={`
-                                border rounded-xl overflow-hidden transition-all cursor-pointer
-                                ${expandedOrder === order.id ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50' : 'border-gray-200 hover:border-gray-300 bg-white'}
-                            `}
-                                >
-                                    {/* Order Header */}
-                                    <div className="p-4 flex items-center justify-between">
-                                        <div className="flex items-center gap-4">
-                                            <div className="bg-brand-900 text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none">
-                                                <span className="text-[10px] font-medium opacity-80">Mesa</span>
-                                                <span className="text-xl font-bold">{order.table_number}</span>
-                                            </div>
-                                            <div>
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
-                                                    <span className="text-xs text-gray-500 flex items-center">
-                                                        <Clock className="w-3 h-3 mr-1" />
-                                                        {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                    </span>
+                            {pendingOrders.map((order) => {
+                                const isBill = isBillRequest(order);
+                                return (
+                                    <div
+                                        key={order.id}
+                                        onClick={() => toggleOrder(order.id)}
+                                        className={`
+                                        border rounded-xl overflow-hidden transition-all cursor-pointer
+                                        ${isBill
+                                                ? (expandedOrder === order.id
+                                                    ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
+                                                    : 'border-green-300 hover:border-green-400 bg-green-50')
+                                                : (expandedOrder === order.id
+                                                    ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
+                                                    : 'border-gray-200 hover:border-gray-300 bg-white')}
+                                    `}
+                                    >
+                                        {/* Order Header */}
+                                        <div className="p-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`${isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
+                                                    <span className="text-[10px] font-medium opacity-80">Mesa</span>
+                                                    <span className="text-xl font-bold">{order.table_number}</span>
                                                 </div>
-                                                <p className="text-sm text-gray-600">
-                                                    {order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span>
-                                                </p>
-                                            </div>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={(e) => handlePrintOrder(order.id, e)}
-                                                className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                                                title="Imprimir orden"
-                                                disabled={printingOrderId === order.id}
-                                            >
-                                                <Printer className={`w-5 h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
-                                            </button>
-                                            <Button
-                                                onClick={(e) => handleCompleteOrder(order.id, e)}
-                                                className="h-9 px-4 text-xs bg-green-600 hover:bg-green-700 border-transparent"
-                                                icon={<Check className="w-4 h-4" />}
-                                            >
-                                                Listo
-                                            </Button>
-                                            <div className="text-gray-400">
-                                                {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Expanded Details */}
-                                    {expandedOrder === order.id && (
-                                        <div className="px-4 pb-4 pt-0 border-t border-gray-200 mt-2 bg-white">
-                                            <ul className="divide-y divide-gray-100">
-                                                {order.items.map((item, idx) => (
-                                                    <li key={idx} className="py-3 flex justify-between items-start">
-                                                        <div className="flex gap-3">
-                                                            <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
-                                                                {item.quantity}x
+                                                <div>
+                                                    <div className="flex items-center gap-2">
+                                                        {isBill ? (
+                                                            <span className="font-bold text-green-700 flex items-center gap-1.5">
+                                                                <Receipt className="w-4 h-4" />
+                                                                Cuenta Cerrada
                                                             </span>
-                                                            <div>
-                                                                <p className="font-medium text-gray-900 text-sm">{item.name}</p>
-                                                                {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-sm font-medium text-gray-900">
-                                                            ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
+                                                        ) : (
+                                                            <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
+                                                        )}
+                                                        <span className="text-xs text-gray-500 flex items-center">
+                                                            <Clock className="w-3 h-3 mr-1" />
+                                                            {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                                    </div>
+                                                    <p className="text-sm text-gray-600">
+                                                        {isBill
+                                                            ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
+                                                            : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={(e) => handlePrintOrder(order.id, e)}
+                                                    className={`p-2 ${isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
+                                                    title={isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                                                    disabled={printingOrderId === order.id}
+                                                >
+                                                    <Printer className={`w-5 h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
+                                                </button>
+                                                <Button
+                                                    onClick={(e) => handleCompleteOrder(order.id, e)}
+                                                    className={`h-9 px-4 text-xs ${isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
+                                                    icon={<Check className="w-4 h-4" />}
+                                                >
+                                                    {isBill ? 'Entregada' : 'Listo'}
+                                                </Button>
+                                                <div className="text-gray-400">
+                                                    {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                </div>
+                                            </div>
                                         </div>
-                                    )}
-                                </div>
-                            ))}
+
+                                        {/* Expanded Details */}
+                                        {expandedOrder === order.id && (
+                                            <div className={`px-4 pb-4 pt-0 border-t ${isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
+                                                {isBill && (
+                                                    <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                                                        <Receipt className="w-5 h-5 text-green-600" />
+                                                        <p className="text-sm text-green-700 font-medium">
+                                                            El cliente ha solicitado la cuenta. Puedes imprimir el ticket y entregárselo.
+                                                        </p>
+                                                    </div>
+                                                )}
+                                                <ul className="divide-y divide-gray-100">
+                                                    {order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map((item, idx) => (
+                                                        <li key={idx} className="py-3 flex justify-between items-start">
+                                                            <div className="flex gap-3">
+                                                                <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
+                                                                    {item.quantity}x
+                                                                </span>
+                                                                <div>
+                                                                    <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                                                                    {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
+                                                                </div>
+                                                            </div>
+                                                            <span className="text-sm font-medium text-gray-900">
+                                                                ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
+                                                            </span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                                {isBill && (
+                                                    <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
+                                                        <div className="flex justify-between items-center text-lg font-bold">
+                                                            <span>Total a Cobrar:</span>
+                                                            <span className="text-green-600">${(order.total || 0).toFixed(2)}</span>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
