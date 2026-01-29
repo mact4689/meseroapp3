@@ -621,6 +621,22 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                         <div className="space-y-4">
                             {pendingOrders.map((order) => {
                                 const isBill = isBillRequest(order);
+
+                                // Si es solicitud de cuenta, obtener todas las órdenes de esa mesa
+                                const tableOrders = isBill
+                                    ? pendingOrders.filter(o => o.table_number === order.table_number && !isBillRequest(o))
+                                    : [];
+
+                                // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
+                                const allTableItems = isBill
+                                    ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')))
+                                    : [];
+
+                                // Calcular el total sumando todas las órdenes de la mesa
+                                const tableTotal = isBill
+                                    ? tableOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+                                    : order.total || 0;
+
                                 return (
                                     <div
                                         key={order.id}
@@ -699,7 +715,7 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                                                     </div>
                                                 )}
                                                 <ul className="divide-y divide-gray-100">
-                                                    {order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map((item, idx) => (
+                                                    {(isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA'))).map((item, idx) => (
                                                         <li key={idx} className="py-3 flex justify-between items-start">
                                                             <div className="flex gap-3">
                                                                 <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
@@ -720,7 +736,7 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                                                     <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
                                                         <div className="flex justify-between items-center text-lg font-bold">
                                                             <span>Total a Cobrar:</span>
-                                                            <span className="text-green-600">${(order.total || 0).toFixed(2)}</span>
+                                                            <span className="text-green-600">${tableTotal.toFixed(2)}</span>
                                                         </div>
                                                     </div>
                                                 )}
