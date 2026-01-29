@@ -15,10 +15,10 @@ interface MenuSetupProps {
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
   const { isOnboarding, printers } = state;
-  
+
   // Use global state for items
   const items = state.menu;
-  
+
   // Form States
   const [category, setCategory] = useState('');
   const [itemName, setItemName] = useState('');
@@ -28,7 +28,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [selectedPrinterId, setSelectedPrinterId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
-  
+
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
@@ -36,15 +36,15 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   // Helper seguro para generar UUID v4 compatible con Supabase
   const generateId = () => {
     try {
-        if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-            return crypto.randomUUID();
-        }
+      if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+        return crypto.randomUUID();
+      }
     } catch (e) {
-        // Fallback en caso de error en crypto
+      // Fallback en caso de error en crypto
     }
-    
+
     // Polyfill robusto para navegadores antiguos o contextos no seguros (HTTP)
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       const r = Math.random() * 16 | 0;
       const v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -53,108 +53,108 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
   const handleImageChange = (file: File | null) => {
     if (file) {
-        const objectUrl = URL.createObjectURL(file);
-        setImagePreview(objectUrl);
-        setImageFile(file);
+      const objectUrl = URL.createObjectURL(file);
+      setImagePreview(objectUrl);
+      setImageFile(file);
     } else {
-        setImagePreview(null);
-        setImageFile(null);
+      setImagePreview(null);
+      setImageFile(null);
     }
   };
 
   const validateForm = () => {
     if (!category.trim()) {
-        alert("Por favor, ingresa una categoría (ej. Bebidas, Entradas).");
-        return false;
+      alert("Por favor, ingresa una categoría (ej. Bebidas, Entradas).");
+      return false;
     }
     if (!itemName.trim()) {
-        alert("Por favor, ingresa el nombre del platillo.");
-        return false;
+      alert("Por favor, ingresa el nombre del platillo.");
+      return false;
     }
     if (!price.trim()) {
-        alert("Por favor, ingresa el precio.");
-        return false;
+      alert("Por favor, ingresa el precio.");
+      return false;
     }
     return true;
   };
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
     if (!state.user) {
-        alert("Error de sesión: No se ha detectado un usuario activo. Por favor recarga la página e inicia sesión nuevamente.");
-        return;
+      alert("Error de sesión: No se ha detectado un usuario activo. Por favor recarga la página e inicia sesión nuevamente.");
+      return;
     }
 
     setIsSubmittingItem(true);
-    
+
     try {
-        let finalImageUrl = imagePreview;
+      let finalImageUrl = imagePreview;
 
-        // Subir imagen solo si hay un archivo nuevo seleccionado
-        if (imageFile) {
-            const path = `menu/${state.user.id}/${Date.now()}`;
-            const publicUrl = await uploadImage(imageFile, path);
-            if (publicUrl) {
-                finalImageUrl = publicUrl;
-            } else {
-                console.warn("No se pudo subir la imagen, guardando sin imagen.");
-                // No detenemos el proceso, permitimos guardar sin imagen
-                // finalImageUrl se queda como estaba (si era local) o null
-                if (imagePreview && imagePreview.startsWith('blob:')) {
-                     finalImageUrl = null;
-                }
-            }
-        } else if (imagePreview && imagePreview.startsWith('blob:')) {
-            // Limpieza de blob urls huerfanas si no se subió
-            finalImageUrl = null;
-        }
-
-        const newItem: MenuItem = {
-          id: editingId ? editingId : generateId(),
-          name: itemName,
-          price: price,
-          category: category,
-          description: description,
-          ingredients: ingredients,
-          image: finalImageUrl,
-          imageFile: null,
-          available: true,
-          printerId: selectedPrinterId || undefined
-        };
-
-        if (editingId) {
-          // Mantener disponibilidad previa si se edita
-          const existing = items.find(i => i.id === editingId);
-          newItem.available = existing?.available ?? true;
-          
-          await updateMenuItem(editingId, newItem);
-          setEditingId(null);
+      // Subir imagen solo si hay un archivo nuevo seleccionado
+      if (imageFile) {
+        const path = `menu/${state.user.id}/${Date.now()}`;
+        const publicUrl = await uploadImage(imageFile, path);
+        if (publicUrl) {
+          finalImageUrl = publicUrl;
         } else {
-          await addMenuItem(newItem);
+          console.warn("No se pudo subir la imagen, guardando sin imagen.");
+          // No detenemos el proceso, permitimos guardar sin imagen
+          // finalImageUrl se queda como estaba (si era local) o null
+          if (imagePreview && imagePreview.startsWith('blob:')) {
+            finalImageUrl = null;
+          }
         }
-        
-        // Limpiar formulario excepto categoría para facilitar entrada rápida
-        setItemName('');
-        setPrice('');
-        setDescription('');
-        setIngredients('');
-        // No limpiamos printerId para facilitar entrada en batch
-        setImagePreview(null);
-        setImageFile(null);
-        
-        // Scroll suave al listado para confirmar visualmente
-        const listElement = document.getElementById('menu-list');
-        if (listElement) {
-             listElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+      } else if (imagePreview && imagePreview.startsWith('blob:')) {
+        // Limpieza de blob urls huerfanas si no se subió
+        finalImageUrl = null;
+      }
+
+      const newItem: MenuItem = {
+        id: editingId ? editingId : generateId(),
+        name: itemName,
+        price: price,
+        category: category,
+        description: description,
+        ingredients: ingredients,
+        image: finalImageUrl,
+        imageFile: null,
+        available: true,
+        printerId: selectedPrinterId || undefined
+      };
+
+      if (editingId) {
+        // Mantener disponibilidad previa si se edita
+        const existing = items.find(i => i.id === editingId);
+        newItem.available = existing?.available ?? true;
+
+        await updateMenuItem(editingId, newItem);
+        setEditingId(null);
+      } else {
+        await addMenuItem(newItem);
+      }
+
+      // Limpiar formulario excepto categoría para facilitar entrada rápida
+      setItemName('');
+      setPrice('');
+      setDescription('');
+      setIngredients('');
+      // No limpiamos printerId para facilitar entrada en batch
+      setImagePreview(null);
+      setImageFile(null);
+
+      // Scroll suave al listado para confirmar visualmente
+      const listElement = document.getElementById('menu-list');
+      if (listElement) {
+        listElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
 
     } catch (error: any) {
-        console.error("Error saving item:", error);
-        alert(`No se pudo guardar: ${error.message || 'Error desconocido'}. Si el error persiste, verifica tu conexión.`);
+      console.error("Error saving item:", error);
+      alert(`No se pudo guardar: ${error.message || 'Error desconocido'}. Si el error persiste, verifica tu conexión.`);
     } finally {
-        setIsSubmittingItem(false);
+      setIsSubmittingItem(false);
     }
   };
 
@@ -168,7 +168,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setSelectedPrinterId(item.printerId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
-    
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -193,50 +193,50 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
     // Cargar secuencialmente para evitar condiciones de carrera en conexiones lentas
     const loadAll = async () => {
-        setIsSubmittingItem(true);
-        try {
-            for (const item of samples) {
-                await addMenuItem(item);
-            }
-        } catch(e: any) {
-            console.error("Error loading sample:", e);
-            alert("Error al cargar ejemplos: " + e.message);
-        } finally {
-            setIsSubmittingItem(false);
+      setIsSubmittingItem(true);
+      try {
+        for (const item of samples) {
+          await addMenuItem(item);
         }
+      } catch (e: any) {
+        console.error("Error loading sample:", e);
+        alert("Error al cargar ejemplos: " + e.message);
+      } finally {
+        setIsSubmittingItem(false);
+      }
     };
     loadAll();
   };
 
   const handleBack = () => {
     if (isOnboarding) {
-        onNavigate(AppView.BUSINESS_SETUP);
+      onNavigate(AppView.BUSINESS_SETUP);
     } else {
-        onNavigate(AppView.DASHBOARD);
+      onNavigate(AppView.DASHBOARD);
     }
   };
-  
+
   const handleNextStep = () => {
     onNavigate(AppView.TABLE_SETUP);
   };
 
   const handleRemoveItem = (id: string) => {
     if (confirm("¿Estás seguro de eliminar este platillo?")) {
-        if (editingId === id) {
-          handleCancelEdit();
-        }
-        removeMenuItem(id).catch(e => alert(e.message));
+      if (editingId === id) {
+        handleCancelEdit();
+      }
+      removeMenuItem(id).catch(e => alert(e.message));
     }
   };
 
   const handleToggleAvailability = async (id: string) => {
-      try {
-          await toggleItemAvailability(id);
-      } catch (error: any) {
-          // If we catch here, it means the DB update failed and the optimistic update was reverted.
-          console.error("Failed to toggle availability:", error);
-          alert("Error: No se pudo cambiar la disponibilidad. Revisa la consola o recarga la página.");
-      }
+    try {
+      await toggleItemAvailability(id);
+    } catch (error: any) {
+      // If we catch here, it means the DB update failed and the optimistic update was reverted.
+      console.error("Failed to toggle availability:", error);
+      alert("Error: No se pudo cambiar la disponibilidad. Revisa la consola o recarga la página.");
+    }
   };
 
   const groupedItems = items.reduce((acc, item) => {
@@ -253,14 +253,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         {/* Header */}
         <div className="mb-6">
           <div className="flex justify-between items-start">
-            <button 
+            <button
               onClick={handleBack}
               className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
               title={isOnboarding ? "Volver" : "Volver al Dashboard"}
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <button 
+            <button
               onClick={handleLoadSample}
               className="text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-3 py-1.5 rounded-full flex items-center transition-colors disabled:opacity-50"
               type="button"
@@ -270,56 +270,71 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               Simular Menú
             </button>
           </div>
-          
+
           {isOnboarding ? (
             <div className="mt-4 flex flex-col items-center">
-                 <div className="flex items-center justify-center space-x-2 mb-4 w-full">
-                    {/* Step 1 - Done */}
-                    <div className="flex flex-col items-center gap-1 opacity-60">
-                        <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-brand-900"></div>
+              <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                {/* Step 1 - Done */}
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5" /></div>
+                </div>
+                <div className="w-3 h-0.5 bg-brand-900"></div>
 
-                    {/* Step 2 - Active */}
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">2</div>
-                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Menú</span>
-                    </div>
-                    <div className="w-3 h-0.5 bg-gray-200"></div>
+                {/* Step 2 - Active */}
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">2</div>
+                  <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Menú</span>
+                </div>
+                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                    {/* Step 3 - Inactive */}
-                    <div className="flex flex-col items-center gap-1 opacity-40">
-                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-gray-200"></div>
+                {/* Step 3 - Inactive */}
+                <div className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
+                </div>
+                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                    {/* Step 4 - Inactive */}
-                    <div className="flex flex-col items-center gap-1 opacity-40">
-                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-gray-200"></div>
+                {/* Step 4 - Inactive */}
+                <div className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
+                </div>
+                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                    {/* Step 5 - Inactive */}
-                    <div className="flex flex-col items-center gap-1 opacity-40">
-                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
-                    </div>
-                 </div>
-                 <h2 className="font-serif text-3xl text-brand-900 text-center">Arma tu Menú</h2>
+                {/* Step 5 - Inactive */}
+                <div className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                </div>
+              </div>
+              <h2 className="font-serif text-3xl text-brand-900 text-center">Arma tu Menú</h2>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-                <h2 className="font-serif text-3xl text-brand-900">Tu Menú Digital</h2>
-                <p className="text-gray-500">Agrega fotos y detalles a tus platillos.</p>
+              <h2 className="font-serif text-3xl text-brand-900">Tu Menú Digital</h2>
+              <p className="text-gray-500">Agrega fotos y detalles a tus platillos.</p>
             </div>
           )}
         </div>
 
         {/* Warning if no user */}
         {!state.user && !isOnboarding && (
-             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center animate-pulse">
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                <span>Error de sesión. <strong>Recarga la página</strong>.</span>
-             </div>
+          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg text-sm flex items-center animate-pulse">
+            <AlertTriangle className="w-4 h-4 mr-2" />
+            <span>Error de sesión. <strong>Recarga la página</strong>.</span>
+          </div>
+        )}
+
+        {/* Info banner when no printers configured */}
+        {printers.filter(p => p.isConnected).length === 0 && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm flex items-start gap-3">
+            <Printer className="w-5 h-5 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold mb-1">💡 Configura tus impresoras primero</p>
+              <p className="text-blue-600">
+                Para asignar a qué impresora (cocina, bar, caja) se enviará cada platillo,
+                primero debes configurar tus impresoras en el paso 4 del onboarding.
+                De lo contrario, todos los tickets se imprimirán en la impresora predeterminada.
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Form Section */}
@@ -332,7 +347,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               {editingId ? 'Editando Platillo' : 'Nuevo Platillo'}
             </h3>
             {editingId && (
-              <button 
+              <button
                 onClick={handleCancelEdit}
                 className="text-xs flex items-center text-gray-500 hover:text-red-500 bg-white px-2 py-1 rounded-md border border-gray-200"
               >
@@ -342,117 +357,117 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
           </div>
 
           <form onSubmit={handleAddItem} className="space-y-4">
-             <div className="flex gap-4">
-                <div className="w-24 shrink-0">
-                  <ImageUpload 
-                    onChange={handleImageChange}
-                    previewUrl={imagePreview}
-                    className="aspect-square !rounded-xl !border-gray-200"
-                  />
-                </div>
-                <div className="flex-1 space-y-3">
-                   <Input 
-                      placeholder="Categoría"
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      icon={<Tag className="w-4 h-4" />}
-                      className="bg-white"
-                      list="categories" 
-                      required
-                    />
-                    <datalist id="categories">
-                        <option value="Entradas" />
-                        <option value="Platillos" />
-                        <option value="Bebidas" />
-                        <option value="Postres" />
-                    </datalist>
-                     <Input 
-                      placeholder="Precio ($)"
-                      type="number"
-                      step="0.01"
-                      inputMode="decimal"
-                      value={price}
-                      onChange={(e) => setPrice(e.target.value)}
-                      icon={<DollarSign className="w-4 h-4" />}
-                      className="bg-white"
-                      required
-                    />
-                </div>
-             </div>
+            <div className="flex gap-4">
+              <div className="w-24 shrink-0">
+                <ImageUpload
+                  onChange={handleImageChange}
+                  previewUrl={imagePreview}
+                  className="aspect-square !rounded-xl !border-gray-200"
+                />
+              </div>
+              <div className="flex-1 space-y-3">
+                <Input
+                  placeholder="Categoría"
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  icon={<Tag className="w-4 h-4" />}
+                  className="bg-white"
+                  list="categories"
+                  required
+                />
+                <datalist id="categories">
+                  <option value="Entradas" />
+                  <option value="Platillos" />
+                  <option value="Bebidas" />
+                  <option value="Postres" />
+                </datalist>
+                <Input
+                  placeholder="Precio ($)"
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  icon={<DollarSign className="w-4 h-4" />}
+                  className="bg-white"
+                  required
+                />
+              </div>
+            </div>
 
-             <Input 
-                placeholder="Nombre del platillo"
-                value={itemName}
-                onChange={(e) => setItemName(e.target.value)}
-                icon={<Utensils className="w-4 h-4" />}
-                className="bg-white"
-                required
-              />
+            <Input
+              placeholder="Nombre del platillo"
+              value={itemName}
+              onChange={(e) => setItemName(e.target.value)}
+              icon={<Utensils className="w-4 h-4" />}
+              className="bg-white"
+              required
+            />
 
-              {/* Printer Selection Dropdown */}
-              <div className="w-full space-y-1.5">
-                  <div className="relative group">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                        <Printer className="w-4 h-4" />
-                    </div>
-                    <select
-                        value={selectedPrinterId}
-                        onChange={(e) => setSelectedPrinterId(e.target.value)}
-                        className={`
+            {/* Printer Selection Dropdown */}
+            <div className="w-full space-y-1.5">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <Printer className="w-4 h-4" />
+                </div>
+                <select
+                  value={selectedPrinterId}
+                  onChange={(e) => setSelectedPrinterId(e.target.value)}
+                  className={`
                             block w-full rounded-xl border-gray-200 bg-white 
                             focus:border-brand-900 focus:ring-1 focus:ring-brand-900 
                             text-gray-900 py-3.5 pl-10 border appearance-none
                         `}
-                    >
-                        <option value="">-- Seleccionar Impresora (Opcional) --</option>
-                        {printers.map(printer => (
-                            <option key={printer.id} value={printer.id}>
-                                {printer.name} ({printer.location})
-                            </option>
-                        ))}
-                    </select>
-                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                        <ChevronRight className="w-4 h-4 rotate-90" />
-                    </div>
-                  </div>
+                >
+                  <option value="">-- Seleccionar Impresora (Opcional) --</option>
+                  {printers.map(printer => (
+                    <option key={printer.id} value={printer.id}>
+                      {printer.name} ({printer.location})
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
               </div>
+            </div>
 
-              <Input 
-                placeholder="Descripción (¿Qué es?)"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                icon={<AlignLeft className="w-4 h-4" />}
-                className="bg-white"
-              />
+            <Input
+              placeholder="Descripción (¿Qué es?)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              icon={<AlignLeft className="w-4 h-4" />}
+              className="bg-white"
+            />
 
-              <Input 
-                placeholder="Ingredientes (Opcional)"
-                value={ingredients}
-                onChange={(e) => setIngredients(e.target.value)}
-                icon={<Carrot className="w-4 h-4" />}
-                className="bg-white"
-              />
-              
-              <Button 
-                type="submit" 
-                variant={editingId ? 'secondary' : 'primary'}
-                fullWidth 
-                isLoading={isSubmittingItem}
-                icon={editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                className={`py-2.5 text-sm mt-2 ${editingId ? 'border-accent-300 bg-white text-accent-700 hover:bg-accent-50' : ''}`}
-              >
-                {editingId ? 'Actualizar Platillo' : 'Agregar Platillo'}
-              </Button>
+            <Input
+              placeholder="Ingredientes (Opcional)"
+              value={ingredients}
+              onChange={(e) => setIngredients(e.target.value)}
+              icon={<Carrot className="w-4 h-4" />}
+              className="bg-white"
+            />
+
+            <Button
+              type="submit"
+              variant={editingId ? 'secondary' : 'primary'}
+              fullWidth
+              isLoading={isSubmittingItem}
+              icon={editingId ? <Pencil className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
+              className={`py-2.5 text-sm mt-2 ${editingId ? 'border-accent-300 bg-white text-accent-700 hover:bg-accent-50' : ''}`}
+            >
+              {editingId ? 'Actualizar Platillo' : 'Agregar Platillo'}
+            </Button>
           </form>
         </div>
 
         {/* Menu List */}
         <div id="menu-list" className="flex-1 overflow-y-auto pr-1 scrollbar-thin mb-4">
           {Object.keys(groupedItems).length === 0 ? (
-             <div className="text-center py-10 opacity-50 border-2 border-dashed border-gray-200 rounded-xl">
-               <Coffee className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-               <p className="text-sm text-gray-500">Tu menú está vacío</p>
-             </div>
+            <div className="text-center py-10 opacity-50 border-2 border-dashed border-gray-200 rounded-xl">
+              <Coffee className="w-10 h-10 mx-auto mb-2 text-gray-400" />
+              <p className="text-sm text-gray-500">Tu menú está vacío</p>
+            </div>
           ) : (
             <div className="space-y-6 pb-4">
               {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
@@ -467,99 +482,99 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                       const assignedPrinter = printers.find(p => p.id === item.printerId);
 
                       return (
-                      <div 
-                        key={item.id} 
-                        className={`
+                        <div
+                          key={item.id}
+                          className={`
                           relative flex gap-3 bg-white p-3 rounded-xl border shadow-sm transition-all
                           ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200'}
                           ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
                         `}
-                      >
-                        <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
-                           {item.image ? (
-                             <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
-                           ) : (
-                             <div className="w-full h-full flex items-center justify-center text-gray-300">
-                               <ImageIcon className="w-6 h-6" />
-                             </div>
-                           )}
-                           
-                           {/* Sold Out Overlay Badge */}
-                           {!isAvailable && (
-                             <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
-                               <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
-                             </div>
-                           )}
-                        </div>
-
-                        <div className="flex-1 min-w-0 pr-8">
-                          <div className="flex justify-between items-start">
-                            <h4 className={`font-bold truncate ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
-                            <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
-                          </div>
-                          
-                          {item.description && (
-                            <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
-                          )}
-
-                          {/* Printer indicator */}
-                          {assignedPrinter && (
-                              <div className="flex items-center mt-1.5 text-[10px] text-gray-400 gap-1">
-                                  <Printer className="w-3 h-3" />
-                                  <span>{assignedPrinter.location}</span>
+                        >
+                          <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
+                            {item.image ? (
+                              <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                <ImageIcon className="w-6 h-6" />
                               </div>
-                          )}
-                        </div>
+                            )}
 
-                        {/* Action Buttons */}
-                        <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
-                          <button 
-                            onClick={() => handleRemoveItem(item.id)}
-                            className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                            title="Eliminar"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          
-                          <button 
-                            onClick={() => handleEditItem(item)}
-                            className={`
+                            {/* Sold Out Overlay Badge */}
+                            {!isAvailable && (
+                              <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
+                                <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex-1 min-w-0 pr-8">
+                            <div className="flex justify-between items-start">
+                              <h4 className={`font-bold truncate ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
+                              <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
+                            </div>
+
+                            {item.description && (
+                              <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
+                            )}
+
+                            {/* Printer indicator */}
+                            {assignedPrinter && (
+                              <div className="flex items-center mt-1.5 text-[10px] text-gray-400 gap-1">
+                                <Printer className="w-3 h-3" />
+                                <span>{assignedPrinter.location}</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
+                            <button
+                              onClick={() => handleRemoveItem(item.id)}
+                              className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                              title="Eliminar"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+
+                            <button
+                              onClick={() => handleEditItem(item)}
+                              className={`
                               p-1.5 rounded-full transition-colors mb-1
-                              ${editingId === item.id 
-                                ? 'text-accent-600 bg-accent-50' 
-                                : 'text-gray-300 hover:text-brand-900 hover:bg-gray-100'}
+                              ${editingId === item.id
+                                  ? 'text-accent-600 bg-accent-50'
+                                  : 'text-gray-300 hover:text-brand-900 hover:bg-gray-100'}
                             `}
-                            title="Editar"
-                          >
-                            <Pencil className="w-4 h-4" />
-                          </button>
+                              title="Editar"
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </button>
 
-                          {/* Toggle Availability Button */}
-                          <button
-                            onClick={() => handleToggleAvailability(item.id)}
-                            className={`
+                            {/* Toggle Availability Button */}
+                            <button
+                              onClick={() => handleToggleAvailability(item.id)}
+                              className={`
                                 flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
-                                ${isAvailable 
-                                    ? 'bg-white border-red-100 text-red-500 hover:bg-red-50' 
-                                    : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
+                                ${isAvailable
+                                  ? 'bg-white border-red-100 text-red-500 hover:bg-red-50'
+                                  : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
                                 }
                             `}
-                            title={isAvailable ? "Marcar como Agotado" : "Marcar como Disponible"}
-                          >
-                            {isAvailable ? (
+                              title={isAvailable ? "Marcar como Agotado" : "Marcar como Disponible"}
+                            >
+                              {isAvailable ? (
                                 <>
-                                    <Ban className="w-3 h-3" /> 
-                                    <span>Agotar</span>
+                                  <Ban className="w-3 h-3" />
+                                  <span>Agotar</span>
                                 </>
-                            ) : (
+                              ) : (
                                 <>
-                                    <CheckCircle className="w-3 h-3" />
-                                    <span>Activ</span>
+                                  <CheckCircle className="w-3 h-3" />
+                                  <span>Activ</span>
                                 </>
-                            )}
-                          </button>
+                              )}
+                            </button>
+                          </div>
                         </div>
-                      </div>
                       );
                     })}
                   </div>
@@ -571,35 +586,35 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
         {/* Footer Actions */}
         {isOnboarding ? (
-           <div className="mt-auto pt-4 border-t border-gray-100 bg-white space-y-3">
-               <Button 
-                 fullWidth 
-                 onClick={handleNextStep}
-                 className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
-                 icon={<ChevronRight className="w-5 h-5" />}
-               >
-                 Continuar a Mesas
-               </Button>
-               
-               <button 
-                  type="button" 
-                  onClick={handleNextStep}
-                  className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
-                >
-                  Omitir por ahora
-                </button>
-           </div>
+          <div className="mt-auto pt-4 border-t border-gray-100 bg-white space-y-3">
+            <Button
+              fullWidth
+              onClick={handleNextStep}
+              className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
+              icon={<ChevronRight className="w-5 h-5" />}
+            >
+              Continuar a Mesas
+            </Button>
+
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+            >
+              Omitir por ahora
+            </button>
+          </div>
         ) : (
-             <div className="mt-6 pt-6 border-t border-gray-100">
-                <Button 
-                    fullWidth 
-                    onClick={handleBack}
-                    className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
-                    icon={<Check className="w-5 h-5" />}
-                >
-                    Guardar Cambios
-                </Button>
-             </div>
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <Button
+              fullWidth
+              onClick={handleBack}
+              className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
+              icon={<Check className="w-5 h-5" />}
+            >
+              Guardar Cambios
+            </Button>
+          </div>
         )}
       </div>
     </div>

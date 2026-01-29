@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useRef } from 'r
 import { MenuItem, User, Printer, Order } from '../types';
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb } from '../services/db';
 import { supabase } from '../services/client';
+import { playNotificationSound } from '../services/notification';
 
 interface AppState {
   user: User | null;
@@ -159,10 +160,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               orders: [newOrder, ...prev.orders]
             }));
 
-            try {
-              const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
-              audio.play().catch(e => console.log('Audio autoplay blocked', e));
-            } catch (e) { }
+            // Play notification sound
+            playNotificationSound();
           }
         )
         .on(
