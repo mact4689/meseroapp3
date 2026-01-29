@@ -2,372 +2,301 @@
 import React, { useState } from 'react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Printer, Bluetooth, Wifi, CheckCircle2, FileText, Search, Signal, Router, CheckCircle, ChevronRight, Receipt } from 'lucide-react';
+import { ArrowLeft, Printer, CheckCircle, ChevronRight, AlertCircle, ExternalLink, Monitor, Settings } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface PrinterSetupProps {
   onNavigate: (view: AppView) => void;
 }
 
-interface DiscoveredDevice {
-  id: string;
-  name: string;
-  detail: string; // RSSI for BT, IP for Wifi
-  type: 'BLUETOOTH' | 'NETWORK';
-}
-
-type SetupMethod = 'BLUETOOTH' | 'WIFI' | null;
-
 export const PrinterSetup: React.FC<PrinterSetupProps> = ({ onNavigate }) => {
   const { state, updatePrinter } = useAppStore();
-  const [setupMethod, setSetupMethod] = useState<SetupMethod>(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const [discoveredDevices, setDiscoveredDevices] = useState<DiscoveredDevice[]>([]);
-  const [testPrintStatus, setTestPrintStatus] = useState<'idle' | 'printing' | 'success'>('idle');
-  const { isOnboarding } = state;
-
-  // Use the first printer (Main/Kitchen) for the setup flow
-  // In a real scenario, we might iterate over multiple printers.
-  // For this mock, we are just configuring the first one in the onboarding,
-  // or allowing selection in a full list if not onboarding.
-  // NOTE: This logic assumes updating the FIRST printer in the array.
-  const printerToSetup = state.printers[0]; 
-  const isConnected = printerToSetup.isConnected;
-
-  const handleScan = () => {
-    setIsSearching(true);
-    setDiscoveredDevices([]);
-
-    setTimeout(() => {
-      if (setupMethod === 'BLUETOOTH') {
-        setDiscoveredDevices([
-          { id: 'bt_1', name: 'Epson TM-T20II', detail: '-65 dBm', type: 'BLUETOOTH' },
-          { id: 'bt_2', name: 'Star Micronics TSP100', detail: '-72 dBm', type: 'BLUETOOTH' },
-          { id: 'bt_3', name: 'Generic POS-58', detail: '-80 dBm', type: 'BLUETOOTH' },
-        ]);
-      } else {
-        setDiscoveredDevices([
-          { id: 'net_1', name: 'Epson TM-m30 (Cocina)', detail: '192.168.1.50', type: 'NETWORK' },
-          { id: 'net_2', name: 'Star TSP143LAN', detail: '192.168.1.102', type: 'NETWORK' },
-        ]);
-      }
-      setIsSearching(false);
-    }, 2500);
-  };
-
-  const handleConnectToDevice = (device: DiscoveredDevice) => {
-    updatePrinter(printerToSetup.id, {
-        isConnected: true,
-        hardwareName: device.name,
-        type: device.type === 'NETWORK' ? 'NETWORK' : 'BLUETOOTH'
-    });
-    setDiscoveredDevices([]);
-    setSetupMethod(null);
-  };
-
-  const handleDisconnect = () => {
-    updatePrinter(printerToSetup.id, {
-      isConnected: false,
-      hardwareName: null,
-      type: null
-    });
-    setTestPrintStatus('idle');
-    setDiscoveredDevices([]);
-    setSetupMethod(null);
-  };
-
-  const handleTestPrint = () => {
-    if (!isConnected) return;
-    setTestPrintStatus('printing');
-    setTimeout(() => {
-      setTestPrintStatus('success');
-      setTimeout(() => setTestPrintStatus('idle'), 3000);
-    }, 1500);
-  };
-
-  const handleToggleBillPrinter = () => {
-      updatePrinter(printerToSetup.id, {
-          isBillPrinter: !printerToSetup.isBillPrinter
-      });
-  };
+  const { isOnboarding, printers } = state;
+  const [showInstructions, setShowInstructions] = useState(false);
 
   const handleBack = () => {
-    if (setupMethod !== null && !isConnected) {
-      setSetupMethod(null);
-      setDiscoveredDevices([]);
-      setIsSearching(false);
+    if (isOnboarding) {
+      onNavigate(AppView.TABLE_SETUP);
     } else {
-        if (isOnboarding) {
-             onNavigate(AppView.TABLE_SETUP);
-        } else {
-             onNavigate(AppView.DASHBOARD);
-        }
+      onNavigate(AppView.DASHBOARD);
     }
   };
 
   const handleNextStep = () => {
-      onNavigate(AppView.TICKET_CONFIG);
+    onNavigate(AppView.TICKET_CONFIG);
+  };
+
+  const handleMarkAsConfigured = (printerId: string) => {
+    updatePrinter(printerId, {
+      isConnected: true,
+      hardwareName: 'Impresora del Sistema'
+    });
+  };
+
+  const handleMarkAsNotConfigured = (printerId: string) => {
+    updatePrinter(printerId, {
+      isConnected: false,
+      hardwareName: null
+    });
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-white px-6 pt-8 pb-6">
-      <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
+      <div className="w-full max-w-2xl mx-auto flex-1 flex flex-col">
         {/* Header */}
         <div className="mb-6">
-          <button 
-            onClick={handleBack}
-            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-            title={isOnboarding ? "Volver" : "Guardar y volver al Dashboard"}
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
-          
+          <div className="flex justify-between items-start">
+            <button
+              onClick={handleBack}
+              className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
+              title={isOnboarding ? "Volver" : "Volver al Dashboard"}
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+          </div>
+
           {isOnboarding ? (
             <div className="mt-4 flex flex-col items-center">
-                 <div className="flex items-center justify-center space-x-2 mb-4 w-full">
-                    {/* Step 1 - Done */}
-                    <div className="flex flex-col items-center gap-1 opacity-60">
-                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-brand-900"></div>
-
-                    {/* Step 2 - Done */}
-                     <div className="flex flex-col items-center gap-1 opacity-60">
-                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-brand-900"></div>
-
-                    {/* Step 3 - Done */}
-                    <div className="flex flex-col items-center gap-1 opacity-60">
-                         <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5"/></div>
-                    </div>
-                    <div className="w-3 h-0.5 bg-brand-900"></div>
-
-                    {/* Step 4 - Active */}
-                    <div className="flex flex-col items-center gap-1">
-                        <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">4</div>
-                        <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Impr.</span>
-                    </div>
-                    <div className="w-3 h-0.5 bg-gray-200"></div>
-
-                    {/* Step 5 - Inactive */}
-                    <div className="flex flex-col items-center gap-1 opacity-40">
-                         <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
-                    </div>
-                 </div>
-                 <h2 className="font-serif text-3xl text-brand-900 text-center">Paso 4</h2>
-                 <p className="text-gray-500 text-center text-sm mt-1">Conecta tu impresora de tickets.</p>
+              <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                {/* Step indicators */}
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5" /></div>
+                </div>
+                <div className="w-3 h-0.5 bg-brand-900"></div>
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5" /></div>
+                </div>
+                <div className="w-3 h-0.5 bg-brand-900"></div>
+                <div className="flex flex-col items-center gap-1 opacity-60">
+                  <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5" /></div>
+                </div>
+                <div className="w-3 h-0.5 bg-brand-900"></div>
+                <div className="flex flex-col items-center gap-1">
+                  <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">4</div>
+                  <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Impresoras</span>
+                </div>
+                <div className="w-3 h-0.5 bg-gray-200"></div>
+                <div className="flex flex-col items-center gap-1 opacity-40">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                </div>
+              </div>
+              <h2 className="font-serif text-3xl text-brand-900 text-center">Configura tus Impresoras</h2>
+              <p className="text-gray-500 text-center mt-2">Conecta impresoras térmicas para tickets de cocina</p>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-                <h2 className="font-serif text-3xl text-brand-900">Configurar Impresora</h2>
-                <p className="text-gray-500">
-                    {isConnected 
-                        ? `Configurando ${printerToSetup.name}`
-                        : setupMethod 
-                        ? `Buscando por ${setupMethod === 'BLUETOOTH' ? 'Bluetooth' : 'WiFi'}...`
-                        : 'Elige cómo conectar tu impresora'
-                    }
+              <h2 className="font-serif text-3xl text-brand-900">Configuración de Impresoras</h2>
+              <p className="text-gray-500">Gestiona tus estaciones de impresión</p>
+            </div>
+          )}
+        </div>
+
+        {/* Important Notice */}
+        <div className="mb-6 p-5 bg-blue-50 border border-blue-200 rounded-xl">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-6 h-6 text-blue-600 shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-bold text-blue-900 mb-2">📌 Cómo funciona la impresión</h3>
+              <p className="text-sm text-blue-700 mb-3">
+                MeseroApp usa el <strong>sistema de impresión de tu computadora</strong>.
+                Cuando hagas click en "Imprimir", el navegador te preguntará qué impresora usar.
+              </p>
+              <button
+                onClick={() => setShowInstructions(!showInstructions)}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+              >
+                {showInstructions ? 'Ocultar' : 'Ver'} instrucciones de configuración
+                <ChevronRight className={`w-4 h-4 transition-transform ${showInstructions ? 'rotate-90' : ''}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Instructions Panel */}
+        {showInstructions && (
+          <div className="mb-6 p-6 bg-white border border-gray-200 rounded-xl space-y-6 animate-in fade-in slide-in-from-top-4">
+            <h3 className="font-bold text-brand-900 text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Pasos para conectar tu impresora
+            </h3>
+
+            {/* Step 1 */}
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-brand-900 text-white rounded-full flex items-center justify-center font-bold shrink-0">1</div>
+              <div>
+                <h4 className="font-semibold text-brand-900 mb-2">Conecta físicamente tu impresora</h4>
+                <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                  <li><strong>USB:</strong> Conecta el cable USB a tu computadora</li>
+                  <li><strong>WiFi:</strong> Conecta la impresora a tu red WiFi (ver manual)</li>
+                  <li><strong>Bluetooth:</strong> Empareja desde la configuración de tu sistema operativo</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* Step 2 */}
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-brand-900 text-white rounded-full flex items-center justify-center font-bold shrink-0">2</div>
+              <div>
+                <h4 className="font-semibold text-brand-900 mb-2">Instala los drivers</h4>
+                <p className="text-sm text-gray-600 mb-2">Descarga e instala los drivers oficiales del fabricante:</p>
+                <div className="space-y-2">
+                  <a href="https://epson.com/Support/Printers/" target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                    <ExternalLink className="w-4 h-4" />
+                    Epson (TM-T20, TM-m30, etc.)
+                  </a>
+                  <a href="https://www.star-m.jp/eng/dl/index.html" target="_blank" rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800">
+                    <ExternalLink className="w-4 h-4" />
+                    Star Micronics (TSP100, TSP143, etc.)
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 3 */}
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-brand-900 text-white rounded-full flex items-center justify-center font-bold shrink-0">3</div>
+              <div>
+                <h4 className="font-semibold text-brand-900 mb-2">Verifica en tu sistema operativo</h4>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>
+                    <strong className="text-brand-900">Windows:</strong> Panel de Control → Dispositivos e Impresoras
+                  </div>
+                  <div>
+                    <strong className="text-brand-900">macOS:</strong> Preferencias del Sistema → Impresoras y Escáneres
+                  </div>
+                  <div>
+                    <strong className="text-brand-900">Linux:</strong> Configuración → Impresoras
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Step 4 */}
+            <div className="flex gap-4">
+              <div className="w-8 h-8 bg-green-500 text-white rounded-full flex items-center justify-center font-bold shrink-0">✓</div>
+              <div>
+                <h4 className="font-semibold text-brand-900 mb-2">¡Listo para imprimir!</h4>
+                <p className="text-sm text-gray-600">
+                  Cuando hagas click en "Imprimir" en MeseroApp, el navegador te mostrará un diálogo
+                  donde podrás seleccionar tu impresora.
                 </p>
+              </div>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* Printer Stations List */}
+        <div className="flex-1 space-y-4 mb-6">
+          <h3 className="font-bold text-brand-900 text-lg">Tus Estaciones de Impresión</h3>
+          <p className="text-sm text-gray-500 -mt-2">
+            Configura las estaciones donde se imprimirán los tickets. Marca como "Configurada" cuando hayas conectado la impresora física.
+          </p>
+
+          <div className="space-y-3">
+            {printers.map((printer) => (
+              <div
+                key={printer.id}
+                className={`p-5 rounded-xl border transition-all ${printer.isConnected
+                    ? 'bg-green-50 border-green-200'
+                    : 'bg-gray-50 border-gray-200'
+                  }`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${printer.isConnected ? 'bg-green-100' : 'bg-gray-200'
+                      }`}>
+                      <Printer className={`w-6 h-6 ${printer.isConnected ? 'text-green-600' : 'text-gray-400'
+                        }`} />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-brand-900">{printer.name}</h4>
+                      <p className="text-sm text-gray-500">{printer.location}</p>
+                    </div>
+                  </div>
+                  {printer.isConnected && (
+                    <div className="flex items-center gap-2 text-green-600 text-sm font-semibold">
+                      <CheckCircle className="w-4 h-4" />
+                      Configurada
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Tamaño de papel:</span>
+                    <span className="font-semibold text-brand-900">{printer.paperWidth}</span>
+                  </div>
+                  {printer.hardwareName && (
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Impresora del sistema:</span>
+                      <span className="font-semibold text-brand-900">{printer.hardwareName}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 flex gap-2">
+                  {!printer.isConnected ? (
+                    <button
+                      onClick={() => handleMarkAsConfigured(printer.id)}
+                      className="flex-1 py-2 px-4 bg-brand-900 text-white rounded-lg font-semibold hover:bg-black transition-colors text-sm"
+                    >
+                      Marcar como Configurada
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleMarkAsNotConfigured(printer.id)}
+                      className="flex-1 py-2 px-4 bg-white border border-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-50 transition-colors text-sm"
+                    >
+                      Marcar como No Configurada
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1">
-          
-          {/* STATE 1: Connected */}
-          {isConnected ? (
-             <div className="bg-green-50 border-2 border-green-200 p-6 rounded-2xl relative overflow-hidden animate-in fade-in zoom-in space-y-6">
-                <div className="relative z-10 flex flex-col items-center text-center">
-                    <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm border border-green-100">
-                        <Printer className="w-8 h-8 text-green-600" />
-                    </div>
-                    <h3 className="font-bold text-green-900 text-lg">{printerToSetup.hardwareName}</h3>
-                    <p className="text-green-700 text-sm mb-4 flex items-center">
-                      {printerToSetup.type === 'NETWORK' ? <Wifi className="w-3 h-3 mr-1"/> : <Bluetooth className="w-3 h-3 mr-1"/>}
-                      Conectado y listo
-                    </p>
-                    <div className="flex gap-2 w-full">
-                        <Button 
-                            variant="secondary" 
-                            fullWidth 
-                            className="bg-white border-green-200 text-green-800 hover:bg-green-100 h-10 text-sm"
-                            onClick={handleTestPrint}
-                            disabled={testPrintStatus !== 'idle'}
-                            icon={testPrintStatus === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <FileText className="w-4 h-4"/>}
-                        >
-                            {testPrintStatus === 'printing' ? 'Imprimiendo...' : testPrintStatus === 'success' ? '¡Impreso!' : 'Prueba'}
-                        </Button>
-                        <Button 
-                            variant="ghost" 
-                            className="text-red-500 hover:bg-red-50 hover:text-red-600 h-10 text-sm px-3"
-                            onClick={handleDisconnect}
-                        >
-                            Desconectar
-                        </Button>
-                    </div>
-                 </div>
-
-                 {/* Bill Printer Role Toggle */}
-                 <div className="bg-white p-4 rounded-xl border border-green-200 shadow-sm flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="bg-blue-50 p-2 rounded-lg text-blue-600">
-                             <Receipt className="w-5 h-5" />
-                        </div>
-                        <div className="text-left">
-                            <p className="font-bold text-sm text-gray-900">Imprimir Cuentas</p>
-                            <p className="text-xs text-gray-500">Usar para tickets de cobro</p>
-                        </div>
-                    </div>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input 
-                            type="checkbox" 
-                            className="sr-only peer" 
-                            checked={printerToSetup.isBillPrinter}
-                            onChange={handleToggleBillPrinter}
-                        />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-900"></div>
-                    </label>
-                 </div>
-             </div>
-          ) : (
-            <>
-              {/* STATE 2: Select Method */}
-              {!setupMethod && (
-                <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4">
-                  <button
-                    onClick={() => { setSetupMethod('BLUETOOTH'); setIsSearching(false); setDiscoveredDevices([]); }}
-                    className="w-full bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-900 hover:shadow-md transition-all group text-left"
-                  >
-                    <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-brand-900 group-hover:text-white transition-colors">
-                      <Bluetooth className="w-6 h-6" />
-                    </div>
-                    <h3 className="font-bold text-brand-900 text-lg">Bluetooth</h3>
-                    <p className="text-sm text-gray-500 mt-1">Para impresoras portátiles o cercanas.</p>
-                  </button>
-
-                  <button
-                    onClick={() => { setSetupMethod('WIFI'); setIsSearching(false); setDiscoveredDevices([]); }}
-                    className="w-full bg-white p-6 rounded-2xl border border-gray-200 shadow-sm hover:border-brand-900 hover:shadow-md transition-all group text-left"
-                  >
-                    <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center mb-4 group-hover:bg-brand-900 group-hover:text-white transition-colors">
-                      <Wifi className="w-6 h-6" />
-                    </div>
-                    <h3 className="font-bold text-brand-900 text-lg">WiFi / Red</h3>
-                    <p className="text-sm text-gray-500 mt-1">Para impresoras fijas en la misma red WiFi.</p>
-                  </button>
-                </div>
-              )}
-
-              {/* STATE 3: Scanning (Bluetooth or WiFi) */}
-              {setupMethod && (
-                <div className="bg-white border border-gray-100 rounded-2xl shadow-sm flex flex-col min-h-[300px] animate-in fade-in">
-                    
-                    {/* Initial State or Searching */}
-                    {!isSearching && discoveredDevices.length === 0 && (
-                        <div className="p-8 text-center flex-1 flex flex-col items-center justify-center">
-                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm text-gray-400">
-                                {setupMethod === 'BLUETOOTH' ? <Bluetooth className="w-8 h-8" /> : <Router className="w-8 h-8" />}
-                            </div>
-                            <h3 className="font-bold text-gray-900 mb-1">
-                              {setupMethod === 'BLUETOOTH' ? 'Buscar dispositivos Bluetooth' : 'Escanear red local'}
-                            </h3>
-                            <p className="text-gray-500 text-sm mb-6">
-                              {setupMethod === 'BLUETOOTH' 
-                                ? 'Asegúrate que la impresora esté en modo visible (Pairing).' 
-                                : 'Asegúrate que tu dispositivo y la impresora estén en el mismo WiFi.'}
-                            </p>
-                            <Button onClick={handleScan} fullWidth icon={<Search className="w-4 h-4" />}>
-                                {setupMethod === 'BLUETOOTH' ? 'Escanear Bluetooth' : 'Escanear Red'}
-                            </Button>
-                        </div>
-                    )}
-
-                    {/* Searching State */}
-                    {isSearching && (
-                        <div className="p-10 flex flex-col items-center justify-center text-center flex-1">
-                            <div className="relative w-16 h-16 mb-4">
-                                <div className="absolute inset-0 bg-brand-900/10 rounded-full animate-ping"></div>
-                                <div className="relative bg-white w-16 h-16 rounded-full border-2 border-brand-900 flex items-center justify-center">
-                                    <Search className="w-6 h-6 text-brand-900 animate-pulse" />
-                                </div>
-                            </div>
-                            <h3 className="font-bold text-gray-900">Buscando...</h3>
-                            <p className="text-sm text-gray-500 mt-1">
-                              {setupMethod === 'BLUETOOTH' ? 'Localizando impresoras cercanas' : 'Analizando direcciones IP'}
-                            </p>
-                        </div>
-                    )}
-
-                    {/* List of Found Devices */}
-                    {!isSearching && discoveredDevices.length > 0 && (
-                        <div className="flex flex-col h-full">
-                            <div className="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center rounded-t-2xl">
-                                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">Resultados</span>
-                                <button 
-                                    onClick={handleScan}
-                                    className="text-xs text-brand-900 hover:underline flex items-center"
-                                >
-                                    <Search className="w-3 h-3 mr-1" />
-                                    Reintentar
-                                </button>
-                            </div>
-                            <div className="divide-y divide-gray-100 flex-1 overflow-y-auto max-h-[300px]">
-                                {discoveredDevices.map((device) => (
-                                    <button
-                                        key={device.id}
-                                        onClick={() => handleConnectToDevice(device)}
-                                        className="w-full px-4 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left group"
-                                    >
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-10 h-10 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-gray-400 group-hover:border-brand-900 group-hover:text-brand-900 transition-colors">
-                                                <Printer className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <h4 className="font-medium text-gray-900">{device.name}</h4>
-                                                <div className="flex items-center text-xs text-gray-400">
-                                                    {setupMethod === 'BLUETOOTH' ? <Bluetooth className="w-3 h-3 mr-1" /> : <Wifi className="w-3 h-3 mr-1" />}
-                                                    {setupMethod === 'BLUETOOTH' && <Signal className="w-3 h-3 mr-1 ml-1" />}
-                                                    <span>{device.detail}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="w-8 h-8 rounded-full border border-gray-200 flex items-center justify-center text-gray-300 group-hover:bg-brand-900 group-hover:border-brand-900 group-hover:text-white transition-all">
-                                            <CheckCircle2 className="w-4 h-4" />
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-              )}
-            </>
-          )}
-
+        {/* Help Text */}
+        <div className="mb-6 p-4 bg-gray-50 rounded-xl border border-gray-100">
+          <p className="text-sm text-gray-600 text-center">
+            <strong className="text-brand-900">💡 Consejo:</strong> Puedes usar MeseroApp sin impresoras.
+            Los tickets se pueden ver en pantalla y imprimir después cuando tengas el hardware listo.
+          </p>
         </div>
 
-        {/* Footer Actions - Solo en onboarding */}
-        {isOnboarding && (
-            <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3">
-                <Button 
-                 fullWidth 
-                 onClick={handleNextStep}
-                 className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
-                 icon={<ChevronRight className="w-5 h-5" />}
-               >
-                 Siguiente Paso
-               </Button>
-               
-               <button 
-                  type="button" 
-                  onClick={handleNextStep}
-                  className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
-                >
-                  Omitir por ahora
-                </button>
-            </div>
+        {/* Footer Actions */}
+        {isOnboarding ? (
+          <div className="mt-auto pt-4 border-t border-gray-100 bg-white space-y-3">
+            <Button
+              fullWidth
+              onClick={handleNextStep}
+              className="h-14 text-lg font-bold shadow-xl shadow-brand-900/20"
+              icon={<ChevronRight className="w-5 h-5" />}
+            >
+              Continuar a Configuración de Tickets
+            </Button>
+
+            <button
+              type="button"
+              onClick={handleNextStep}
+              className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors"
+            >
+              Omitir por ahora
+            </button>
+          </div>
+        ) : (
+          <div className="mt-6 pt-6 border-t border-gray-100">
+            <Button
+              fullWidth
+              onClick={handleBack}
+              className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
+              icon={<CheckCircle className="w-5 h-5" />}
+            >
+              Guardar Cambios
+            </Button>
+          </div>
         )}
       </div>
     </div>
