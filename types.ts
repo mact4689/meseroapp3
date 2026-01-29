@@ -13,7 +13,8 @@ export enum AppView {
   TICKET_CONFIG = 'TICKET_CONFIG',
   DASHBOARD = 'DASHBOARD',
   CUSTOMER_MENU = 'CUSTOMER_MENU',
-  TERMS = 'TERMS'
+  TERMS = 'TERMS',
+  PRIVACY = 'PRIVACY'
 }
 
 export interface User {

@@ -14,6 +14,7 @@ import { Dashboard } from './views/Dashboard';
 import { Splash } from './views/Splash';
 import { CustomerMenu } from './views/CustomerMenu';
 import { Terms } from './views/Terms';
+import { Privacy } from './views/Privacy';
 import { AppView } from './types';
 
 const App: React.FC = () => {
@@ -70,6 +71,9 @@ const App: React.FC = () => {
       )}
       {currentView === AppView.TERMS && (
         <Terms onNavigate={setCurrentView} />
+      )}
+      {currentView === AppView.PRIVACY && (
+        <Privacy onNavigate={setCurrentView} />
       )}
     </div>
   );

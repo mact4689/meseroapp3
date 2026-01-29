@@ -186,7 +186,14 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
                   >
                     Términos
                   </button>{' '}
-                  y la Política de Privacidad
+                  y la{' '}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(AppView.PRIVACY)}
+                    className="font-medium text-brand-900 hover:underline inline"
+                  >
+                    Política de Privacidad
+                  </button>
                 </label>
               </div>
             </div>
