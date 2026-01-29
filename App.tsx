@@ -13,6 +13,7 @@ import { TicketConfigView } from './views/TicketConfig';
 import { Dashboard } from './views/Dashboard';
 import { Splash } from './views/Splash';
 import { CustomerMenu } from './views/CustomerMenu';
+import { Terms } from './views/Terms';
 import { AppView } from './types';
 
 const App: React.FC = () => {
@@ -66,6 +67,9 @@ const App: React.FC = () => {
       )}
       {currentView === AppView.CUSTOMER_MENU && (
         <CustomerMenu onNavigate={setCurrentView} />
+      )}
+      {currentView === AppView.TERMS && (
+        <Terms onNavigate={setCurrentView} />
       )}
     </div>
   );

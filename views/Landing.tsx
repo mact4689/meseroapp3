@@ -17,7 +17,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 relative z-10">
         <div className="w-full max-w-sm mx-auto space-y-12">
-          
+
           {/* Logo Section */}
           <div className="text-center space-y-6 fade-in">
             <div className="relative inline-block">
@@ -30,7 +30,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 <ChefHat className="w-5 h-5" />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <h1 className="font-serif text-4xl text-brand-900 tracking-tight">
                 MeseroApp
@@ -43,16 +43,16 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
           {/* Action Buttons */}
           <div className="space-y-4 w-full slide-up" style={{ animationDelay: '0.2s' }}>
-            <Button 
-              fullWidth 
+            <Button
+              fullWidth
               onClick={() => onNavigate(AppView.LOGIN)}
               className="text-lg py-4"
             >
               Iniciar Sesión
             </Button>
-            
-            <Button 
-              fullWidth 
+
+            <Button
+              fullWidth
               variant="secondary"
               onClick={() => onNavigate(AppView.REGISTER)}
               className="text-lg py-4 border-2 border-transparent bg-white shadow-xl shadow-brand-900/5 hover:border-gray-200"
@@ -66,7 +66,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
       {/* Footer / Legal Links */}
       <div className="py-8 text-center text-sm text-gray-400 relative z-10 fade-in" style={{ animationDelay: '0.4s' }}>
-        <p>Al continuar, aceptas nuestros <a href="#" className="underline hover:text-brand-900">Términos</a></p>
+        <p>Al continuar, aceptas nuestros <button onClick={() => onNavigate(AppView.TERMS)} className="underline hover:text-brand-900 transition-colors">Términos</button></p>
       </div>
     </div>
   );

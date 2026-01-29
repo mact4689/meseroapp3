@@ -178,7 +178,15 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
               </div>
               <div className="ml-3 text-sm">
                 <label htmlFor="terms" className="text-gray-500 cursor-pointer">
-                  Acepto los <a href="#" className="font-medium text-brand-900 hover:underline">Términos</a> y la <a href="#" className="font-medium text-brand-900 hover:underline">Política de Privacidad</a>
+                  Acepto los{' '}
+                  <button
+                    type="button"
+                    onClick={() => onNavigate(AppView.TERMS)}
+                    className="font-medium text-brand-900 hover:underline inline"
+                  >
+                    Términos
+                  </button>{' '}
+                  y la Política de Privacidad
                 </label>
               </div>
             </div>
