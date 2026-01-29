@@ -16,7 +16,9 @@ import {
   Menu,
   TrendingUp,
   Users,
-  Clock
+  Clock,
+  Monitor,
+  Wifi
 } from 'lucide-react';
 
 interface WebsiteProps {
@@ -67,7 +69,7 @@ export const Website: React.FC<WebsiteProps> = ({ onNavigate }) => {
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-gray-600">
             <a href="#features" onClick={(e) => scrollToSection(e, 'features')} className="hover:text-brand-900 transition-colors">Características</a>
-            <a href="#demo" onClick={(e) => scrollToSection(e, 'demo')} className="hover:text-brand-900 transition-colors">Demo</a>
+            <a href="#requirements" onClick={(e) => scrollToSection(e, 'requirements')} className="hover:text-brand-900 transition-colors">Requisitos</a>
             <a href="#how-it-works" onClick={(e) => scrollToSection(e, 'how-it-works')} className="hover:text-brand-900 transition-colors">Cómo funciona</a>
           </div>
           <div className="flex items-center gap-4">
@@ -317,6 +319,133 @@ export const Website: React.FC<WebsiteProps> = ({ onNavigate }) => {
                 Cuentas específicas para meseros, cocineros y administradores. Mantén tu operación segura y organizada.
               </p>
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Hardware Requirements Section */}
+      <section id="requirements" className="py-24 px-6 bg-gradient-to-b from-white to-brand-50">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16 max-w-3xl mx-auto">
+            <span className="text-brand-900 font-bold tracking-wider uppercase text-sm mb-3 block">Requisitos Técnicos</span>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6 text-brand-900">¿Qué necesitas para empezar?</h2>
+            <p className="text-gray-500 text-lg">Hardware simple y accesible. Sin inversiones costosas ni equipos complicados.</p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 mb-12">
+            {/* Device Requirements */}
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center">
+                  <Monitor className="w-7 h-7 text-blue-600" />
+                </div>
+                <h3 className="text-2xl font-bold font-serif">Dispositivo Principal</h3>
+              </div>
+
+              <p className="text-gray-500 mb-6">Para gestionar tu restaurante desde el Dashboard:</p>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Computadora (Recomendado)</p>
+                    <p className="text-sm text-gray-500">Windows 10+, macOS 10.14+, o Linux • 4GB RAM mínimo</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Tablet</p>
+                    <p className="text-sm text-gray-500">iPad (iOS 14+) o Android (9+) • Pantalla 10" recomendada</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Smartphone</p>
+                    <p className="text-sm text-gray-500">iPhone (iOS 14+) o Android (9+) • Solo para negocios pequeños</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Navegador Moderno</p>
+                    <p className="text-sm text-gray-500">Chrome 90+, Firefox 88+, Safari 14+, o Edge 90+</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Printer Requirements */}
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-lg">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center">
+                  <Printer className="w-7 h-7 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-bold font-serif">Impresoras (Opcional)</h3>
+              </div>
+
+              <p className="text-gray-500 mb-6">Para imprimir tickets de cocina y comandas:</p>
+
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Impresoras Térmicas Recomendadas</p>
+                    <p className="text-sm text-gray-500">Epson TM-T20III (~$230) • Star TSP143III (~$300) • POS-5890 (~$100)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Impresoras Convencionales</p>
+                    <p className="text-sm text-gray-500">HP, Canon, Brother, Epson • Cualquier impresora con drivers instalados</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Tamaños de Papel</p>
+                    <p className="text-sm text-gray-500">Soporte para 58mm y 80mm (térmicas) • Carta/A4 (convencionales)</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="font-semibold text-brand-900">Conexión</p>
+                    <p className="text-sm text-gray-500">USB (más confiable), WiFi, o Bluetooth</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Internet Requirements */}
+          <div className="bg-brand-900 p-8 md:p-12 rounded-[2rem] text-white relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-accent-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
+            <div className="relative z-10 flex flex-col md:flex-row items-center gap-8">
+              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center shrink-0">
+                <Wifi className="w-8 h-8 text-accent-400" />
+              </div>
+              <div className="flex-1 text-center md:text-left">
+                <h3 className="text-2xl font-bold font-serif mb-3">Conexión a Internet</h3>
+                <p className="text-gray-300 text-lg mb-4">WiFi estable con mínimo 5 Mbps para sincronización en tiempo real</p>
+                <div className="flex flex-wrap gap-4 justify-center md:justify-start">
+                  <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">✓ Sincronización instantánea</span>
+                  <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">✓ Múltiples dispositivos</span>
+                  <span className="px-4 py-2 bg-white/10 rounded-full text-sm font-medium">✓ Actualizaciones automáticas</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Summary */}
+          <div className="mt-12 text-center">
+            <p className="text-gray-500 text-lg max-w-3xl mx-auto">
+              <strong className="text-brand-900">En resumen:</strong> Solo necesitas un dispositivo con navegador e internet.
+              Las impresoras son opcionales y puedes agregarlas cuando estés listo.
+              <span className="text-accent-600 font-semibold"> ¡Comienza hoy sin inversión en hardware!</span>
+            </p>
           </div>
         </div>
       </section>
