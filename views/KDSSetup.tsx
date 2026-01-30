@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
 import { ArrowLeft, Plus, Trash2, ChefHat, Palette, QrCode, Copy, Check, Monitor } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
+import QRCode from 'qrcode';
 
 interface KDSSetupProps {
     onNavigate: (view: AppView) => void;
@@ -29,6 +30,40 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
     const [selectedColor, setSelectedColor] = useState(STATION_COLORS[0]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
+
+    const getKDSUrl = (stationId: string) => {
+        const baseUrl = window.location.origin;
+        return `${baseUrl}/?view=KDS&station=${stationId}`;
+    };
+
+    // Generate QR codes for all stations
+    useEffect(() => {
+        const generateQRCodes = async () => {
+            const codes: Record<string, string> = {};
+            for (const station of stations) {
+                const url = getKDSUrl(station.id);
+                try {
+                    const qrDataUrl = await QRCode.toDataURL(url, {
+                        width: 120,
+                        margin: 1,
+                        color: {
+                            dark: '#1f2937',
+                            light: '#ffffff'
+                        }
+                    });
+                    codes[station.id] = qrDataUrl;
+                } catch (err) {
+                    console.error('Error generating QR:', err);
+                }
+            }
+            setQrCodes(codes);
+        };
+
+        if (stations.length > 0) {
+            generateQRCodes();
+        }
+    }, [stations]);
 
     const handleAddStation = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -59,11 +94,6 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                 alert(error.message);
             }
         }
-    };
-
-    const getKDSUrl = (stationId: string) => {
-        const baseUrl = window.location.origin;
-        return `${baseUrl}/?view=KDS&station=${stationId}`;
     };
 
     const handleCopyUrl = (stationId: string) => {
@@ -110,7 +140,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                     <ol className="list-decimal list-inside space-y-1 text-blue-600">
                         <li>Crea estaciones (ej: Cocina, Barra, Postres)</li>
                         <li>Asigna cada platillo a una estación en el menú</li>
-                        <li>Abre el link en una tablet en cada estación</li>
+                        <li><strong>Escanea el QR</strong> con la tablet de cada estación</li>
                         <li>¡Las órdenes aparecerán automáticamente!</li>
                     </ol>
                 </div>
@@ -180,13 +210,13 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                             <p className="text-xs text-gray-400 mt-1">Crea tu primera estación arriba</p>
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-4">
                             {stations.map(station => (
                                 <div
                                     key={station.id}
                                     className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm"
                                 >
-                                    <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-start justify-between mb-3">
                                         <div className="flex items-center gap-3">
                                             <div
                                                 className="w-10 h-10 rounded-lg flex items-center justify-center"
@@ -209,38 +239,61 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                                         </button>
                                     </div>
 
-                                    {/* Action Buttons */}
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleCopyUrl(station.id)}
-                                            className={`
-                        flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium transition-all
-                        ${copiedId === station.id
-                                                    ? 'bg-green-50 text-green-600 border border-green-200'
-                                                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
-                                                }
-                      `}
-                                        >
-                                            {copiedId === station.id ? (
-                                                <>
-                                                    <Check className="w-3.5 h-3.5" />
-                                                    Copiado!
-                                                </>
+                                    {/* QR Code and Actions Row */}
+                                    <div className="flex gap-4 items-center">
+                                        {/* QR Code */}
+                                        <div className="shrink-0">
+                                            {qrCodes[station.id] ? (
+                                                <div className="bg-white border border-gray-200 rounded-lg p-1 shadow-sm">
+                                                    <img
+                                                        src={qrCodes[station.id]}
+                                                        alt={`QR ${station.name}`}
+                                                        className="w-24 h-24"
+                                                    />
+                                                </div>
                                             ) : (
-                                                <>
-                                                    <Copy className="w-3.5 h-3.5" />
-                                                    Copiar Link
-                                                </>
+                                                <div className="w-24 h-24 bg-gray-100 rounded-lg flex items-center justify-center">
+                                                    <QrCode className="w-8 h-8 text-gray-300 animate-pulse" />
+                                                </div>
                                             )}
-                                        </button>
+                                            <p className="text-[9px] text-center text-gray-400 mt-1">
+                                                Escanear con tablet
+                                            </p>
+                                        </div>
 
-                                        <button
-                                            onClick={() => handleOpenKDS(station.id)}
-                                            className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-lg text-xs font-medium bg-brand-900 text-white hover:bg-brand-800 transition-colors"
-                                        >
-                                            <Monitor className="w-3.5 h-3.5" />
-                                            Abrir Pantalla
-                                        </button>
+                                        {/* Action Buttons - Vertical */}
+                                        <div className="flex-1 flex flex-col gap-2">
+                                            <button
+                                                onClick={() => handleCopyUrl(station.id)}
+                                                className={`
+                                                    w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-medium transition-all
+                                                    ${copiedId === station.id
+                                                        ? 'bg-green-50 text-green-600 border border-green-200'
+                                                        : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                                                    }
+                                                `}
+                                            >
+                                                {copiedId === station.id ? (
+                                                    <>
+                                                        <Check className="w-3.5 h-3.5" />
+                                                        ¡Copiado!
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Copy className="w-3.5 h-3.5" />
+                                                        Copiar Link
+                                                    </>
+                                                )}
+                                            </button>
+
+                                            <button
+                                                onClick={() => handleOpenKDS(station.id)}
+                                                className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs font-medium bg-brand-900 text-white hover:bg-brand-800 transition-colors"
+                                            >
+                                                <Monitor className="w-3.5 h-3.5" />
+                                                Abrir Pantalla
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             ))}
