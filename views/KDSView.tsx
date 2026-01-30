@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { AppView, Order, OrderItem, KitchenStation } from '../types';
+import { AppView, Order, OrderItem, KitchenStation, PreparedItem } from '../types';
 import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
 import { getStations, getOrders, updateOrderPreparedItems } from '../services/db';
@@ -8,12 +8,6 @@ import { supabase } from '../services/client';
 
 interface KDSViewProps {
     onNavigate: (view: AppView) => void;
-}
-
-interface PreparedItem {
-    itemId: string;
-    stationId: string;
-    preparedAt: string;
 }
 
 export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
@@ -187,7 +181,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
             // Add
             newPreparedItems = [
                 ...currentPreparedItems,
-                { itemId, stationId, preparedAt: new Date().toISOString() }
+                { itemId, stationId, completedAt: Date.now() }
             ];
         }
 
