@@ -421,3 +421,23 @@ export const deleteStationDb = async (stationId: string) => {
     return error;
   }
 };
+
+// Update prepared items for an order (public access for KDS tablets)
+export const updateOrderPreparedItems = async (orderId: string, preparedItems: any[]) => {
+  const attemptUpdate = async () => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ prepared_items: preparedItems })
+      .eq('id', orderId);
+
+    if (error) throw error;
+  };
+
+  try {
+    await withRetry(attemptUpdate);
+    return null;
+  } catch (error) {
+    console.error('Error updating prepared items:', error);
+    return error;
+  }
+};

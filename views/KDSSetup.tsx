@@ -34,7 +34,8 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
 
     const getKDSUrl = (stationId: string) => {
         const baseUrl = window.location.origin;
-        return `${baseUrl}/?view=KDS&station=${stationId}`;
+        const userId = state.user?.id;
+        return `${baseUrl}/?view=KDS&station=${stationId}&uid=${userId}`;
     };
 
     // Generate QR codes for all stations

@@ -1,29 +1,123 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { AppView, Order, OrderItem } from '../types';
-import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X } from 'lucide-react';
-import { useAppStore } from '../store/AppContext';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { AppView, Order, OrderItem, KitchenStation } from '../types';
+import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
+import { getStations, getOrders, updateOrderPreparedItems } from '../services/db';
+import { supabase } from '../services/client';
 
 interface KDSViewProps {
     onNavigate: (view: AppView) => void;
 }
 
-export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
-    const { state, toggleItemPrepared } = useAppStore();
-    const { orders, stations } = state;
+interface PreparedItem {
+    itemId: string;
+    stationId: string;
+    preparedAt: string;
+}
 
+export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [lastOrderCount, setLastOrderCount] = useState(0);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    // Get station ID from URL
+    // Data loaded from Supabase
+    const [stations, setStations] = useState<KitchenStation[]>([]);
+    const [orders, setOrders] = useState<Order[]>([]);
+
+    // Get station ID and user ID from URL
     const stationId = useMemo(() => {
         const params = new URLSearchParams(window.location.search);
         return params.get('station');
     }, []);
 
+    const userId = useMemo(() => {
+        const params = new URLSearchParams(window.location.search);
+        return params.get('uid');
+    }, []);
+
     // Find this station's info
-    const station = stations.find(s => s.id === stationId);
+    const station = useMemo(() => {
+        return stations.find(s => s.id === stationId);
+    }, [stations, stationId]);
+
+    // Load initial data
+    const loadData = useCallback(async () => {
+        if (!userId) {
+            setError('Falta el ID del restaurante en la URL');
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+            const [stationsData, ordersData] = await Promise.all([
+                getStations(userId),
+                getOrders(userId)
+            ]);
+
+            // Map stations
+            const mappedStations: KitchenStation[] = stationsData.map((s: any) => ({
+                id: s.id,
+                name: s.name,
+                color: s.color
+            }));
+            setStations(mappedStations);
+
+            // Map orders
+            const mappedOrders: Order[] = ordersData.map((o: any) => ({
+                id: o.id,
+                user_id: o.user_id,
+                table_number: o.table_number,
+                status: o.status,
+                total: o.total,
+                items: o.items || [],
+                created_at: o.created_at,
+                prepared_items: o.prepared_items || []
+            }));
+            setOrders(mappedOrders);
+
+            setError(null);
+        } catch (err: any) {
+            console.error('Error loading KDS data:', err);
+            setError(err.message || 'Error al cargar datos');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [userId]);
+
+    // Initial load
+    useEffect(() => {
+        loadData();
+    }, [loadData]);
+
+    // Subscribe to realtime updates
+    useEffect(() => {
+        if (!userId) return;
+
+        const channel = supabase
+            .channel('kds-orders')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'orders',
+                    filter: `user_id=eq.${userId}`
+                },
+                (payload) => {
+                    console.log('Realtime update:', payload);
+                    // Reload orders on any change
+                    loadData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [userId, loadData]);
 
     // Filter orders that have items for this station
     const relevantOrders = useMemo(() => {
@@ -46,11 +140,11 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
 
     // Play sound on new orders
     useEffect(() => {
-        if (relevantOrders.length > lastOrderCount && soundEnabled) {
+        if (relevantOrders.length > lastOrderCount && soundEnabled && !isLoading) {
             playNotificationSound();
         }
         setLastOrderCount(relevantOrders.length);
-    }, [relevantOrders.length, soundEnabled]);
+    }, [relevantOrders.length, soundEnabled, isLoading]);
 
     // Calculate time elapsed for each order
     const getTimeElapsed = (createdAt: string) => {
@@ -76,16 +170,44 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     // Handle item click to toggle prepared status
     const handleItemClick = async (orderId: string, itemId: string) => {
         if (!stationId) return;
-        await toggleItemPrepared(orderId, itemId, stationId);
+
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const currentPreparedItems: PreparedItem[] = order.prepared_items || [];
+        const existingIndex = currentPreparedItems.findIndex(
+            pi => pi.itemId === itemId && pi.stationId === stationId
+        );
+
+        let newPreparedItems: PreparedItem[];
+        if (existingIndex >= 0) {
+            // Remove (undo)
+            newPreparedItems = currentPreparedItems.filter((_, i) => i !== existingIndex);
+        } else {
+            // Add
+            newPreparedItems = [
+                ...currentPreparedItems,
+                { itemId, stationId, preparedAt: new Date().toISOString() }
+            ];
+        }
+
+        // Optimistic update
+        setOrders(prev => prev.map(o =>
+            o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o
+        ));
+
+        // Save to database
+        await updateOrderPreparedItems(orderId, newPreparedItems);
     };
 
     // Auto-refresh timer display
     const [, setTick] = useState(0);
     useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 30000); // Update every 30 seconds
+        const interval = setInterval(() => setTick(t => t + 1), 30000);
         return () => clearInterval(interval);
     }, []);
 
+    // Error state - no station ID
     if (!stationId) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
@@ -94,8 +216,55 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     <h1 className="text-2xl font-bold text-white mb-2">Sin Estación</h1>
                     <p className="text-gray-400">No se especificó una estación en la URL.</p>
                     <p className="text-gray-500 text-sm mt-4">
-                        Formato correcto: ?view=KDS&station=ID_ESTACION
+                        Formato correcto: ?view=KDS&station=ID_ESTACION&uid=ID_RESTAURANTE
                     </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state - no user ID
+    if (!userId) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+                <div className="text-center">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-white mb-2">URL Incompleta</h1>
+                    <p className="text-gray-400">Falta el ID del restaurante en la URL.</p>
+                    <p className="text-gray-500 text-sm mt-4">
+                        Regenera el código QR desde el panel de administración.
+                    </p>
+                </div>
+            </div>
+        );
+    }
+
+    // Loading state
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+                <div className="text-center">
+                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
+                    <p className="text-gray-400">Cargando pantalla de cocina...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+                <div className="text-center">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-white mb-2">Error</h1>
+                    <p className="text-gray-400 mb-4">{error}</p>
+                    <button
+                        onClick={loadData}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    >
+                        Reintentar
+                    </button>
                 </div>
             </div>
         );
@@ -138,7 +307,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
 
                         {/* Refresh */}
                         <button
-                            onClick={() => window.location.reload()}
+                            onClick={loadData}
                             className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white transition-colors"
                             title="Recargar"
                         >
