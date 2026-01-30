@@ -176,16 +176,28 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         await completeOrder(id);
     };
 
-    const handlePrintOrder = async (orderId: string, e: React.MouseEvent) => {
+    const handleReleaseTable = async (tableNumber: string, e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (!confirm(`¿Confirmas que la Mesa ${tableNumber} ya está vacía? Esto archivará TODAS sus órdenes.`)) return;
+
+        const tableOrders = pendingOrders.filter(o => o.table_number === tableNumber);
+
+        // Ejecutar todas las promesas de completado en paralelo
+        await Promise.all(tableOrders.map(o => completeOrder(o.id)));
+    };
+
+    const handlePrintOrder = async (orderId: string, e: React.MouseEvent, isTableClosure: boolean = false) => {
         e.stopPropagation();
         const order = pendingOrders.find(o => o.id === orderId);
         if (!order) return;
 
         setPrintingOrderId(orderId);
         try {
-            // Si es una solicitud de cuenta, combinar todas las órdenes de la mesa
-            if (isBillRequest(order)) {
-                // Obtener todas las órdenes de esta mesa (excepto la solicitud de cuenta)
+            // Si es una solicitud de cuenta explícita O si el mesero está cerrando la mesa manualmente
+            const shouldPrintFullBill = isBillRequest(order) || isTableClosure;
+
+            if (shouldPrintFullBill) {
+                // Obtener todas las órdenes de esta mesa (excepto la solicitud de cuenta items sistema)
                 const tableOrders = pendingOrders.filter(
                     o => o.table_number === order.table_number && !isBillRequest(o)
                 );
@@ -198,6 +210,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 // Calcular el total
                 const totalAmount = tableOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
+                if (tableOrders.length === 0 && !isBillRequest(order)) {
+                    alert("No hay órdenes activas para cerrar.");
+                    return;
+                }
+
                 // Crear una orden virtual para imprimir
                 const billOrder = {
                     ...order,
@@ -205,6 +222,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     total: totalAmount
                 };
 
+                // Imprimir con título de CUENTA
                 await printOrder(billOrder, printers, business.name || 'Mi Restaurante');
             } else {
                 await printOrder(order, printers, business.name || 'Mi Restaurante');
@@ -707,21 +725,49 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
+                                                {/* Botón 1: Imprimir Comanda Individual (Cocina) */}
                                                 <button
-                                                    onClick={(e) => handlePrintOrder(order.id, e)}
+                                                    onClick={(e) => handlePrintOrder(order.id, e, false)}
                                                     className={`p-2 ${isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
-                                                    title={isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                                                    title={isBill ? 'Imprimir ticket de cuenta' : 'Imprimir comanda de cocina'}
                                                     disabled={printingOrderId === order.id}
                                                 >
                                                     <Printer className={`w-5 h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
                                                 </button>
-                                                <Button
-                                                    onClick={(e) => handleCompleteOrder(order.id, e)}
-                                                    className={`h-9 px-4 text-xs ${isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
-                                                    icon={<Check className="w-4 h-4" />}
-                                                >
-                                                    {isBill ? 'Entregada' : 'Listo'}
-                                                </Button>
+
+                                                {/* Botón 2: CERRAR MESA (Imprimir Cuenta Total) */}
+                                                {!isBill && (
+                                                    <button
+                                                        onClick={(e) => handlePrintOrder(order.id, e, true)}
+                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg border border-transparent hover:border-green-200 transition-colors"
+                                                        title="Cerrar Mesa: Imprimir Cuenta Total"
+                                                        disabled={printingOrderId === order.id}
+                                                    >
+                                                        <Receipt className="w-5 h-5" />
+                                                    </button>
+                                                )}
+
+                                                {/* Botón 3: Completar / Liberar */}
+                                                {/* Si hay múltiples órdenes en la mesa, mostramos opción de liberar todo */}
+                                                {pendingOrders.filter(o => o.table_number === order.table_number).length > 1 ? (
+                                                    <Button
+                                                        onClick={(e) => handleReleaseTable(order.table_number, e)}
+                                                        className={`h-9 px-3 text-xs bg-gray-800 hover:bg-gray-900 border-transparent text-white`}
+                                                        icon={<Check className="w-4 h-4" />}
+                                                        title="Liberar todas las órdenes de esta mesa"
+                                                    >
+                                                        Liberar
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={(e) => handleCompleteOrder(order.id, e)}
+                                                        className={`h-9 px-4 text-xs ${isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
+                                                        icon={<Check className="w-4 h-4" />}
+                                                    >
+                                                        {isBill ? 'Entregada' : 'Listo'}
+                                                    </Button>
+                                                )}
+
                                                 <div className="text-gray-400">
                                                     {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
                                                 </div>
