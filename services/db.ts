@@ -406,18 +406,38 @@ export const insertStation = async (userId: string, station: { name: string, col
 
 export const deleteStationDb = async (stationId: string) => {
   const attemptDelete = async () => {
+    console.log('[deleteStationDb] Attempting to delete station:', stationId);
+
+    // First, unassign all menu items from this station
+    const { error: unassignError } = await supabase
+      .from('menu_items')
+      .update({ station_id: null })
+      .eq('station_id', stationId);
+
+    if (unassignError) {
+      console.error('[deleteStationDb] Error unassigning items:', unassignError);
+      // Continue anyway, might be no items
+    }
+
+    // Now delete the station
     const { error } = await supabase
       .from('kitchen_stations')
       .delete()
       .eq('id', stationId);
-    if (error) throw error;
+
+    if (error) {
+      console.error('[deleteStationDb] Error deleting:', JSON.stringify(error, null, 2));
+      throw error;
+    }
+
+    console.log('[deleteStationDb] Success');
   };
 
   try {
     await withRetry(attemptDelete);
     return null; // Success
-  } catch (error) {
-    console.error('Error deleting station:', error);
+  } catch (error: any) {
+    console.error('[deleteStationDb] Final error:', error?.message || error);
     return error;
   }
 };
