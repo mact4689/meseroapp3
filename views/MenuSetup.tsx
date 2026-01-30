@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, Printer } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, Printer, ChefHat } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -14,7 +14,7 @@ interface MenuSetupProps {
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
-  const { isOnboarding, printers } = state;
+  const { isOnboarding, printers, stations } = state;
 
   // Use global state for items
   const items = state.menu;
@@ -26,6 +26,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState('');
   const [selectedPrinterId, setSelectedPrinterId] = useState<string>('');
+  const [selectedStationId, setSelectedStationId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -121,7 +122,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         image: finalImageUrl,
         imageFile: null,
         available: true,
-        printerId: selectedPrinterId || undefined
+        printerId: selectedPrinterId || undefined,
+        stationId: selectedStationId || undefined
       };
 
       if (editingId) {
@@ -140,7 +142,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       setPrice('');
       setDescription('');
       setIngredients('');
-      // No limpiamos printerId para facilitar entrada en batch
+      // No limpiamos printerId/stationId para facilitar entrada en batch
       setImagePreview(null);
       setImageFile(null);
 
@@ -166,6 +168,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setDescription(item.description || '');
     setIngredients(item.ingredients || '');
     setSelectedPrinterId(item.printerId || '');
+    setSelectedStationId(item.stationId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
 
@@ -179,6 +182,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setDescription('');
     setIngredients('');
     setSelectedPrinterId('');
+    setSelectedStationId('');
     setImagePreview(null);
     setImageFile(null);
   };
@@ -432,6 +436,37 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               </div>
             </div>
 
+            {/* KDS Station Selection Dropdown */}
+            <div className="w-full space-y-1.5">
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
+                  <ChefHat className="w-4 h-4" />
+                </div>
+                <select
+                  value={selectedStationId}
+                  onChange={(e) => setSelectedStationId(e.target.value)}
+                  className={`
+                            block w-full rounded-xl border-gray-200 bg-white 
+                            focus:border-brand-900 focus:ring-1 focus:ring-brand-900 
+                            text-gray-900 py-3.5 pl-10 border appearance-none
+                        `}
+                >
+                  <option value="">-- Estación de Cocina (KDS) --</option>
+                  {stations.map(station => (
+                    <option key={station.id} value={station.id}>
+                      {station.name}
+                    </option>
+                  ))}
+                </select>
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
+                  <ChevronRight className="w-4 h-4 rotate-90" />
+                </div>
+              </div>
+              {stations.length === 0 && (
+                <p className="text-[11px] text-gray-400 pl-1">💡 Configura estaciones en Dashboard → KDS</p>
+              )}
+            </div>
+
             <Input
               placeholder="Descripción (¿Qué es?)"
               value={description}
@@ -480,6 +515,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                     {catItems.map((item) => {
                       const isAvailable = item.available !== false;
                       const assignedPrinter = printers.find(p => p.id === item.printerId);
+                      const assignedStation = stations.find(s => s.id === item.stationId);
 
                       return (
                         <div
@@ -517,13 +553,24 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                               <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
                             )}
 
-                            {/* Printer indicator */}
-                            {assignedPrinter && (
-                              <div className="flex items-center mt-1.5 text-[10px] text-gray-400 gap-1">
-                                <Printer className="w-3 h-3" />
-                                <span>{assignedPrinter.location}</span>
-                              </div>
-                            )}
+                            {/* Printer and Station indicators */}
+                            <div className="flex items-center mt-1.5 gap-3">
+                              {assignedPrinter && (
+                                <div className="flex items-center text-[10px] text-gray-400 gap-1">
+                                  <Printer className="w-3 h-3" />
+                                  <span>{assignedPrinter.location}</span>
+                                </div>
+                              )}
+                              {assignedStation && (
+                                <div
+                                  className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
+                                  style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
+                                >
+                                  <ChefHat className="w-3 h-3" />
+                                  <span className="font-medium">{assignedStation.name}</span>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
                           {/* Action Buttons */}

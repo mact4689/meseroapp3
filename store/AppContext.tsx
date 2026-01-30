@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { MenuItem, User, Printer, Order } from '../types';
-import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb } from '../services/db';
+import { MenuItem, User, Printer, Order, KitchenStation } from '../types';
+import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
 
@@ -18,6 +18,7 @@ interface AppState {
     generated: any[];
   };
   printers: Printer[];
+  stations: KitchenStation[];
   orders: Order[];
   isOnboarding: boolean;
   isLoading: boolean;
@@ -36,6 +37,9 @@ interface AppContextType {
   updateTables: (count: string, generated: any[]) => void;
   updatePrinter: (id: string, data: Partial<Printer>) => void;
   completeOrder: (id: string) => Promise<void>;
+  addStation: (name: string, color: string) => Promise<void>;
+  removeStation: (id: string) => Promise<void>;
+  toggleItemPrepared: (orderId: string, itemId: string, stationId: string) => Promise<void>;
   startOnboarding: () => void;
   endOnboarding: () => void;
 }
@@ -80,6 +84,7 @@ const baseState: AppState = {
       isBillPrinter: true
     }
   ],
+  stations: [],
   orders: [],
   isOnboarding: false,
   isLoading: true
@@ -201,9 +206,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadUserData = async (userId: string) => {
     try {
-      let [profileData, menuData] = await Promise.all([
+      let [profileData, menuData, stationsData] = await Promise.all([
         getProfile(userId),
-        getMenuItems(userId)
+        getMenuItems(userId),
+        getStations(userId)
       ]);
 
       if (!profileData) {
@@ -252,12 +258,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ingredients: m.ingredients,
           image: m.image_url,
           available: m.available !== false,
-          printerId: m.printer_id
+          printerId: m.printer_id,
+          stationId: m.station_id
         })) : [],
         tables: profileData?.tables_count ? {
           count: profileData.tables_count.toString(),
           generated: Array.from({ length: profileData.tables_count }, (_, i) => ({ id: i + 1, qrDataUrl: '' }))
         } : prev.tables,
+        stations: stationsData || [],
         isLoading: false
       }));
 
@@ -441,6 +449,67 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await updateOrderStatusDb(orderId, 'completed');
   };
 
+  const addStation = async (name: string, color: string) => {
+    if (!state.user) return;
+    try {
+      const newStation = await insertStation(state.user.id, { name, color });
+      if (newStation) {
+        setState(prev => ({
+          ...prev,
+          stations: [...prev.stations, newStation]
+        }));
+      }
+    } catch (e) {
+      console.error("Error adding station:", e);
+      throw e;
+    }
+  };
+
+  const removeStation = async (id: string) => {
+    // Optimistic update
+    const originalStations = [...state.stations];
+    setState(prev => ({
+      ...prev,
+      stations: prev.stations.filter(s => s.id !== id)
+    }));
+
+    const error = await deleteStationDb(id);
+    if (error) {
+      // Revert
+      setState(prev => ({ ...prev, stations: originalStations }));
+      throw new Error("No se pudo eliminar la estación");
+    }
+  };
+
+  const toggleItemPrepared = async (orderId: string, itemId: string, stationId: string) => {
+    const order = state.orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    const preparedItems = order.prepared_items || [];
+    const itemIndex = preparedItems.findIndex(pi => pi.itemId === itemId && pi.stationId === stationId);
+
+    let newPreparedItems;
+    if (itemIndex >= 0) {
+      // UNDO: Remove if exists
+      newPreparedItems = preparedItems.filter((_, idx) => idx !== itemIndex);
+    } else {
+      // ADD: Mark as prepared
+      newPreparedItems = [...preparedItems, {
+        itemId,
+        stationId,
+        completedAt: Date.now()
+      }];
+    }
+
+    // Optimistic update
+    setState(prev => ({
+      ...prev,
+      orders: prev.orders.map(o => o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o)
+    }));
+
+    await updateOrderPreparedItemsDb(orderId, newPreparedItems);
+  };
+
   const startOnboarding = () => {
     setState(prev => ({ ...prev, isOnboarding: true }));
   };
@@ -463,6 +532,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateTables,
       updatePrinter,
       completeOrder,
+      addStation,
+      removeStation,
+      toggleItemPrepared,
       startOnboarding,
       endOnboarding
     }}>

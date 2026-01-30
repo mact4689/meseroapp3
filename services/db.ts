@@ -162,7 +162,8 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
     ingredients: item.ingredients,
     image_url: item.image,
     available: item.available ?? true,
-    printer_id: item.printerId || null
+    printer_id: item.printerId || null,
+    station_id: item.stationId || null
   };
 
   const attemptInsert = async () => {
@@ -207,7 +208,8 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
     ingredients: item.ingredients,
     image_url: item.image,
     available: item.available,
-    printer_id: item.printerId
+    printer_id: item.printerId,
+    station_id: item.stationId
   };
 
   const attemptUpdate = async () => {
@@ -332,6 +334,90 @@ export const updateOrderStatusDb = async (orderId: string, status: 'completed' |
     return await withRetry(attemptUpdateStatus);
   } catch (error) {
     console.error('Error updating order:', JSON.stringify(error, null, 2));
+    return error;
+  }
+};
+
+export const updateOrderPreparedItemsDb = async (orderId: string, preparedItems: any[]) => {
+  const attemptUpdate = async () => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ prepared_items: preparedItems })
+      .eq('id', orderId);
+    if (error) throw error;
+    return null;
+  };
+
+  try {
+    return await withRetry(attemptUpdate);
+  } catch (error) {
+    console.error('Error updating prepared items:', error);
+    return error;
+  }
+};
+
+// --- KITCHEN STATIONS ---
+
+export const getStations = async (userId: string) => {
+  const fetchStations = async () => {
+    const { data, error } = await supabase
+      .from('kitchen_stations')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: true });
+
+    if (error) throw error;
+    return data || [];
+  };
+
+  try {
+    return await withRetry(fetchStations);
+  } catch (error: any) {
+    if (error.code !== '42P01') {
+      console.error('Error fetching stations:', error);
+    }
+    return [];
+  }
+};
+
+export const insertStation = async (userId: string, station: { name: string, color: string }) => {
+  const attemptInsert = async () => {
+    const { data, error } = await supabase
+      .from('kitchen_stations')
+      .insert({
+        user_id: userId,
+        name: station.name,
+        color: station.color
+      })
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  };
+
+  try {
+    return await withRetry(attemptInsert);
+  } catch (error) {
+    console.error('Error creating station:', error);
+    throw error;
+  }
+};
+
+export const deleteStationDb = async (stationId: string) => {
+  const attemptDelete = async () => {
+    const { error } = await supabase
+      .from('kitchen_stations')
+      .delete()
+      .eq('id', stationId);
+    if (error) throw error;
+  };
+
+  try {
+    await withRetry(attemptDelete);
+    return null; // Success
+  } catch (error) {
+    console.error('Error deleting station:', error);
     return error;
   }
 };

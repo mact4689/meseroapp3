@@ -13,6 +13,8 @@ export enum AppView {
   TICKET_CONFIG = 'TICKET_CONFIG',
   DASHBOARD = 'DASHBOARD',
   CUSTOMER_MENU = 'CUSTOMER_MENU',
+  KDS_SETUP = 'KDS_SETUP',
+  KDS_VIEW = 'KDS_VIEW',
   TERMS = 'TERMS',
   PRIVACY = 'PRIVACY'
 }
@@ -21,6 +23,12 @@ export interface User {
   id: string;
   name: string;
   email: string;
+}
+
+export interface KitchenStation {
+  id: string;
+  name: string;
+  color: string;
 }
 
 export interface MenuItem {
@@ -34,11 +42,19 @@ export interface MenuItem {
   imageFile?: File | null;
   available?: boolean; // New field for stock status
   printerId?: string; // ID of the printer where this item should be printed
+  stationId?: string; // ID of the kitchen station (KDS)
 }
 
 export interface OrderItem extends MenuItem {
   quantity: number;
   notes?: string;
+}
+
+export interface PreparedItem {
+  itemId: string;
+  stationId: string;
+  completedAt: number;
+  completedBy?: string; // Device ID or user name
 }
 
 export interface Order {
@@ -49,6 +65,7 @@ export interface Order {
   total: number;
   items: OrderItem[];
   created_at: string;
+  prepared_items?: PreparedItem[]; // Array of finished items
 }
 
 export interface TicketConfig {
@@ -58,6 +75,9 @@ export interface TicketConfig {
   showTable: boolean;
   showOrderNumber: boolean;
   showNotes: boolean;
+  showLogo?: boolean;
+  showAddress?: boolean;
+  customHeader?: string;
   textSize: 'normal' | 'large';
 }
 

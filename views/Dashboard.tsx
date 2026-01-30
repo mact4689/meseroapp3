@@ -886,38 +886,8 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                             </Button>
                         </div>
 
-                        {/* Printer Card (Connection) */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                            <div className="flex items-center space-x-4">
-                                <div className={`
-                            w-12 h-12 rounded-xl flex items-center justify-center transition-colors
-                            ${mainPrinter.isConnected
-                                        ? 'bg-green-50 text-green-600'
-                                        : 'bg-gray-50 text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900'
-                                    }
-                        `}>
-                                    <Printer className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <div className="flex items-center gap-2">
-                                        <h3 className="font-bold text-brand-900">Conexión</h3>
-                                        {connectedPrintersCount > 0 && (
-                                            <span className="flex items-center text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
-                                                <CheckCircle2 className="w-3 h-3 mr-0.5" />
-                                                {connectedPrintersCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                    <p className="text-xs text-gray-500">Hardware y Red</p>
-                                </div>
-                            </div>
-                            <Button variant="secondary" onClick={() => onNavigate(AppView.PRINTER_SETUP)} className="!px-3 !py-2 shadow-none">
-                                <Edit2 className="w-4 h-4 text-gray-600" />
-                            </Button>
-                        </div>
-
                         {/* Ticket Config Card */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all md:col-span-2">
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
                             <div className="flex items-center space-x-4">
                                 <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
                                     <FileText className="w-6 h-6" />
@@ -928,6 +898,22 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                                 </div>
                             </div>
                             <Button variant="secondary" onClick={() => onNavigate(AppView.TICKET_CONFIG)} className="!px-3 !py-2 shadow-none">
+                                <Edit2 className="w-4 h-4 text-gray-600" />
+                            </Button>
+                        </div>
+
+                        {/* KDS Setup Card */}
+                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                            <div className="flex items-center space-x-4">
+                                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
+                                    <ChefHat className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-brand-900">Pantallas de Cocina (KDS)</h3>
+                                    <p className="text-xs text-gray-500">Configura estaciones para tu cocina</p>
+                                </div>
+                            </div>
+                            <Button variant="secondary" onClick={() => onNavigate(AppView.KDS_SETUP)} className="!px-3 !py-2 shadow-none">
                                 <Edit2 className="w-4 h-4 text-gray-600" />
                             </Button>
                         </div>

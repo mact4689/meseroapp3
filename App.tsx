@@ -15,6 +15,8 @@ import { Splash } from './views/Splash';
 import { CustomerMenu } from './views/CustomerMenu';
 import { Terms } from './views/Terms';
 import { Privacy } from './views/Privacy';
+import { KDSSetup } from './views/KDSSetup';
+import { KDSView } from './views/KDSView';
 import { AppView } from './types';
 
 const App: React.FC = () => {
@@ -24,6 +26,10 @@ const App: React.FC = () => {
     // Prioritize table parameter detection for QR codes
     if (params.get('table')) {
       return AppView.CUSTOMER_MENU;
+    }
+    // Check for KDS view parameter
+    if (params.get('view') === 'KDS' && params.get('station')) {
+      return AppView.KDS_VIEW;
     }
     return AppView.SPLASH;
   });
@@ -74,6 +80,12 @@ const App: React.FC = () => {
       )}
       {currentView === AppView.PRIVACY && (
         <Privacy onNavigate={setCurrentView} />
+      )}
+      {currentView === AppView.KDS_SETUP && (
+        <KDSSetup onNavigate={setCurrentView} />
+      )}
+      {currentView === AppView.KDS_VIEW && (
+        <KDSView onNavigate={setCurrentView} />
       )}
     </div>
   );
