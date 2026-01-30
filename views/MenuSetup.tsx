@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, Printer, ChefHat } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -14,7 +14,7 @@ interface MenuSetupProps {
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
-  const { isOnboarding, printers, stations } = state;
+  const { isOnboarding, stations } = state;
 
   // Use global state for items
   const items = state.menu;
@@ -25,7 +25,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [price, setPrice] = useState('');
   const [description, setDescription] = useState('');
   const [ingredients, setIngredients] = useState('');
-  const [selectedPrinterId, setSelectedPrinterId] = useState<string>('');
   const [selectedStationId, setSelectedStationId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -122,7 +121,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         image: finalImageUrl,
         imageFile: null,
         available: true,
-        printerId: selectedPrinterId || undefined,
         stationId: selectedStationId || undefined
       };
 
@@ -167,7 +165,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setPrice(item.price);
     setDescription(item.description || '');
     setIngredients(item.ingredients || '');
-    setSelectedPrinterId(item.printerId || '');
     setSelectedStationId(item.stationId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
@@ -181,7 +178,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setPrice('');
     setDescription('');
     setIngredients('');
-    setSelectedPrinterId('');
     setSelectedStationId('');
     setImagePreview(null);
     setImageFile(null);
@@ -190,9 +186,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const handleLoadSample = () => {
     if (!state.user) return;
     const samples: MenuItem[] = [
-      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true, printerId: printers[0]?.id },
-      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true, printerId: printers[0]?.id },
-      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true, printerId: printers[0]?.id },
+      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true },
+      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true },
+      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true },
     ];
 
     // Cargar secuencialmente para evitar condiciones de carrera en conexiones lentas
@@ -326,20 +322,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
           </div>
         )}
 
-        {/* Info banner when no printers configured */}
-        {printers.filter(p => p.isConnected).length === 0 && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-xl text-sm flex items-start gap-3">
-            <Printer className="w-5 h-5 mt-0.5 shrink-0" />
-            <div>
-              <p className="font-bold mb-1">💡 Configura tus impresoras primero</p>
-              <p className="text-blue-600">
-                Para asignar a qué impresora (cocina, bar, caja) se enviará cada platillo,
-                primero debes configurar tus impresoras en el paso 4 del onboarding.
-                De lo contrario, todos los tickets se imprimirán en la impresora predeterminada.
-              </p>
-            </div>
-          </div>
-        )}
+
 
         {/* Form Section */}
         <div className={`
@@ -408,33 +391,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               required
             />
 
-            {/* Printer Selection Dropdown */}
-            <div className="w-full space-y-1.5">
-              <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">
-                  <Printer className="w-4 h-4" />
-                </div>
-                <select
-                  value={selectedPrinterId}
-                  onChange={(e) => setSelectedPrinterId(e.target.value)}
-                  className={`
-                            block w-full rounded-xl border-gray-200 bg-white 
-                            focus:border-brand-900 focus:ring-1 focus:ring-brand-900 
-                            text-gray-900 py-3.5 pl-10 border appearance-none
-                        `}
-                >
-                  <option value="">-- Seleccionar Impresora (Opcional) --</option>
-                  {printers.map(printer => (
-                    <option key={printer.id} value={printer.id}>
-                      {printer.name} ({printer.location})
-                    </option>
-                  ))}
-                </select>
-                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-400">
-                  <ChevronRight className="w-4 h-4 rotate-90" />
-                </div>
-              </div>
-            </div>
+
 
             {/* KDS Station Selection Dropdown */}
             <div className="w-full space-y-1.5">
@@ -514,7 +471,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                   <div className="space-y-3">
                     {catItems.map((item) => {
                       const isAvailable = item.available !== false;
-                      const assignedPrinter = printers.find(p => p.id === item.printerId);
                       const assignedStation = stations.find(s => s.id === item.stationId);
 
                       return (
@@ -553,15 +509,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                               <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
                             )}
 
-                            {/* Printer and Station indicators */}
-                            <div className="flex items-center mt-1.5 gap-3">
-                              {assignedPrinter && (
-                                <div className="flex items-center text-[10px] text-gray-400 gap-1">
-                                  <Printer className="w-3 h-3" />
-                                  <span>{assignedPrinter.location}</span>
-                                </div>
-                              )}
-                              {assignedStation && (
+                            {/* Station indicator */}
+                            {assignedStation && (
+                              <div className="flex items-center mt-1.5 gap-3">
                                 <div
                                   className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
                                   style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
@@ -569,8 +519,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                                   <ChefHat className="w-3 h-3" />
                                   <span className="font-medium">{assignedStation.name}</span>
                                 </div>
-                              )}
-                            </div>
+                              </div>
+                            )}
                           </div>
 
                           {/* Action Buttons */}
