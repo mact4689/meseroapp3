@@ -24,7 +24,7 @@ const STATION_COLORS = [
 
 export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
     const { state, addStation, removeStation } = useAppStore();
-    const { stations } = state;
+    const { stations, isOnboarding } = state;
 
     const [newStationName, setNewStationName] = useState('');
     const [selectedColor, setSelectedColor] = useState(STATION_COLORS[0]);
@@ -116,7 +116,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                 {/* Header */}
                 <div className="mb-6">
                     <button
-                        onClick={() => onNavigate(AppView.DASHBOARD)}
+                        onClick={() => onNavigate(isOnboarding ? AppView.BUSINESS_SETUP : AppView.DASHBOARD)}
                         className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
                     >
                         <ArrowLeft className="w-6 h-6" />
@@ -306,12 +306,21 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                 <div className="mt-6 pt-6 border-t border-gray-100">
                     <Button
                         fullWidth
-                        onClick={() => onNavigate(AppView.DASHBOARD)}
+                        onClick={() => onNavigate(isOnboarding ? AppView.MENU_SETUP : AppView.DASHBOARD)}
                         className="h-12"
                         icon={<Check className="w-5 h-5" />}
                     >
-                        Listo
+                        {isOnboarding ? 'Continuar' : 'Listo'}
                     </Button>
+                    {isOnboarding && (
+                        <button
+                            type="button"
+                            onClick={() => onNavigate(AppView.MENU_SETUP)}
+                            className="w-full text-center text-gray-400 hover:text-gray-600 text-sm font-medium py-2 transition-colors mt-2"
+                        >
+                            Omitir por ahora
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

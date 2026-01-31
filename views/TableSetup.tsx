@@ -162,7 +162,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
     if (tableCount && generatedTables.length === 0) {
       updateTables(tableCount, []);
     }
-    onNavigate(AppView.PRINTER_SETUP);
+    onNavigate(AppView.TICKET_CONFIG);
   };
 
   return (
