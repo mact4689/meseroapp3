@@ -34,7 +34,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // URL Params
     const query = new URLSearchParams(window.location.search);
     const tableId = query.get('table');
-    const uid = query.get('uid');
+    // Allow both 'uid' (standard) and 'user' (fallback/legacy)
+    const uid = query.get('uid') || query.get('user');
 
     // Determine if it's Admin Preview Mode
     // FIX: Si hay un UID en la URL (escaneo de QR), NO es vista previa, es modo cliente (aunque seas el admin).
