@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { MenuItem, User, Printer, Order, KitchenStation } from '../types';
+import { MenuItem, User, Order, KitchenStation, TicketConfig } from '../types';
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
@@ -17,7 +17,7 @@ interface AppState {
     count: string;
     generated: any[];
   };
-  printers: Printer[];
+  ticketConfig: TicketConfig;
   stations: KitchenStation[];
   orders: Order[];
   isOnboarding: boolean;
@@ -35,7 +35,7 @@ interface AppContextType {
   removeMenuItem: (id: string) => Promise<void>;
   toggleItemAvailability: (id: string) => Promise<void>;
   updateTables: (count: string, generated: any[]) => void;
-  updatePrinter: (id: string, data: Partial<Printer>) => void;
+  updateTicketConfig: (data: Partial<TicketConfig>) => void;
   completeOrder: (id: string) => Promise<void>;
   addStation: (name: string, color: string) => Promise<void>;
   removeStation: (id: string) => Promise<void>;
@@ -44,14 +44,15 @@ interface AppContextType {
   endOnboarding: () => void;
 }
 
-const defaultTicketConfig = {
-  title: 'ORDEN DE COCINA',
-  footerMessage: '',
+const defaultTicketConfig: TicketConfig = {
+  title: 'TICKET DE ORDEN',
+  footerMessage: 'Gracias por su preferencia',
   showDate: true,
   showTable: true,
   showOrderNumber: true,
   showNotes: true,
-  textSize: 'normal' as const
+  textSize: 'normal',
+  paperWidth: '80mm'
 };
 
 // Estado base
@@ -60,30 +61,7 @@ const baseState: AppState = {
   business: { name: '', cuisine: '', logo: null },
   menu: [],
   tables: { count: '', generated: [] },
-  printers: [
-    {
-      id: '1',
-      name: 'Impresora Principal',
-      location: 'Cocina',
-      isConnected: false,
-      hardwareName: null,
-      type: null,
-      paperWidth: '80mm',
-      ticketConfig: { ...defaultTicketConfig, title: 'ORDEN COCINA' },
-      isBillPrinter: false
-    },
-    {
-      id: '2',
-      name: 'Impresora Secundaria',
-      location: 'Barra',
-      isConnected: false,
-      hardwareName: null,
-      type: null,
-      paperWidth: '58mm',
-      ticketConfig: { ...defaultTicketConfig, title: 'TICKET BARRA', textSize: 'normal' },
-      isBillPrinter: true
-    }
-  ],
+  ticketConfig: defaultTicketConfig,
   stations: [],
   orders: [],
   isOnboarding: false,
@@ -432,12 +410,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updatePrinter = (id: string, data: Partial<Printer>) => {
+  const updateTicketConfig = (data: Partial<TicketConfig>) => {
     setState(prev => ({
       ...prev,
-      printers: prev.printers.map(p =>
-        p.id === id ? { ...p, ...data } : p
-      )
+      ticketConfig: { ...prev.ticketConfig, ...data }
     }));
   };
 
@@ -530,7 +506,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       removeMenuItem,
       toggleItemAvailability,
       updateTables,
-      updatePrinter,
+      updateTicketConfig,
       completeOrder,
       addStation,
       removeStation,

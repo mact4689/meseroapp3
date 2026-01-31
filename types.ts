@@ -79,6 +79,7 @@ export interface TicketConfig {
   showAddress?: boolean;
   customHeader?: string;
   textSize: 'normal' | 'large';
+  paperWidth: '58mm' | '80mm';
 }
 
 export interface Printer {

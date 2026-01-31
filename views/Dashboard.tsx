@@ -45,7 +45,7 @@ type TimeRange = 'today' | '7days' | '30days' | 'all';
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder } = useAppStore();
-    const { business, menu, tables, user, printers, orders } = state;
+    const { business, menu, tables, user, orders } = state;
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showSqlModal, setShowSqlModal] = useState(false);
@@ -53,9 +53,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
     const [printingAll, setPrintingAll] = useState(false);
-
-    const connectedPrintersCount = printers.filter(p => p.isConnected).length;
-    const mainPrinter = printers[0];
 
     // Filter orders by status
     const pendingOrders = orders.filter(o => o.status === 'pending');
@@ -205,9 +202,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     total: totalAmount
                 };
 
-                await printOrder(billOrder, printers, business.name || 'Mi Restaurante');
+                await printOrder(billOrder, state.ticketConfig, business.name || 'Mi Restaurante');
             } else {
-                await printOrder(order, printers, business.name || 'Mi Restaurante');
+                await printOrder(order, state.ticketConfig, business.name || 'Mi Restaurante');
             }
         } catch (error) {
             console.error('Error al imprimir:', error);
@@ -221,7 +218,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
         setPrintingAll(true);
         try {
-            await printMultipleOrders(pendingOrders, printers, business.name || 'Mi Restaurante');
+            await printMultipleOrders(pendingOrders, state.ticketConfig, business.name || 'Mi Restaurante');
         } catch (error) {
             console.error('Error al imprimir órdenes:', error);
         } finally {

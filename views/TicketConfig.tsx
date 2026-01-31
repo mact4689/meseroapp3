@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Printer, Settings2, CheckCircle, Rocket } from 'lucide-react';
+import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Settings2, CheckCircle, Rocket } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface TicketConfigViewProps {
@@ -10,64 +10,38 @@ interface TicketConfigViewProps {
 }
 
 export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }) => {
-    const { state, updatePrinter, endOnboarding } = useAppStore();
-    const { isOnboarding } = state;
+    const { state, updateTicketConfig, endOnboarding } = useAppStore();
+    const { isOnboarding, ticketConfig } = state;
 
-    // Local state to track which printer is being edited. If null, show list.
-    const [selectedPrinterId, setSelectedPrinterId] = useState<string | null>(null);
+    const [localConfig, setLocalConfig] = useState(ticketConfig);
 
-    // Find the selected printer object
-    const selectedPrinter = state.printers.find(p => p.id === selectedPrinterId);
-    const [localConfig, setLocalConfig] = useState(selectedPrinter?.ticketConfig);
-
-    // For onboarding: Auto-select the first printer (usually Main/Kitchen)
+    // Update local config when global config changes
     useEffect(() => {
-        if (isOnboarding && !selectedPrinterId) {
-            setSelectedPrinterId(state.printers[0].id);
-        }
-    }, [isOnboarding]);
-
-    // Update local config when selection changes
-    useEffect(() => {
-        if (selectedPrinter) {
-            setLocalConfig(selectedPrinter.ticketConfig);
-        }
-    }, [selectedPrinter]);
+        setLocalConfig(state.ticketConfig);
+    }, [state.ticketConfig]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        if (!localConfig) return;
-
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
 
-        setLocalConfig(prev => prev ? ({
+        setLocalConfig(prev => ({
             ...prev,
             [name]: type === 'checkbox' ? checked : value
-        }) : undefined);
+        }));
     };
 
     const handleSaveAndBack = () => {
-        if (selectedPrinterId && localConfig) {
-            // Guardar automáticamente al regresar
-            updatePrinter(selectedPrinterId, { ticketConfig: localConfig });
-        }
+        updateTicketConfig(localConfig);
 
         if (isOnboarding) {
-            // En onboarding, el paso anterior es TABLE_SETUP
             onNavigate(AppView.TABLE_SETUP);
         } else {
-            setSelectedPrinterId(null);
+            onNavigate(AppView.DASHBOARD);
         }
-    };
-
-    const handleBackToDashboard = () => {
-        onNavigate(AppView.DASHBOARD);
     };
 
     const handleFinishOnboarding = () => {
-        if (selectedPrinterId && localConfig) {
-            updatePrinter(selectedPrinterId, { ticketConfig: localConfig });
-        }
+        updateTicketConfig(localConfig);
         endOnboarding();
         onNavigate(AppView.DASHBOARD);
     };
@@ -78,72 +52,6 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
         { qty: 1, name: 'Coca Cola', notes: '' },
     ];
 
-    // VIEW 1: PRINTER LIST SELECTION (Skipped in Onboarding)
-    if (!isOnboarding && (!selectedPrinterId || !localConfig)) {
-        return (
-            <div className="flex flex-col min-h-screen bg-gray-50">
-                <header className="bg-white px-6 py-4 shadow-sm sticky top-0 z-50">
-                    <div className="flex items-center space-x-3 max-w-4xl mx-auto w-full">
-                        <button
-                            onClick={handleBackToDashboard}
-                            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-                            title="Guardar y volver al Dashboard"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </button>
-                        <h1 className="font-serif text-lg font-bold text-brand-900">Seleccionar Impresora</h1>
-                    </div>
-                </header>
-
-                <main className="flex-1 p-6 max-w-4xl mx-auto w-full">
-                    <div className="space-y-4">
-                        <p className="text-gray-500 mb-4">Elige una impresora para ajustar el diseño de su ticket:</p>
-
-                        {state.printers.map((printer) => (
-                            <div
-                                key={printer.id}
-                                onClick={() => setSelectedPrinterId(printer.id)}
-                                className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/30 hover:shadow-md transition-all cursor-pointer"
-                            >
-                                <div className="flex items-center space-x-4">
-                                    <div className={`
-                          w-12 h-12 rounded-xl flex items-center justify-center transition-colors
-                          ${printer.isConnected
-                                            ? 'bg-brand-900 text-white'
-                                            : 'bg-gray-100 text-gray-400'
-                                        }
-                      `}>
-                                        <Printer className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <h3 className="font-bold text-brand-900 text-lg">{printer.name}</h3>
-                                            <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium border border-gray-200">{printer.location}</span>
-                                        </div>
-                                        <p className="text-sm text-gray-500 mt-1">
-                                            {printer.isConnected
-                                                ? <span className="text-green-600 font-medium">● Conectada</span>
-                                                : <span className="text-gray-400">● Desconectada</span>}
-                                            <span className="mx-1.5 text-gray-300">|</span>
-                                            Ancho: {printer.paperWidth}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="bg-gray-50 p-2 rounded-full text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
-                                    <Settings2 className="w-5 h-5" />
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </main>
-            </div>
-        );
-    }
-
-    // Ensure localConfig exists for rendering editor (during onboarding initial render it might be undefined briefly)
-    if (!localConfig) return <div className="min-h-screen bg-gray-50"></div>;
-
-    // VIEW 2: EDITOR (Used for Onboarding and Edit Mode)
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             {/* Navbar */}
@@ -169,12 +77,6 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                             </div>
                             <div className="w-3 h-0.5 bg-brand-900"></div>
 
-                            {/* Step 4 - Done */}
-                            <div className="flex flex-col items-center gap-1 opacity-60">
-                                <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><CheckCircle className="w-5 h-5" /></div>
-                            </div>
-                            <div className="w-3 h-0.5 bg-brand-900"></div>
-
                             {/* Step 4 - Active */}
                             <div className="flex flex-col items-center gap-1">
                                 <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">4</div>
@@ -182,7 +84,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                             </div>
                         </div>
                         <h2 className="font-serif text-3xl text-brand-900 text-center">Diseño de Ticket</h2>
-                        <p className="text-gray-500 text-center text-sm mt-1">Personaliza cómo se ven tus pedidos en cocina.</p>
+                        <p className="text-gray-500 text-center text-sm mt-1">Personaliza cómo se ven tus tickets impresos.</p>
                     </div>
                 ) : (
                     <div className="flex items-center space-x-3 max-w-4xl mx-auto w-full">
@@ -194,8 +96,8 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                             <ArrowLeft className="w-6 h-6" />
                         </button>
                         <div>
-                            <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">Editando: {selectedPrinter?.name}</h1>
-                            <p className="text-xs text-gray-500">{selectedPrinter?.location}</p>
+                            <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">Configuración de Tickets</h1>
+                            <p className="text-xs text-gray-500">Personaliza el formato de impresión</p>
                         </div>
                     </div>
                 )}
@@ -215,14 +117,14 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                             name="title"
                             value={localConfig.title}
                             onChange={handleChange}
-                            placeholder="ORDEN DE COCINA"
+                            placeholder="TICKET DE ORDEN"
                         />
                         <Input
                             label="Mensaje al pie (Opcional)"
                             name="footerMessage"
                             value={localConfig.footerMessage}
                             onChange={handleChange}
-                            placeholder="Ej. Revisar alergias"
+                            placeholder="Ej. Gracias por su preferencia"
                         />
                     </div>
 
@@ -285,22 +187,49 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
 
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 space-y-4">
                         <h3 className="font-bold text-brand-900 flex items-center gap-2">
-                            <Type className="w-4 h-4" />
-                            Tamaño de Fuente
+                            <Settings2 className="w-4 h-4" />
+                            Formato
                         </h3>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.textSize === 'normal' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                                onClick={() => setLocalConfig(prev => prev ? ({ ...prev, textSize: 'normal' }) : undefined)}
-                            >
-                                Normal (48mm)
-                            </button>
-                            <button
-                                className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.textSize === 'large' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
-                                onClick={() => setLocalConfig(prev => prev ? ({ ...prev, textSize: 'large' }) : undefined)}
-                            >
-                                Grande (80mm)
-                            </button>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-2">Tamaño de Fuente</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.textSize === 'normal' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        onClick={() => setLocalConfig(prev => ({ ...prev, textSize: 'normal' }))}
+                                    >
+                                        Normal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.textSize === 'large' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        onClick={() => setLocalConfig(prev => ({ ...prev, textSize: 'large' }))}
+                                    >
+                                        Grande
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-medium text-gray-500 block mb-2">Ancho de Papel</label>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.paperWidth === '58mm' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        onClick={() => setLocalConfig(prev => ({ ...prev, paperWidth: '58mm' }))}
+                                    >
+                                        58mm
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className={`p-3 rounded-xl border text-sm font-medium transition-all ${localConfig.paperWidth === '80mm' ? 'border-brand-900 bg-brand-900 text-white' : 'border-gray-200 text-gray-600 hover:border-gray-300'}`}
+                                        onClick={() => setLocalConfig(prev => ({ ...prev, paperWidth: '80mm' }))}
+                                    >
+                                        80mm
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -312,7 +241,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                     {/* Thermal Ticket Simulator */}
                     <div className={`
                 bg-white w-full shadow-xl rounded-sm overflow-hidden border-t-8 border-gray-800 relative transition-all duration-300
-                ${selectedPrinter?.paperWidth === '58mm' ? 'max-w-[240px]' : 'max-w-[320px]'}
+                ${localConfig.paperWidth === '58mm' ? 'max-w-[240px]' : 'max-w-[320px]'}
             `}>
                         {/* Paper texture effect */}
                         <div className="absolute inset-0 bg-yellow-50/10 pointer-events-none"></div>
@@ -328,7 +257,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
 
                             {/* Header */}
                             <div className="text-center border-b-2 border-dashed border-gray-300 pb-4 mb-4">
-                                <h2 className="font-black text-xl mb-1 uppercase">{localConfig.title || 'ORDEN'}</h2>
+                                <h2 className="font-black text-xl mb-1 uppercase">{localConfig.title || 'TICKET'}</h2>
                                 {localConfig.showDate && (
                                     <p className="text-gray-500 text-[10px] mt-1">
                                         {new Date().toLocaleDateString()} - {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -350,7 +279,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                                             <span>{item.qty} x {item.name}</span>
                                         </div>
                                         {localConfig.showNotes && item.notes && (
-                                            <p className="text-gray-500 italic ml-4 mt-0.5">Note: {item.notes}</p>
+                                            <p className="text-gray-500 italic ml-4 mt-0.5">Nota: {item.notes}</p>
                                         )}
                                     </div>
                                 ))}
@@ -371,7 +300,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
 
                         </div>
                     </div>
-                    <p className="text-xs text-gray-400 mt-4">Simulación ancho: {selectedPrinter?.paperWidth}</p>
+                    <p className="text-xs text-gray-400 mt-4">Simulación ancho: {localConfig.paperWidth}</p>
                 </div>
 
                 {/* Footer Actions - Solo en onboarding */}

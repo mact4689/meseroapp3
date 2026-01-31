@@ -1,30 +1,8 @@
-import { Order, OrderItem, Printer } from '../types';
+import { Order, OrderItem, TicketConfig } from '../types';
 
 // Cola de impresión para evitar diálogos superpuestos
-let printQueue: { items: OrderItem[], order: Order, printer: Printer }[] = [];
+let printQueue: { items: OrderItem[], order: Order, config: TicketConfig }[] = [];
 let isPrinting = false;
-
-/**
- * Agrupa los items de una orden por printer_id (estación)
- */
-export const groupItemsByPrinter = (order: Order, printers: Printer[]): Map<string, { items: OrderItem[], printer: Printer }> => {
-  const grouped = new Map<string, { items: OrderItem[], printer: Printer }>();
-
-  order.items.forEach(item => {
-    const printerId = item.printerId || printers[0]?.id; // Default a primera impresora si no tiene asignada
-
-    if (!grouped.has(printerId)) {
-      const printer = printers.find(p => p.id === printerId);
-      if (printer) {
-        grouped.set(printerId, { items: [], printer });
-      }
-    }
-
-    grouped.get(printerId)?.items.push(item);
-  });
-
-  return grouped;
-};
 
 /**
  * Genera el HTML del ticket basado en la configuración, items y tamaño de papel
@@ -32,7 +10,7 @@ export const groupItemsByPrinter = (order: Order, printers: Printer[]): Map<stri
 export const generateTicketHTML = (
   items: OrderItem[],
   order: Order,
-  printer: Printer,
+  config: TicketConfig,
   businessName: string = 'Mi Restaurante'
 ): string => {
   const currentDate = new Date(order.created_at);
@@ -46,7 +24,7 @@ export const generateTicketHTML = (
     minute: '2-digit'
   });
 
-  const paperWidth = printer.paperWidth;
+  const paperWidth = config.paperWidth;
   const is58mm = paperWidth === '58mm';
 
   // Calcular subtotal de estos items
@@ -57,7 +35,7 @@ export const generateTicketHTML = (
     <html>
     <head>
       <meta charset="UTF-8">
-      <title>Ticket - ${printer.name}</title>
+      <title>Ticket</title>
       <style>
         @media print {
           @page {
@@ -75,7 +53,7 @@ export const generateTicketHTML = (
           width: ${paperWidth};
           margin: 0 auto;
           padding: ${is58mm ? '5mm' : '10mm'};
-          font-size: ${is58mm ? '10pt' : '12pt'};
+          font-size: ${config.textSize === 'large' ? '14pt' : (is58mm ? '10pt' : '12pt')};
           line-height: 1.4;
         }
         
@@ -92,7 +70,7 @@ export const generateTicketHTML = (
           margin-bottom: 5px;
         }
         
-        .station-name {
+        .ticket-title {
           font-size: ${is58mm ? '12pt' : '14pt'};
           font-weight: bold;
           background: #000;
@@ -173,20 +151,16 @@ export const generateTicketHTML = (
     <body>
       <div class="header">
         <div class="business-name">${businessName}</div>
-        <div>${printer.ticketConfig.title || 'TICKET DE COCINA'}</div>
-      </div>
-      
-      <div class="station-name">
-        📍 ${printer.name.toUpperCase()}
+        <div class="ticket-title">${config.title || 'TICKET DE ORDEN'}</div>
       </div>
       
       <div class="order-info">
-        <div><strong>Orden:</strong> #${order.id.slice(0, 8).toUpperCase()}</div>
-        ${printer.ticketConfig.showDate ? `<div><strong>Fecha:</strong> ${formattedDate}</div>` : ''}
+        ${config.showOrderNumber ? `<div><strong>Orden:</strong> #${order.id.slice(0, 8).toUpperCase()}</div>` : ''}
+        ${config.showDate ? `<div><strong>Fecha:</strong> ${formattedDate}</div>` : ''}
         <div><strong>Hora:</strong> ${formattedTime}</div>
       </div>
       
-      ${printer.ticketConfig.showTable ? `
+      ${config.showTable ? `
       <div class="table-number">
         MESA ${order.table_number}
       </div>
@@ -199,16 +173,16 @@ export const generateTicketHTML = (
             <span class="item-name">${item.name}</span>
             <span class="item-price">$${(parseFloat(item.price) * item.quantity).toFixed(2)}</span>
           </div>
-          ${item.notes && printer.ticketConfig.showNotes ? `<div class="item-notes">Nota: ${item.notes}</div>` : ''}
+          ${item.notes && config.showNotes ? `<div class="item-notes">Nota: ${item.notes}</div>` : ''}
         `).join('')}
       </div>
       
       <div class="subtotal">
-        SUBTOTAL: $${subtotal.toFixed(2)}
+        TOTAL: $${subtotal.toFixed(2)}
       </div>
       
       <div class="footer">
-        ${printer.ticketConfig.footerMessage || 'Powered by MeseroApp'}
+        ${config.footerMessage || 'Gracias por su preferencia'}
       </div>
     </body>
     </html>
@@ -216,17 +190,17 @@ export const generateTicketHTML = (
 };
 
 /**
- * Imprime un ticket para una estación específica
+ * Imprime un ticket usando window.print()
  */
 export const printTicket = async (
   items: OrderItem[],
   order: Order,
-  printer: Printer,
+  config: TicketConfig,
   businessName?: string
 ): Promise<void> => {
   return new Promise((resolve, reject) => {
     try {
-      const ticketHTML = generateTicketHTML(items, order, printer, businessName);
+      const ticketHTML = generateTicketHTML(items, order, config, businessName);
 
       // Crear iframe oculto para impresión
       const printFrame = document.createElement('iframe');
@@ -271,74 +245,53 @@ export const printTicket = async (
 };
 
 /**
- * Imprime una orden completa, separando items por estación
+ * Imprime una orden completa usando la configuración global
  */
 export const printOrder = async (
   order: Order,
-  printers: Printer[],
+  config: TicketConfig,
   businessName?: string
 ): Promise<void> => {
-  const groupedItems = groupItemsByPrinter(order, printers);
+  printQueue.push({ items: order.items, order, config });
 
-  // Añadir cada estación a la cola
-  groupedItems.forEach(({ items, printer }) => {
-    printQueue.push({ items, order, printer });
-  });
-
-  // Iniciar procesamiento de cola
-  processPrintQueue(businessName);
+  if (!isPrinting) {
+    await processPrintQueue(businessName);
+  }
 };
 
 /**
- * Procesa la cola de impresión
- * Imprime un ticket a la vez para evitar diálogos superpuestos
+ * Procesa la cola de impresión secuencialmente
  */
 const processPrintQueue = async (businessName?: string): Promise<void> => {
-  if (isPrinting || printQueue.length === 0) {
+  if (printQueue.length === 0) {
+    isPrinting = false;
     return;
   }
 
   isPrinting = true;
-  const { items, order, printer } = printQueue.shift()!;
+  const { items, order, config } = printQueue.shift()!;
 
   try {
-    await printTicket(items, order, printer, businessName);
+    await printTicket(items, order, config, businessName);
+    // Pequeño delay entre impresiones para evitar problemas
+    await new Promise(resolve => setTimeout(resolve, 500));
   } catch (error) {
-    console.error('Error al imprimir ticket:', error);
-  } finally {
-    isPrinting = false;
-
-    // Si hay más tickets en cola, continuar
-    if (printQueue.length > 0) {
-      // Pequeño delay para que el usuario cierre el diálogo anterior
-      setTimeout(() => processPrintQueue(businessName), 500);
-    }
+    console.error('Error printing:', error);
   }
+
+  // Continuar con el siguiente ticket en la cola
+  await processPrintQueue(businessName);
 };
 
 /**
- * Imprime múltiples órdenes en secuencia
+ * Imprime múltiples órdenes de forma secuencial
  */
 export const printMultipleOrders = async (
   orders: Order[],
-  printers: Printer[],
+  config: TicketConfig,
   businessName?: string
 ): Promise<void> => {
   for (const order of orders) {
-    await printOrder(order, printers, businessName);
+    await printOrder(order, config, businessName);
   }
-};
-
-/**
- * Obtiene el número de tickets pendientes en la cola
- */
-export const getPrintQueueLength = (): number => {
-  return printQueue.length;
-};
-
-/**
- * Limpia la cola de impresión
- */
-export const clearPrintQueue = (): void => {
-  printQueue = [];
 };
