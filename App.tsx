@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { Landing } from './views/Landing';
 import { Website } from './views/Website'; // Import Website
+import { OfflineStatus } from './components/OfflineStatus';
 import { Login } from './views/Login';
 import { Register } from './views/Register';
 import { Welcome } from './views/Welcome';
@@ -35,6 +36,7 @@ const App: React.FC = () => {
 
   return (
     <div className="w-full h-screen bg-white">
+      <OfflineStatus />
       {currentView === AppView.SPLASH && (
         <Splash onNavigate={setCurrentView} />
       )}

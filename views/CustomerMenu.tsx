@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw } from 'lucide-react';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
@@ -24,6 +24,10 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // BILL REQUEST STATE
     const [isRequestingBill, setIsRequestingBill] = useState(false);
     const [billRequested, setBillRequested] = useState(false);
+
+    // HELP REQUEST STATE
+    const [isRequestingHelp, setIsRequestingHelp] = useState(false);
+    const [helpRequested, setHelpRequested] = useState(false);
 
     // GUEST MODE STATE
     const [guestBusiness, setGuestBusiness] = useState<{ name: string, cuisine: string, logo: string | null } | null>(null);
@@ -242,6 +246,46 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             alert("Error al pedir la cuenta.");
         } finally {
             setIsRequestingBill(false);
+        }
+    };
+
+    const handleRequestHelp = async () => {
+        if (isAdminPreview) {
+            alert("Vista Previa: Solicitud de ayuda simulada.");
+            setHelpRequested(true);
+            setTimeout(() => setHelpRequested(false), 3000);
+            return;
+        }
+
+        const restaurantId = uid || state.user?.id;
+        if (!restaurantId) return;
+
+        setIsRequestingHelp(true);
+
+        try {
+            const helpItem: any = {
+                id: 'help-req',
+                name: '👋 SOLICITUD DE AYUDA / MESERO',
+                price: '0',
+                quantity: 1,
+                category: 'System',
+                printerId: 'BILL_PRINTER' // Usually printed on same printer as bills or main one
+            };
+
+            await createOrder({
+                user_id: restaurantId,
+                table_number: tableId || 'S/N',
+                status: 'pending',
+                total: 0,
+                items: [helpItem]
+            });
+
+            setHelpRequested(true);
+            setTimeout(() => setHelpRequested(false), 4000);
+        } catch (e) {
+            alert("Error al solicitar ayuda.");
+        } finally {
+            setIsRequestingHelp(false);
         }
     };
 
@@ -474,6 +518,26 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                         <CreditCard className="w-5 h-5 text-gray-500 group-hover:text-brand-900" />
                     )}
                     <span>{billRequested ? 'Cuenta Pedida' : 'Pedir Cuenta'}</span>
+                </button>
+
+                <button
+                    onClick={handleRequestHelp}
+                    disabled={isRequestingHelp || helpRequested}
+                    className={`
+                shadow-xl transition-all flex items-center gap-2 pr-4 pl-3 py-3 rounded-full font-bold text-sm group
+                ${helpRequested
+                            ? 'bg-yellow-500 text-white cursor-default'
+                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
+            `}
+                >
+                    {isRequestingHelp ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                    ) : helpRequested ? (
+                        <CheckCircle className="w-5 h-5" />
+                    ) : (
+                        <Hand className="w-5 h-5 text-gray-500 group-hover:text-yellow-600" />
+                    )}
+                    <span>{helpRequested ? 'Ayuda Solicitada' : 'Pedir Ayuda'}</span>
                 </button>
 
                 {!isCartOpen && cartCount === 0 && (
