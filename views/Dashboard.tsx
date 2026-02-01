@@ -34,7 +34,8 @@ import {
     ShieldCheck,
     Copy,
     Terminal,
-    Receipt
+    Receipt,
+    Hand
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -61,6 +62,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     // Helper: Detectar si una orden es solicitud de cuenta cerrada
     const isBillRequest = (order: typeof orders[0]) => {
         return order.items.some(item => item.id === 'bill-req' || item.name?.includes('SOLICITUD DE CUENTA'));
+    };
+
+    // Helper: Detectar si una orden es solicitud de ayuda
+    const isHelpRequest = (order: typeof orders[0]) => {
+        return order.items.some(item => item.id === 'help-req' || item.name?.includes('SOLICITUD DE AYUDA'));
     };
 
     // Calculate total stats
@@ -524,6 +530,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="space-y-4">
                             {pendingOrders.map((order) => {
                                 const isBill = isBillRequest(order);
+                                const isHelp = isHelpRequest(order);
 
                                 // Si es solicitud de cuenta, obtener todas las órdenes de esa mesa
                                 const tableOrders = isBill
@@ -546,25 +553,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                         onClick={() => toggleOrder(order.id)}
                                         className={`
                                         border rounded-xl overflow-hidden transition-all cursor-pointer
-                                        ${isBill
+                                        ${isHelp
                                                 ? (expandedOrder === order.id
-                                                    ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
-                                                    : 'border-green-300 hover:border-green-400 bg-green-50')
-                                                : (expandedOrder === order.id
-                                                    ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
-                                                    : 'border-gray-200 hover:border-gray-300 bg-white')}
+                                                    ? 'border-yellow-500 ring-2 ring-yellow-500 bg-yellow-50'
+                                                    : 'border-yellow-300 hover:border-yellow-400 bg-yellow-50')
+                                                : isBill
+                                                    ? (expandedOrder === order.id
+                                                        ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
+                                                        : 'border-green-300 hover:border-green-400 bg-green-50')
+                                                    : (expandedOrder === order.id
+                                                        ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
+                                                        : 'border-gray-200 hover:border-gray-300 bg-white')}
                                     `}
                                     >
                                         {/* Order Header */}
                                         <div className="p-4 flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className={`${isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
+                                                <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
                                                     <span className="text-[10px] font-medium opacity-80">Mesa</span>
                                                     <span className="text-xl font-bold">{order.table_number}</span>
                                                 </div>
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        {isBill ? (
+                                                        {isHelp ? (
+                                                            <span className="font-bold text-yellow-700 flex items-center gap-1.5">
+                                                                <Hand className="w-4 h-4" />
+                                                                🆘 AYUDA - Mesa {order.table_number}
+                                                            </span>
+                                                        ) : isBill ? (
                                                             <span className="font-bold text-green-700 flex items-center gap-1.5">
                                                                 <Receipt className="w-4 h-4" />
                                                                 Cuenta Cerrada
@@ -578,27 +594,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-gray-600">
-                                                        {isBill
-                                                            ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
-                                                            : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
+                                                        {isHelp
+                                                            ? <span className="text-yellow-700 font-medium">{order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}</span>
+                                                            : isBill
+                                                                ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
+                                                                : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
                                                     </p>
                                                 </div>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={(e) => handlePrintOrder(order.id, e)}
-                                                    className={`p-2 ${isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
-                                                    title={isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                                                    className={`p-2 ${isHelp ? 'text-yellow-600 hover:bg-yellow-100' : isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
+                                                    title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
                                                     disabled={printingOrderId === order.id}
                                                 >
                                                     <Printer className={`w-5 h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
                                                 </button>
                                                 <Button
                                                     onClick={(e) => handleCompleteOrder(order.id, e)}
-                                                    className={`h-9 px-4 text-xs ${isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
+                                                    className={`h-9 px-4 text-xs ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700' : isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
                                                     icon={<Check className="w-4 h-4" />}
                                                 >
-                                                    {isBill ? 'Entregada' : 'Listo'}
+                                                    {isHelp ? 'Atendido' : isBill ? 'Entregada' : 'Listo'}
                                                 </Button>
                                                 <div className="text-gray-400">
                                                     {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
@@ -608,7 +626,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                                         {/* Expanded Details */}
                                         {expandedOrder === order.id && (
-                                            <div className={`px-4 pb-4 pt-0 border-t ${isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
+                                            <div className={`px-4 pb-4 pt-0 border-t ${isHelp ? 'border-yellow-200 bg-white' : isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
+                                                {isHelp && (
+                                                    <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                                                        <Hand className="w-5 h-5 text-yellow-600" />
+                                                        <p className="text-sm text-yellow-700 font-medium">
+                                                            {order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}
+                                                        </p>
+                                                    </div>
+                                                )}
                                                 {isBill && (
                                                     <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
                                                         <Receipt className="w-5 h-5 text-green-600" />
@@ -618,7 +644,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                     </div>
                                                 )}
                                                 <ul className="divide-y divide-gray-100">
-                                                    {(isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA'))).map((item, idx) => (
+                                                    {(isHelp ? [] : isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item, idx) => (
                                                         <li key={idx} className="py-3 flex justify-between items-start">
                                                             <div className="flex gap-3">
                                                                 <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
