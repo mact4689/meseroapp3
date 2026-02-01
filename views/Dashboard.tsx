@@ -48,7 +48,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { business, menu, tables, user, orders } = state;
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
-    const [showSqlModal, setShowSqlModal] = useState(false);
+    // Eliminated unused showSqlModal state
     const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
@@ -233,36 +233,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         }
     };
 
-    const handleCopySql = () => {
-        const sql = `-- CORREGIR PERMISOS (RLS)
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
--- 1. Permisos Públicos (Lectura de Menú y Creación de Órdenes)
-DROP POLICY IF EXISTS "Public Read Menu" ON menu_items;
-CREATE POLICY "Public Read Menu" ON menu_items FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read Profiles" ON profiles;
-CREATE POLICY "Public Read Profiles" ON profiles FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Create Orders" ON orders;
-CREATE POLICY "Public Create Orders" ON orders FOR INSERT WITH CHECK (true);
-
--- 2. Permisos de Dueño (Gestión Total de su propia data)
-DROP POLICY IF EXISTS "Owner Manage Menu" ON menu_items;
-CREATE POLICY "Owner Manage Menu" ON menu_items FOR ALL USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Owner Manage Profile" ON profiles;
-CREATE POLICY "Owner Manage Profile" ON profiles FOR ALL USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Owner Manage Orders" ON orders;
-CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_id);`;
-
-        navigator.clipboard.writeText(sql);
-        setCopyFeedback(true);
-        setTimeout(() => setCopyFeedback(false), 2000);
-    };
+    // Eliminated unused handleCopySql function
 
     // Safe Base URL Calculation - strictly use origin
     const baseUrl = window.location.origin;
@@ -416,97 +387,7 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                     </div>
                 )}
 
-                {/* MODAL: SQL DIAGNOSTIC */}
-                {showSqlModal && (
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-brand-900/60 backdrop-blur-sm" onClick={() => setShowSqlModal(false)}></div>
-                        <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[90vh]">
-                            <div className="p-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600">
-                                        <ShieldCheck className="w-6 h-6" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900 text-lg">Permisos de Base de Datos</h3>
-                                        <p className="text-xs text-gray-500">Solución para errores de carga o "0 items"</p>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => setShowSqlModal(false)}
-                                    className="p-1.5 rounded-full hover:bg-gray-200 text-gray-400 transition-colors"
-                                >
-                                    <X className="w-6 h-6" />
-                                </button>
-                            </div>
-
-                            <div className="p-6 overflow-y-auto space-y-4">
-                                <div className="bg-yellow-50 p-4 rounded-xl border border-yellow-100 flex gap-3 items-start">
-                                    <AlertCircle className="w-5 h-5 text-yellow-600 shrink-0 mt-0.5" />
-                                    <div className="text-sm text-yellow-800">
-                                        <p className="font-bold mb-1">¿Por qué veo esto?</p>
-                                        <p>Si tus platillos no aparecen en el celular o ves errores de conexión, es probable que falten los permisos de seguridad (RLS) en Supabase.</p>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <p className="text-sm font-bold text-gray-700">Instrucciones:</p>
-                                    <ol className="text-sm text-gray-600 list-decimal list-inside space-y-1 ml-1">
-                                        <li>Copia el código de abajo.</li>
-                                        <li>Ve a tu proyecto en <strong>Supabase</strong> {'>'} <strong>SQL Editor</strong>.</li>
-                                        <li>Pega el código y haz clic en <strong>Run</strong>.</li>
-                                    </ol>
-                                </div>
-
-                                <div className="relative group">
-                                    <div className="absolute top-2 right-2 flex gap-2">
-                                        {copyFeedback && (
-                                            <span className="text-xs bg-green-500 text-white px-2 py-1 rounded animate-in fade-in">¡Copiado!</span>
-                                        )}
-                                        <button
-                                            onClick={handleCopySql}
-                                            className="p-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/10"
-                                            title="Copiar SQL"
-                                        >
-                                            <Copy className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                    <pre className="bg-brand-900 text-gray-300 p-4 rounded-xl text-xs overflow-x-auto font-mono leading-relaxed border border-gray-800">
-                                        {`-- CORREGIR PERMISOS (RLS)
-ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE menu_items ENABLE ROW LEVEL SECURITY;
-ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
-
--- 1. Permisos Públicos
-DROP POLICY IF EXISTS "Public Read Menu" ON menu_items;
-CREATE POLICY "Public Read Menu" ON menu_items FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Read Profiles" ON profiles;
-CREATE POLICY "Public Read Profiles" ON profiles FOR SELECT USING (true);
-
-DROP POLICY IF EXISTS "Public Create Orders" ON orders;
-CREATE POLICY "Public Create Orders" ON orders FOR INSERT WITH CHECK (true);
-
--- 2. Permisos de Dueño
-DROP POLICY IF EXISTS "Owner Manage Menu" ON menu_items;
-CREATE POLICY "Owner Manage Menu" ON menu_items FOR ALL USING (auth.uid() = user_id);
-
-DROP POLICY IF EXISTS "Owner Manage Profile" ON profiles;
-CREATE POLICY "Owner Manage Profile" ON profiles FOR ALL USING (auth.uid() = id);
-
-DROP POLICY IF EXISTS "Owner Manage Orders" ON orders;
-CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_id);`}
-                                    </pre>
-                                </div>
-                            </div>
-
-                            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                                <Button onClick={() => setShowSqlModal(false)}>
-                                    Entendido
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* REMOVED SQL MODAL */}
 
                 {/* ANALYTICS SECTION */}
                 <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -814,26 +695,7 @@ CREATE POLICY "Owner Manage Orders" ON orders FOR ALL USING (auth.uid() = user_i
                             </div>
                         </div>
 
-                        {/* DIAGNOSTIC CARD (NEW) */}
-                        <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-blue-500/30 transition-all md:col-span-2">
-                            <div className="flex items-center space-x-4">
-                                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-blue-500 group-hover:bg-blue-100 transition-colors">
-                                    <ShieldCheck className="w-6 h-6" />
-                                </div>
-                                <div>
-                                    <h3 className="font-bold text-brand-900">Diagnóstico y Permisos</h3>
-                                    <p className="text-xs text-gray-500">Arreglar problemas de conexión (0 items)</p>
-                                </div>
-                            </div>
-                            <Button
-                                variant="secondary"
-                                onClick={() => setShowSqlModal(true)}
-                                className="!px-3 !py-2 shadow-none border-blue-200 text-blue-700 hover:bg-blue-50"
-                            >
-                                <Terminal className="w-4 h-4 mr-2" />
-                                Ver SQL
-                            </Button>
-                        </div>
+                        {/* DIAGNOSTIC CARD REMOVED */}
 
                         {/* Business Card */}
                         <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">

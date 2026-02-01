@@ -28,6 +28,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // HELP REQUEST STATE
     const [isRequestingHelp, setIsRequestingHelp] = useState(false);
     const [helpRequested, setHelpRequested] = useState(false);
+    const [showHelpModal, setShowHelpModal] = useState(false);
+    const [helpMessage, setHelpMessage] = useState('');
 
     // GUEST MODE STATE
     const [guestBusiness, setGuestBusiness] = useState<{ name: string, cuisine: string, logo: string | null } | null>(null);
@@ -253,6 +255,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         if (isAdminPreview) {
             alert("Vista Previa: Solicitud de ayuda simulada.");
             setHelpRequested(true);
+            setShowHelpModal(false);
+            setHelpMessage('');
             setTimeout(() => setHelpRequested(false), 3000);
             return;
         }
@@ -265,11 +269,12 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         try {
             const helpItem: any = {
                 id: 'help-req',
-                name: '👋 SOLICITUD DE AYUDA / MESERO',
+                name: '👋 SOLICITUD DE AYUDA',
                 price: '0',
                 quantity: 1,
                 category: 'System',
-                printerId: 'BILL_PRINTER' // Usually printed on same printer as bills or main one
+                notes: helpMessage || 'El cliente necesita asistencia',
+                printerId: 'BILL_PRINTER'
             };
 
             await createOrder({
@@ -281,6 +286,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             });
 
             setHelpRequested(true);
+            setShowHelpModal(false);
+            setHelpMessage('');
             setTimeout(() => setHelpRequested(false), 4000);
         } catch (e) {
             alert("Error al solicitar ayuda.");
@@ -521,7 +528,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 </button>
 
                 <button
-                    onClick={handleRequestHelp}
+                    onClick={() => setShowHelpModal(true)}
                     disabled={isRequestingHelp || helpRequested}
                     className={`
                 shadow-xl transition-all flex items-center gap-2 pr-4 pl-3 py-3 rounded-full font-bold text-sm group
@@ -680,6 +687,62 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                 </Button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Help Request Modal */}
+            {showHelpModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                    <div
+                        className="absolute inset-0 bg-brand-900/60 backdrop-blur-sm"
+                        onClick={() => {
+                            setShowHelpModal(false);
+                            setHelpMessage('');
+                        }}
+                    />
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden">
+                        <div className="p-5 border-b border-gray-100">
+                            <div className="flex items-center gap-3 mb-2">
+                                <div className="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <Hand className="w-6 h-6 text-yellow-600" />
+                                </div>
+                                <h3 className="font-serif text-xl font-bold text-brand-900">¿Qué necesitas?</h3>
+                            </div>
+                            <p className="text-sm text-gray-500 ml-13">El mesero recibirá tu mensaje de inmediato</p>
+                        </div>
+
+                        <div className="p-5">
+                            <textarea
+                                value={helpMessage}
+                                onChange={(e) => setHelpMessage(e.target.value)}
+                                placeholder="Ej: Necesito más servilletas, agua, o tengo una pregunta..."
+                                className="w-full h-32 p-3 border border-gray-200 rounded-xl resize-none focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all outline-none text-sm"
+                                autoFocus
+                            />
+                        </div>
+
+                        <div className="p-5 bg-gray-50 flex gap-3">
+                            <Button
+                                variant="secondary"
+                                onClick={() => {
+                                    setShowHelpModal(false);
+                                    setHelpMessage('');
+                                }}
+                                className="flex-1"
+                            >
+                                Cancelar
+                            </Button>
+                            <Button
+                                onClick={handleRequestHelp}
+                                disabled={!helpMessage.trim() || isRequestingHelp}
+                                isLoading={isRequestingHelp}
+                                className="flex-1 bg-yellow-500 hover:bg-yellow-600 border-transparent"
+                                icon={<Hand className="w-4 h-4" />}
+                            >
+                                Enviar Solicitud
+                            </Button>
+                        </div>
                     </div>
                 </div>
             )}
