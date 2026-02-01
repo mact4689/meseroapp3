@@ -61,16 +61,16 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
 
     // Lógica de Onboarding estricta
     if (state.isOnboarding) {
-       if (!state.business.name) {
-         onNavigate(AppView.BUSINESS_SETUP);
-       } else if (state.menu.length === 0) {
-         onNavigate(AppView.MENU_SETUP);
-       } else if (state.tables.generated.length === 0) {
-         onNavigate(AppView.TABLE_SETUP);
-       } else {
-         onNavigate(AppView.PRINTER_SETUP);
-       }
-       return;
+      if (!state.business.name) {
+        onNavigate(AppView.BUSINESS_SETUP);
+      } else if (state.menu.length === 0) {
+        onNavigate(AppView.MENU_SETUP);
+      } else if (state.tables.generated.length === 0) {
+        onNavigate(AppView.TABLE_SETUP);
+      } else {
+        onNavigate(AppView.TICKET_CONFIG);
+      }
+      return;
     }
 
     // Verificar si falta configuración esencial aunque no esté en modo onboarding explícito
@@ -112,14 +112,14 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
         {/* Loading Indicator */}
         {!showManualButton ? (
           <div className="mt-8 flex space-x-2 opacity-0 animate-[fadeIn_0.5s_ease-out_0.8s_forwards]">
-              <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_0ms]"></div>
-              <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
-              <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_400ms]"></div>
+            <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_0ms]"></div>
+            <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_200ms]"></div>
+            <div className="w-2.5 h-2.5 bg-accent-500 rounded-full animate-[bounce_1s_infinite_400ms]"></div>
           </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 w-full max-w-xs">
-            <Button 
-              onClick={handleRouting} 
+            <Button
+              onClick={handleRouting}
               fullWidth
               className="bg-white text-brand-900 hover:bg-gray-100"
               icon={<ArrowRight className="w-4 h-4" />}
@@ -129,7 +129,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
           </div>
         )}
       </div>
-      
+
       <div className="absolute bottom-8 text-white/20 text-xs">
         v1.0.0
       </div>

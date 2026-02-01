@@ -8,7 +8,6 @@ import { Welcome } from './views/Welcome';
 import { BusinessSetup } from './views/BusinessSetup';
 import { MenuSetup } from './views/MenuSetup';
 import { TableSetup } from './views/TableSetup';
-import { PrinterSetup } from './views/PrinterSetup';
 import { TicketConfigView } from './views/TicketConfig';
 import { Dashboard } from './views/Dashboard';
 import { Splash } from './views/Splash';
@@ -63,9 +62,7 @@ const App: React.FC = () => {
       {currentView === AppView.TABLE_SETUP && (
         <TableSetup onNavigate={setCurrentView} />
       )}
-      {currentView === AppView.PRINTER_SETUP && (
-        <PrinterSetup onNavigate={setCurrentView} />
-      )}
+
       {currentView === AppView.TICKET_CONFIG && (
         <TicketConfigView onNavigate={setCurrentView} />
       )}
