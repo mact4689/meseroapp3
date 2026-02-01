@@ -116,40 +116,48 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                 {/* Header */}
                 {/* Onboarding Header */}
                 {isOnboarding ? (
-                    <div className="mb-6 flex flex-col items-center">
-                        <div className="flex items-center justify-center space-x-2 mb-4 w-full">
-                            {/* Step 1 - Done */}
-                            <div className="flex flex-col items-center gap-1 opacity-60">
-                                <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><Check className="w-5 h-5" /></div>
-                            </div>
-                            <div className="w-3 h-0.5 bg-brand-900"></div>
+                    <div className="mb-6">
+                        <button
+                            onClick={() => onNavigate(AppView.BUSINESS_SETUP)}
+                            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors mb-4"
+                        >
+                            <ArrowLeft className="w-6 h-6" />
+                        </button>
+                        <div className="flex flex-col items-center">
+                            <div className="flex items-center justify-center space-x-2 mb-4 w-full">
+                                {/* Step 1 - Done */}
+                                <div className="flex flex-col items-center gap-1 opacity-60">
+                                    <div className="w-8 h-8 rounded-full bg-green-500 text-white flex items-center justify-center text-sm font-bold"><Check className="w-5 h-5" /></div>
+                                </div>
+                                <div className="w-3 h-0.5 bg-brand-900"></div>
 
-                            {/* Step 2 - Active */}
-                            <div className="flex flex-col items-center gap-1">
-                                <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">2</div>
-                                <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Cocina</span>
-                            </div>
-                            <div className="w-3 h-0.5 bg-gray-200"></div>
+                                {/* Step 2 - Active */}
+                                <div className="flex flex-col items-center gap-1">
+                                    <div className="w-8 h-8 rounded-full bg-brand-900 text-white flex items-center justify-center text-sm font-bold shadow-lg shadow-brand-900/20">2</div>
+                                    <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Cocina</span>
+                                </div>
+                                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                            {/* Step 3 - Inactive */}
-                            <div className="flex flex-col items-center gap-1 opacity-40">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
-                            </div>
-                            <div className="w-3 h-0.5 bg-gray-200"></div>
+                                {/* Step 3 - Inactive */}
+                                <div className="flex flex-col items-center gap-1 opacity-40">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">3</div>
+                                </div>
+                                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                            {/* Step 4 - Inactive */}
-                            <div className="flex flex-col items-center gap-1 opacity-40">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
-                            </div>
-                            <div className="w-3 h-0.5 bg-gray-200"></div>
+                                {/* Step 4 - Inactive */}
+                                <div className="flex flex-col items-center gap-1 opacity-40">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">4</div>
+                                </div>
+                                <div className="w-3 h-0.5 bg-gray-200"></div>
 
-                            {/* Step 5 - Inactive */}
-                            <div className="flex flex-col items-center gap-1 opacity-40">
-                                <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                                {/* Step 5 - Inactive */}
+                                <div className="flex flex-col items-center gap-1 opacity-40">
+                                    <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
+                                </div>
                             </div>
+                            <h2 className="font-serif text-3xl text-brand-900 text-center">Pantallas de Cocina</h2>
+                            <p className="text-gray-500 text-center text-sm mt-1">Configura dónde se preparan los alimentos.</p>
                         </div>
-                        <h2 className="font-serif text-3xl text-brand-900 text-center">Pantallas de Cocina</h2>
-                        <p className="text-gray-500 text-center text-sm mt-1">Configura dónde se preparan los alimentos.</p>
                     </div>
                 ) : (
                     <div className="mb-6">

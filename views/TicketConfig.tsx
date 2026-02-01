@@ -58,6 +58,12 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
             <header className={`bg-white px-6 py-4 shadow-sm sticky top-0 z-50 ${isOnboarding ? 'pt-8' : ''}`}>
                 {isOnboarding ? (
                     <div className="w-full max-w-sm mx-auto">
+                        <button
+                            onClick={() => onNavigate(AppView.TABLE_SETUP)}
+                            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors mb-4"
+                        >
+                            <ArrowLeft className="w-6 h-6" />
+                        </button>
                         <div className="flex items-center justify-center space-x-2 mb-4 w-full">
                             {/* Step 1 - Done */}
                             <div className="flex flex-col items-center gap-1 opacity-60">
