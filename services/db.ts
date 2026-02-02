@@ -461,36 +461,38 @@ export const updateOrderPreparedItems = async (orderId: string, preparedItems: a
     console.error('Error updating prepared items:', error);
     return error;
   }
-  // Helper to get the last takeout order number
-  export const getLastTakeoutOrderNumber = async (userId: string) => {
-    const fetchLastRequest = async () => {
-      // Like "LLEVAR-%"
-      const { data, error } = await supabase
-        .from('orders')
-        .select('table_number')
-        .eq('user_id', userId)
-        .like('table_number', 'LLEVAR-%')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle(); // Use maybeSingle to avoid 406 if no rows
+};
 
-      if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows" which is fine
+// Helper to get the last takeout order number
+export const getLastTakeoutOrderNumber = async (userId: string) => {
+  const fetchLastRequest = async () => {
+    // Like "LLEVAR-%"
+    const { data, error } = await supabase
+      .from('orders')
+      .select('table_number')
+      .eq('user_id', userId)
+      .like('table_number', 'LLEVAR-%')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle(); // Use maybeSingle to avoid 406 if no rows
 
-      if (!data) return 0;
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows" which is fine
 
-      // Extract number from "LLEVAR-42"
-      const parts = data.table_number.split('-');
-      if (parts.length === 2) {
-        const num = parseInt(parts[1]);
-        return isNaN(num) ? 0 : num;
-      }
-      return 0;
-    };
+    if (!data) return 0;
 
-    try {
-      return await withRetry(fetchLastRequest);
-    } catch (e) {
-      console.error("Error fetching last takeout number:", e);
-      return 0; // Fallback to start at 1
+    // Extract number from "LLEVAR-42"
+    const parts = data.table_number.split('-');
+    if (parts.length === 2) {
+      const num = parseInt(parts[1]);
+      return isNaN(num) ? 0 : num;
     }
+    return 0;
   };
+
+  try {
+    return await withRetry(fetchLastRequest);
+  } catch (e) {
+    console.error("Error fetching last takeout number:", e);
+    return 0; // Fallback to start at 1
+  }
+};
