@@ -535,50 +535,54 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 ))}
             </main>
 
-            {/* Floating Actions */}
+            {/* Floating Actions - Hide for takeout orders */}
             <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
 
-                <button
-                    onClick={handleRequestBill}
-                    disabled={isRequestingBill || billRequested}
-                    className={`
+                {tableId !== 'LLEVAR' && (
+                    <button
+                        onClick={handleRequestBill}
+                        disabled={isRequestingBill || billRequested}
+                        className={`
                 shadow-xl transition-all flex items-center gap-2 pr-4 pl-3 py-3 rounded-full font-bold text-sm group
                 ${billRequested
-                            ? 'bg-green-500 text-white cursor-default'
-                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
+                                ? 'bg-green-500 text-white cursor-default'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
             `}
-                >
-                    {isRequestingBill ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : billRequested ? (
-                        <CheckCircle className="w-5 h-5" />
-                    ) : (
-                        <CreditCard className="w-5 h-5 text-gray-500 group-hover:text-brand-900" />
-                    )}
-                    <span>{billRequested ? 'Cuenta Pedida' : 'Pedir Cuenta'}</span>
-                </button>
+                    >
+                        {isRequestingBill ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : billRequested ? (
+                            <CheckCircle className="w-5 h-5" />
+                        ) : (
+                            <CreditCard className="w-5 h-5 text-gray-500 group-hover:text-brand-900" />
+                        )}
+                        <span>{billRequested ? 'Cuenta Pedida' : 'Pedir Cuenta'}</span>
+                    </button>
+                )}
 
-                <button
-                    onClick={() => setShowHelpModal(true)}
-                    disabled={isRequestingHelp || helpRequested}
-                    className={`
+                {tableId !== 'LLEVAR' && (
+                    <button
+                        onClick={() => setShowHelpModal(true)}
+                        disabled={isRequestingHelp || helpRequested}
+                        className={`
                 shadow-xl transition-all flex items-center gap-2 pr-4 pl-3 py-3 rounded-full font-bold text-sm group
                 ${helpRequested
-                            ? 'bg-yellow-500 text-white cursor-default'
-                            : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
+                                ? 'bg-yellow-500 text-white cursor-default'
+                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100'}
             `}
-                >
-                    {isRequestingHelp ? (
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : helpRequested ? (
-                        <CheckCircle className="w-5 h-5" />
-                    ) : (
-                        <Hand className="w-5 h-5 text-gray-500 group-hover:text-yellow-600" />
-                    )}
-                    <span>{helpRequested ? 'Ayuda Solicitada' : 'Pedir Ayuda'}</span>
-                </button>
+                    >
+                        {isRequestingHelp ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : helpRequested ? (
+                            <CheckCircle className="w-5 h-5" />
+                        ) : (
+                            <Hand className="w-5 h-5 text-gray-500 group-hover:text-yellow-600" />
+                        )}
+                        <span>{helpRequested ? 'Ayuda Solicitada' : 'Pedir Ayuda'}</span>
+                    </button>
+                )}
 
-                {!isCartOpen && cartCount === 0 && (
+                {tableId !== 'LLEVAR' && !isCartOpen && cartCount === 0 && (
                     <button className="bg-white text-brand-900 p-4 rounded-full shadow-xl hover:scale-105 transition-transform flex items-center justify-center group border border-gray-100">
                         <Bell className="w-6 h-6 group-hover:animate-swing" />
                     </button>
