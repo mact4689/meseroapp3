@@ -164,35 +164,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             }))
     }, [completedOrders]);
 
-    // --- HISTORIAL DE ÓRDENES DETALLADO (MODAL) ---
+
+    // --- HISTORIAL DE ÓRDENES CON FECHA ---
     const [showHistoryModal, setShowHistoryModal] = useState(false);
+    const [historyDate, setHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
     const ordersHistory = useMemo(() => {
-        type HistoryGroup = { date: string, orders: typeof completedOrders };
-        const grouped: Record<string, typeof completedOrders> = {};
+        return completedOrders
+            .filter(order => {
+                if (!order.created_at) return false;
+                const orderDate = new Date(order.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+                return orderDate === historyDate;
+            })
+            .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }, [completedOrders, historyDate]);
 
-        completedOrders.forEach(order => {
-            if (!order.created_at) return;
-            const dateObj = new Date(order.created_at);
-            const dateKey = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+    const handleReprintOrder = async (order: typeof completedOrders[0]) => {
+        setPrintingOrderId(order.id);
+        try {
+            await printOrder(order, state.ticketConfig, business.name);
+        } catch (error) {
+            console.error('Error reprinting:', error);
+        } finally {
+            setPrintingOrderId(null);
+        }
+    };
 
-            if (!grouped[dateKey]) grouped[dateKey] = [];
-            grouped[dateKey].push(order);
-        });
-
-        // Ordenar grupos por fecha (parseando one of the orders)
-        return Object.entries(grouped)
-            .map(([date, orders]) => ({
-                date,
-                orders: orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-            }))
-            .sort((a, b) => {
-                // Ordenar grupos por la fecha de la primera orden
-                const dateA = new Date(a.orders[0].created_at).getTime();
-                const dateB = new Date(b.orders[0].created_at).getTime();
-                return dateB - dateA;
-            });
-    }, [completedOrders]);
 
 
     const handleLogout = () => {
@@ -379,70 +376,91 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowHistoryModal(false)}></div>
                         <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
-                            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
                                 <div className="flex items-center gap-2">
                                     <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
                                         <FileText className="w-4 h-4" />
                                     </div>
-                                    <h3 className="font-bold text-brand-900">Historial de Órdenes</h3>
+                                    <div>
+                                        <h3 className="font-bold text-brand-900 leading-none">Historial</h3>
+                                        <p className="text-[10px] text-gray-400 font-medium">Selecciona una fecha</p>
+                                    </div>
                                 </div>
-                                <button
-                                    onClick={() => setShowHistoryModal(false)}
-                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={historyDate}
+                                        onChange={(e) => setHistoryDate(e.target.value)}
+                                        className="bg-gray-50 border border-gray-200 rounded-lg py-1.5 px-3 text-sm font-medium text-brand-900 focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none"
+                                    />
+                                    <button
+                                        onClick={() => setShowHistoryModal(false)}
+                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="overflow-y-auto p-0">
+                            <div className="overflow-y-auto p-0 bg-gray-50/50 min-h-[300px]">
                                 {ordersHistory.length === 0 ? (
-                                    <div className="text-center py-12 px-4">
-                                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
-                                            <FileText className="w-6 h-6" />
+                                    <div className="text-center py-12 px-4 flex flex-col items-center justify-center h-full">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 text-gray-200 shadow-sm">
+                                            <Calendar className="w-8 h-8" />
                                         </div>
-                                        <p className="text-gray-400 text-sm">No hay órdenes completadas aún.</p>
+                                        <h4 className="font-bold text-gray-900 mb-1">Sin órdenes</h4>
+                                        <p className="text-gray-400 text-sm">No hay órdenes completadas para esta fecha.</p>
                                     </div>
                                 ) : (
                                     <div className="divide-y divide-gray-100">
-                                        {ordersHistory.map((group) => (
-                                            <div key={group.date}>
-                                                <div className="bg-gray-50/50 px-4 py-2 sticky top-0 backdrop-blur-sm border-y border-gray-100">
-                                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{group.date}</h4>
-                                                </div>
-                                                <div className="divide-y divide-gray-50">
-                                                    {group.orders.map(order => (
-                                                        <div key={order.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group">
-                                                            <div className="flex items-start gap-3">
-                                                                <div className={`
-                                                                    w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold shrink-0
-                                                                    ${order.table_number.startsWith('LLEVAR') ? 'bg-orange-100 text-orange-600' : 'bg-brand-50 text-brand-900'}
-                                                                `}>
-                                                                    {order.table_number.startsWith('LLEVAR') ? '🛍️' : order.table_number}
-                                                                </div>
-                                                                <div>
-                                                                    <p className="font-bold text-brand-900 text-sm">
-                                                                        {order.table_number.startsWith('LLEVAR')
-                                                                            ? `Para Llevar #${order.table_number.split('-')[1] || '?'}`
-                                                                            : `Mesa ${order.table_number}`}
-                                                                    </p>
-                                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
-                                                                        <span className="font-mono">#{order.id.slice(0, 4)}</span>
-                                                                        <span>•</span>
-                                                                        <span className="flex items-center">
-                                                                            <Clock className="w-3 h-3 mr-1" />
-                                                                            {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                        </span>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div className="text-right">
-                                                                <span className="block font-bold text-brand-900">${(order.total || 0).toFixed(2)}</span>
-                                                                <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full inline-block mt-1">
-                                                                    Completada
-                                                                </span>
-                                                            </div>
+                                        {ordersHistory.map(order => (
+                                            <div key={order.id} className="p-4 bg-white hover:bg-gray-50 transition-colors flex items-center justify-between group border-b border-gray-100 last:border-0">
+                                                <div className="flex items-start gap-4">
+                                                    <div className={`
+                                                            w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 shadow-sm
+                                                            ${order.table_number.startsWith('LLEVAR') ? 'bg-orange-100 text-orange-600' : 'bg-brand-50 text-brand-900'}
+                                                        `}>
+                                                        {order.table_number.startsWith('LLEVAR') ? '🛍️' : order.table_number}
+                                                    </div>
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <p className="font-bold text-brand-900 text-base">
+                                                                {order.table_number.startsWith('LLEVAR')
+                                                                    ? `Para Llevar #${order.table_number.split('-')[1] || '?'}`
+                                                                    : `Mesa ${order.table_number}`}
+                                                            </p>
+                                                            <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
+                                                                Completada
+                                                            </span>
                                                         </div>
-                                                    ))}
+                                                        <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                                                            <span className="flex items-center bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                                                                #{order.id.slice(0, 4)}
+                                                            </span>
+                                                            <span className="flex items-center">
+                                                                <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                                                                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <div className="flex flex-col items-end gap-2">
+                                                    <span className="block font-bold text-brand-900 text-lg">${(order.total || 0).toFixed(2)}</span>
+
+                                                    <Button
+                                                        variant="secondary"
+                                                        onClick={() => handleReprintOrder(order)}
+                                                        disabled={printingOrderId === order.id}
+                                                        className="h-8 text-xs !px-3 bg-gray-100 hover:bg-gray-200 text-brand-900 border-none flex items-center gap-1.5"
+                                                    >
+                                                        {printingOrderId === order.id ? (
+                                                            <div className="animate-spin w-3 h-3 border-2 border-brand-900 border-t-transparent rounded-full" />
+                                                        ) : (
+                                                            <Printer className="w-3.5 h-3.5" />
+                                                        )}
+                                                        Reimprimir
+                                                    </Button>
                                                 </div>
                                             </div>
                                         ))}
