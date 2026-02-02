@@ -581,12 +581,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                         <span>{helpRequested ? 'Ayuda Solicitada' : 'Pedir Ayuda'}</span>
                     </button>
                 )}
-
-                {tableId !== 'LLEVAR' && !isCartOpen && cartCount === 0 && (
-                    <button className="bg-white text-brand-900 p-4 rounded-full shadow-xl hover:scale-105 transition-transform flex items-center justify-center group border border-gray-100">
-                        <Bell className="w-6 h-6 group-hover:animate-swing" />
-                    </button>
-                )}
             </div>
 
             {/* Bottom Cart Bar */}
