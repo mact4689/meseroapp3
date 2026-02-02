@@ -729,7 +729,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 <Button
                                     variant="primary"
                                     onClick={() => onNavigate(AppView.CUSTOMER_MENU)}
-                                    className="!px-6 !py-2.5 bg-accent-500 !text-brand-900 hover:bg-accent-600 border-none font-bold"
+                                    className="!px-6 !py-2.5 bg-white !text-brand-900 hover:bg-gray-50 border border-gray-200 font-bold shadow-sm"
                                 >
                                     Abrir Preview
                                 </Button>
