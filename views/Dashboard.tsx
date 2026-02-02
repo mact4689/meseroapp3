@@ -162,7 +162,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 count: data.count,
                 rawDate: data.rawDate
             }))
-            .sort((a, b) => b.rawDate - a.rawDate);
+    }, [completedOrders]);
+
+    // --- HISTORIAL DE ÓRDENES DETALLADO (MODAL) ---
+    const [showHistoryModal, setShowHistoryModal] = useState(false);
+
+    const ordersHistory = useMemo(() => {
+        type HistoryGroup = { date: string, orders: typeof completedOrders };
+        const grouped: Record<string, typeof completedOrders> = {};
+
+        completedOrders.forEach(order => {
+            if (!order.created_at) return;
+            const dateObj = new Date(order.created_at);
+            const dateKey = dateObj.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' });
+
+            if (!grouped[dateKey]) grouped[dateKey] = [];
+            grouped[dateKey].push(order);
+        });
+
+        // Ordenar grupos por fecha (parseando one of the orders)
+        return Object.entries(grouped)
+            .map(([date, orders]) => ({
+                date,
+                orders: orders.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+            }))
+            .sort((a, b) => {
+                // Ordenar grupos por la fecha de la primera orden
+                const dateA = new Date(a.orders[0].created_at).getTime();
+                const dateB = new Date(b.orders[0].created_at).getTime();
+                return dateB - dateA;
+            });
     }, [completedOrders]);
 
 
@@ -329,70 +358,157 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         </div>
                     </div>
 
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    <div
+                        onClick={() => setShowHistoryModal(true)}
+                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
+                    >
                         <div className="flex items-center space-x-2 text-purple-600 mb-2">
                             <Users className="w-4 h-4" />
                             <span className="text-xs font-bold uppercase tracking-wider">Órdenes</span>
                         </div>
                         <p className="text-2xl font-bold text-brand-900">{completedOrders.length}</p>
-                        <p className="text-xs text-gray-500">Completadas Total</p>
+                        <div className="flex justify-between items-center mt-1">
+                            <p className="text-xs text-gray-500">Completadas Total</p>
+                            <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                        </div>
                     </div>
                 </div>
 
-                {/* MODAL: SALES HISTORY */}
-                {showSalesModal && (
+                {/* MODAL: ORDER HISTORY */}
+                {showHistoryModal && (
                     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
-                        <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
+                        <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowHistoryModal(false)}></div>
                         <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
                             <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                                 <div className="flex items-center gap-2">
-                                    <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                                        <Calendar className="w-4 h-4" />
+                                    <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
+                                        <FileText className="w-4 h-4" />
                                     </div>
-                                    <h3 className="font-bold text-brand-900">Historial de Ventas</h3>
+                                    <h3 className="font-bold text-brand-900">Historial de Órdenes</h3>
                                 </div>
                                 <button
-                                    onClick={() => setShowSalesModal(false)}
+                                    onClick={() => setShowHistoryModal(false)}
                                     className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
                                 >
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
 
-                            <div className="overflow-y-auto p-2">
-                                {salesByDay.length === 0 ? (
-                                    <div className="text-center py-8 px-4">
-                                        <p className="text-gray-400 text-sm">No hay registros de ventas anteriores.</p>
+                            <div className="overflow-y-auto p-0">
+                                {ordersHistory.length === 0 ? (
+                                    <div className="text-center py-12 px-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <p className="text-gray-400 text-sm">No hay órdenes completadas aún.</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-1">
-                                        {salesByDay.map((day, idx) => (
-                                            <div key={day.date} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex flex-col items-center justify-center w-10 h-10 bg-gray-100 rounded-lg text-gray-500">
-                                                        <span className="text-[10px] font-bold uppercase leading-none">{day.date.split(' ')[0]}</span>
-                                                        <span className="text-xs font-bold leading-none mt-0.5">{day.date.split(' ')[1]}</span>
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-brand-900 capitalize">{day.date}</p>
-                                                        <p className="text-xs text-gray-500">{day.count} órdenes</p>
-                                                    </div>
+                                    <div className="divide-y divide-gray-100">
+                                        {ordersHistory.map((group) => (
+                                            <div key={group.date}>
+                                                <div className="bg-gray-50/50 px-4 py-2 sticky top-0 backdrop-blur-sm border-y border-gray-100">
+                                                    <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider">{group.date}</h4>
                                                 </div>
-                                                <span className="text-base font-bold text-brand-900">
-                                                    ${day.total.toFixed(2)}
-                                                </span>
+                                                <div className="divide-y divide-gray-50">
+                                                    {group.orders.map(order => (
+                                                        <div key={order.id} className="p-4 hover:bg-gray-50 transition-colors flex items-center justify-between group">
+                                                            <div className="flex items-start gap-3">
+                                                                <div className={`
+                                                                    w-10 h-10 rounded-lg flex items-center justify-center text-lg font-bold shrink-0
+                                                                    ${order.table_number.startsWith('LLEVAR') ? 'bg-orange-100 text-orange-600' : 'bg-brand-50 text-brand-900'}
+                                                                `}>
+                                                                    {order.table_number.startsWith('LLEVAR') ? '🛍️' : order.table_number}
+                                                                </div>
+                                                                <div>
+                                                                    <p className="font-bold text-brand-900 text-sm">
+                                                                        {order.table_number.startsWith('LLEVAR')
+                                                                            ? `Para Llevar #${order.table_number.split('-')[1] || '?'}`
+                                                                            : `Mesa ${order.table_number}`}
+                                                                    </p>
+                                                                    <div className="flex items-center gap-2 text-xs text-gray-500 mt-0.5">
+                                                                        <span className="font-mono">#{order.id.slice(0, 4)}</span>
+                                                                        <span>•</span>
+                                                                        <span className="flex items-center">
+                                                                            <Clock className="w-3 h-3 mr-1" />
+                                                                            {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="block font-bold text-brand-900">${(order.total || 0).toFixed(2)}</span>
+                                                                <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full inline-block mt-1">
+                                                                    Completada
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>
                                 )}
                             </div>
-
-                            <div className="p-4 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-400">
-                                Mostrando ventas totales (incluye propinas si aplica)
-                            </div>
                         </div>
                     </div>
                 )}
+
+                {/* MODAL: SALES HISTORY */}
+                {
+                    showSalesModal && (
+                        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                            <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
+                                            <Calendar className="w-4 h-4" />
+                                        </div>
+                                        <h3 className="font-bold text-brand-900">Historial de Ventas</h3>
+                                    </div>
+                                    <button
+                                        onClick={() => setShowSalesModal(false)}
+                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                                    >
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+
+                                <div className="overflow-y-auto p-2">
+                                    {salesByDay.length === 0 ? (
+                                        <div className="text-center py-8 px-4">
+                                            <p className="text-gray-400 text-sm">No hay registros de ventas anteriores.</p>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-1">
+                                            {salesByDay.map((day, idx) => (
+                                                <div key={day.date} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex flex-col items-center justify-center w-10 h-10 bg-gray-100 rounded-lg text-gray-500">
+                                                            <span className="text-[10px] font-bold uppercase leading-none">{day.date.split(' ')[0]}</span>
+                                                            <span className="text-xs font-bold leading-none mt-0.5">{day.date.split(' ')[1]}</span>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-sm font-bold text-brand-900 capitalize">{day.date}</p>
+                                                            <p className="text-xs text-gray-500">{day.count} órdenes</p>
+                                                        </div>
+                                                    </div>
+                                                    <span className="text-base font-bold text-brand-900">
+                                                        ${day.total.toFixed(2)}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="p-4 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-400">
+                                    Mostrando ventas totales (incluye propinas si aplica)
+                                </div>
+                            </div>
+                        </div>
+                    )
+                }
 
                 {/* REMOVED SQL MODAL */}
 
@@ -820,7 +936,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                 </div>
 
-            </main>
-        </div>
+            </main >
+        </div >
     );
 };
