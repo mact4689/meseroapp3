@@ -205,11 +205,11 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                   <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
                 </div>
               </div>
-              <h2 className="font-serif text-3xl text-brand-900 text-center">Tus Mesas</h2>
+              <h2 className="text-3xl text-brand-900 text-center">Tus Mesas</h2>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-              <h2 className="font-serif text-3xl text-brand-900">Configuración de Mesas</h2>
+              <h2 className="text-3xl text-brand-900">Configuración de Mesas</h2>
               <p className="text-gray-500">Genera los códigos QR para tus clientes.</p>
             </div>
           )}

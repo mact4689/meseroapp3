@@ -260,7 +260,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             </div>
                         )}
                         <div>
-                            <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">
+                            <h1 className="text-lg font-bold text-brand-900 leading-none">
                                 {business.name || 'Mi Restaurante'}
                             </h1>
                             <p className="text-xs text-gray-500 mt-0.5">
@@ -403,7 +403,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
                                 <BarChart3 className="w-5 h-5" />
                             </div>
-                            <h3 className="font-serif font-bold text-brand-900 text-lg">Rendimiento del Menú</h3>
+                            <h3 className="font-bold text-brand-900 text-lg">Rendimiento del Menú</h3>
                         </div>
 
                         <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
@@ -430,7 +430,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     <div className="space-y-4">
                                         {itemStats.topItems.map((item, idx) => (
                                             <div key={item.id} className="flex items-center gap-3 group">
-                                                <div className="font-serif font-bold text-gray-300 w-4 text-center text-lg group-hover:text-brand-900 transition-colors">{idx + 1}</div>
+                                                <div className="font-bold text-gray-300 w-4 text-center text-lg group-hover:text-brand-900 transition-colors">{idx + 1}</div>
                                                 <div className="relative w-12 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-100">
                                                     {item.image ? (<img src={item.image} alt={item.name} className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center text-gray-300"><UtensilsCrossed className="w-5 h-5" /></div>)}
                                                     {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-400 text-[8px] px-1 font-bold text-yellow-900 rounded-bl">#1</div>}
@@ -494,7 +494,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <div className="w-8 h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500">
                                 <Bell className="w-5 h-5" />
                             </div>
-                            <h3 className="font-serif font-bold text-brand-900 text-lg">Órdenes Activas</h3>
+                            <h3 className="font-bold text-brand-900 text-lg">Órdenes Activas</h3>
                             {pendingOrders.length > 0 && (
                                 <span className="bg-red-100 text-red-600 text-xs font-bold px-2 py-0.5 rounded-full">
                                     {pendingOrders.length}
@@ -699,7 +699,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
                             <Settings className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-serif font-bold text-brand-900">Configuración</h2>
+                        <h2 className="text-lg font-bold text-brand-900">Configuración</h2>
                     </div>
 
                     <div className="grid md:grid-cols-2 gap-4">

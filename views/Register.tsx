@@ -120,7 +120,7 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="mt-6 space-y-2">
-            <h2 className="font-serif text-3xl text-brand-900">Crear cuenta</h2>
+            <h2 className="text-3xl text-brand-900">Crear cuenta</h2>
           </div>
         </div>
 

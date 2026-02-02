@@ -155,7 +155,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                                     <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
                                 </div>
                             </div>
-                            <h2 className="font-serif text-3xl text-brand-900 text-center">Pantallas de Cocina</h2>
+                            <h2 className="text-3xl text-brand-900 text-center">Pantallas de Cocina</h2>
                             <p className="text-gray-500 text-center text-sm mt-1">Configura dónde se preparan los alimentos.</p>
                         </div>
                     </div>
@@ -174,7 +174,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                                     <ChefHat className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
-                                    <h2 className="font-serif text-2xl text-brand-900">Pantallas de Cocina</h2>
+                                    <h2 className="text-2xl text-brand-900">Pantallas de Cocina</h2>
                                     <p className="text-sm text-gray-500">Configura estaciones KDS</p>
                                 </div>
                             </div>

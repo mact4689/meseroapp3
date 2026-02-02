@@ -304,11 +304,11 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                   <div className="w-8 h-8 rounded-full bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold">5</div>
                 </div>
               </div>
-              <h2 className="font-serif text-3xl text-brand-900 text-center">Arma tu Menú</h2>
+              <h2 className="text-3xl text-brand-900 text-center">Arma tu Menú</h2>
             </div>
           ) : (
             <div className="mt-4 space-y-2">
-              <h2 className="font-serif text-3xl text-brand-900">Tu Menú Digital</h2>
+              <h2 className="text-3xl text-brand-900">Tu Menú Digital</h2>
               <p className="text-gray-500">Agrega fotos y detalles a tus platillos.</p>
             </div>
           )}
@@ -464,7 +464,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             <div className="space-y-6 pb-4">
               {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
                 <div key={cat} className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                  <h3 className="font-serif text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10 shadow-sm px-2 -mx-2 rounded-lg">
+                  <h3 className="text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10 shadow-sm px-2 -mx-2 rounded-lg">
                     <span className="w-1.5 h-1.5 bg-accent-500 rounded-full mr-2"></span>
                     {cat}
                   </h3>

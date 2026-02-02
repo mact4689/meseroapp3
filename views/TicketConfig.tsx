@@ -95,7 +95,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                                 <span className="text-[10px] font-bold text-brand-900 uppercase tracking-wider">Ticket</span>
                             </div>
                         </div>
-                        <h2 className="font-serif text-3xl text-brand-900 text-center">Diseño de Ticket</h2>
+                        <h2 className="text-3xl text-brand-900 text-center">Diseño de Ticket</h2>
                         <p className="text-gray-500 text-center text-sm mt-1">Personaliza cómo se ven tus tickets impresos.</p>
                     </div>
                 ) : (
@@ -108,7 +108,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                             <ArrowLeft className="w-6 h-6" />
                         </button>
                         <div>
-                            <h1 className="font-serif text-lg font-bold text-brand-900 leading-none">Configuración de Tickets</h1>
+                            <h1 className="text-lg font-bold text-brand-900 leading-none">Configuración de Tickets</h1>
                             <p className="text-xs text-gray-500">Personaliza el formato de impresión</p>
                         </div>
                     </div>

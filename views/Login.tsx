@@ -72,7 +72,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             <ArrowLeft className="w-6 h-6" />
           </button>
           <div className="mt-6 space-y-2">
-            <h2 className="font-serif text-3xl text-brand-900">Bienvenido de nuevo</h2>
+            <h2 className="text-3xl text-brand-900">Bienvenido de nuevo</h2>
             <p className="text-gray-500">Ingresa tus credenciales para ver tu negocio.</p>
           </div>
         </div>
