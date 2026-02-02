@@ -284,21 +284,14 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
               </div>
 
               {!isGenerating && generatedTables.length > 0 && (
-                <div className="mb-4 bg-blue-50 p-3 rounded-lg flex items-start gap-3 text-sm text-blue-800">
-                  <div className="mt-0.5"><ExternalLink className="w-4 h-4" /></div>
-                  <div className="flex-1">
-                    <p className="font-bold mb-1">Asegúrate de que los QRs funcionen</p>
-                    <p className="text-xs opacity-90 mb-2">
-                      Si generaste estos códigos en tu computadora (localhost), no funcionarán para los clientes en sus celulares.
-                    </p>
-                    <Button
-                      variant="secondary"
-                      onClick={handleGenerate}
-                      className="text-xs h-8 bg-blue-100 hover:bg-blue-200 text-blue-900 border-none px-3"
-                    >
-                      Regenerar con dominio actual
-                    </Button>
-                  </div>
+                <div className="mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
+                  <p className="font-bold mb-2 flex items-center gap-2">💡 ¿Cómo funciona?</p>
+                  <ol className="space-y-1 text-xs opacity-90 list-decimal list-inside">
+                    <li>Descarga e imprime los códigos QR</li>
+                    <li>Colócalos en cada mesa de tu restaurante</li>
+                    <li>Los clientes escanean y hacen su pedido</li>
+                    <li>¡Las órdenes aparecen automáticamente!</li>
+                  </ol>
                 </div>
               )}
 
