@@ -13,7 +13,7 @@ interface TableSetupProps {
 }
 
 interface TableData {
-  id: number;
+  id: number | string;
   qrDataUrl: string;
 }
 
@@ -231,15 +231,42 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                 required
               />
             </div>
-            <div className="pb-1.5">
+            <div className="pb-1.5 flex gap-2">
               <Button
                 type="submit"
                 variant="secondary"
                 isLoading={isGenerating}
                 disabled={!tableCount}
-                className="h-[52px]"
+                className="h-[52px] flex-1"
               >
                 Generar
+              </Button>
+              <Button
+                type="button"
+                onClick={async () => {
+                  if (!state.user?.id) return;
+                  const cleanBaseUrl = getBaseUrl();
+                  const url = `${cleanBaseUrl}/?table=LLEVAR&uid=${state.user.id}`;
+                  const qrDataUrl = await QRCode.toDataURL(url, {
+                    width: 300,
+                    margin: 2,
+                    color: { dark: '#1a1a1a', light: '#ffffff' },
+                  });
+                  const takeoutTable = { id: 'LLEVAR', qrDataUrl };
+                  // Add or replace 'LLEVAR' in the list (prepend it)
+                  const filtered = generatedTables.filter(t => t.id !== 'LLEVAR');
+                  const newTables = [takeoutTable, ...filtered];
+                  setGeneratedTables(newTables);
+                  updateTables(tableCount, newTables);
+                }}
+                variant="outline"
+                className="h-[52px] px-4"
+                title="Generar QR para pedidos Para Llevar"
+              >
+                <div className="flex flex-col items-center leading-none">
+                  <span className="font-bold text-xs">QR</span>
+                  <span className="text-[10px]">Llevar</span>
+                </div>
               </Button>
             </div>
           </form>

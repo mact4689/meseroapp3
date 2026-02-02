@@ -30,8 +30,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onChange, previ
   return (
     <div className="space-y-2">
       {label && <span className="block text-sm font-medium text-gray-700 ml-1">{label}</span>}
-      
-      <div 
+
+      <div
         onClick={() => fileInputRef.current?.click()}
         className={`
           relative w-full aspect-video rounded-2xl border-2 border-dashed 
@@ -41,8 +41,8 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onChange, previ
           ${className}
         `}
       >
-        <input 
-          type="file" 
+        <input
+          type="file"
           ref={fileInputRef}
           onChange={handleFileChange}
           accept="image/png, image/jpeg, image/jpg"
@@ -51,9 +51,9 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onChange, previ
 
         {previewUrl ? (
           <>
-            <img 
-              src={previewUrl} 
-              alt="Preview" 
+            <img
+              src={previewUrl}
+              alt="Preview"
               className="absolute inset-0 w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -62,7 +62,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onChange, previ
                 <span className="text-xs font-medium">Cambiar foto</span>
               </div>
             </div>
-            <button 
+            <button
               onClick={handleRemove}
               className="absolute top-2 right-2 p-1.5 bg-white/90 rounded-full shadow-sm text-gray-600 hover:text-red-500 transition-colors z-10"
             >
@@ -70,15 +70,15 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onChange, previ
             </button>
           </>
         ) : (
-          <div className="text-center p-6 transition-transform duration-200 group-hover:scale-105">
-            <div className="w-12 h-12 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-3 text-brand-900">
-              <ImageIcon className="w-6 h-6" />
+          <div className="text-center p-2 transition-transform duration-200 group-hover:scale-105">
+            <div className="w-8 h-8 bg-white rounded-full shadow-sm flex items-center justify-center mx-auto mb-1.5 text-brand-900 border border-gray-100">
+              <ImageIcon className="w-4 h-4" />
             </div>
-            <p className="text-sm font-medium text-gray-900">Subir foto</p>
+            <p className="text-xs font-medium text-gray-500">Subir</p>
           </div>
         )}
       </div>
-      
+
       {error && <p className="text-sm text-red-500 ml-1">{error}</p>}
     </div>
   );

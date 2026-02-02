@@ -84,8 +84,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const filteredOrdersForStats = useMemo(() => {
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-        const sevenDaysAgo = now.getTime() - (7 * 24 * 60 * 60 * 1000);
-        const thirtyDaysAgo = now.getTime() - (30 * 24 * 60 * 60 * 1000);
+        // Use calendar days relative to todayStart for consistency (00:00:00 of N days ago)
+        const sevenDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7).getTime();
+        const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30).getTime();
 
         return completedOrders.filter(o => {
             if (!o.created_at) return false;

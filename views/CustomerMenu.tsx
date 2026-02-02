@@ -189,15 +189,38 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         setIsSending(true);
 
         try {
+            let finalTableNumber = tableId || 'S/N';
+            let takeoutNumber = 0;
+
+            // TAKEOUT LOGIC: Sequential 1-99
+            if (tableId === 'LLEVAR') {
+                // Determine restaurant ID
+                const targetId = uid || state.user?.id;
+
+                // Dynamically import to avoid circular dependencies
+                const dbService = await import('../services/db') as any;
+                const lastNum = await dbService.getLastTakeoutOrderNumber(targetId);
+
+                // Logic: Next number = (Last % 99) + 1
+                takeoutNumber = (lastNum % 99) + 1;
+                finalTableNumber = `LLEVAR-${takeoutNumber}`;
+            }
+
             await createOrder({
                 user_id: restaurantId,
-                table_number: tableId || 'S/N',
+                table_number: finalTableNumber,
                 status: 'pending',
                 total: cartTotal,
                 items: cart
             });
 
             setOrderSent(true);
+
+            // If takeout, show the number in alert (or toast) before clearing
+            if (takeoutNumber > 0) {
+                alert(`¡Orden Recibida!\n\nTu número de entrega es: #${takeoutNumber}\n\nEspera a que te llamen.`);
+            }
+
             setTimeout(() => {
                 setCart([]);
                 setOrderSent(false);
@@ -394,8 +417,15 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             )}
                         </div>
                         <div className="mb-1 flex flex-col items-end gap-2">
-                            <span className="inline-flex items-center px-3 py-1 rounded-full bg-accent-50 text-accent-700 text-xs font-bold border border-accent-100 shadow-sm">
-                                Mesa {tableId || '1'}
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold border shadow-sm ${tableId === 'LLEVAR' ? 'bg-orange-50 text-orange-700 border-orange-100' : 'bg-accent-50 text-accent-700 border-accent-100'}`}>
+                                {tableId === 'LLEVAR' ? (
+                                    <>
+                                        <ShoppingBag className="w-3 h-3 mr-1.5" />
+                                        Para Llevar
+                                    </>
+                                ) : (
+                                    `Mesa ${tableId || '1'}`
+                                )}
                             </span>
                         </div>
                     </div>

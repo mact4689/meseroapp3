@@ -408,7 +408,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                             text-gray-900 py-3.5 pl-10 border appearance-none
                         `}
                 >
-                  <option value="">-- Estación de Cocina (KDS) --</option>
+                  <option value="">¿En que estación saldrá tu platillo?</option>
                   {stations.map(station => (
                     <option key={station.id} value={station.id}>
                       {station.name}
