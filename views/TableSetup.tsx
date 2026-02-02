@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2 } from 'lucide-react';
+import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag } from 'lucide-react';
 import QRCode from 'qrcode';
 import { jsPDF } from 'jspdf';
 import { useAppStore } from '../store/AppContext';
@@ -314,13 +314,19 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                       return (
                         <div key={table.id} className="bg-white p-3 rounded-xl border border-gray-100 flex flex-col items-center text-center shadow-sm">
                           {table.qrDataUrl ? (
-                            <img src={table.qrDataUrl} alt={`QR Mesa ${table.id}`} className="w-24 h-24 mb-2 mix-blend-multiply" />
+                            <img src={table.qrDataUrl} alt={`QR ${table.id === 'LLEVAR' ? 'Para Llevar' : 'Mesa ' + table.id}`} className="w-24 h-24 mb-2 mix-blend-multiply" />
                           ) : (
                             <div className="w-24 h-24 mb-2 flex items-center justify-center bg-gray-50 rounded-lg">
                               <Loader2 className="w-6 h-6 animate-spin text-gray-300" />
                             </div>
                           )}
-                          <span className="text-sm font-bold text-brand-900">Mesa {table.id}</span>
+                          {table.id === 'LLEVAR' ? (
+                            <span className="text-sm font-bold text-orange-600 bg-orange-50 px-2 py-1 rounded-full border border-orange-200 flex items-center gap-1">
+                              <ShoppingBag className="w-3.5 h-3.5" /> Para Llevar
+                            </span>
+                          ) : (
+                            <span className="text-sm font-bold text-brand-900">Mesa {table.id}</span>
+                          )}
 
                           <a
                             href={tableUrl}

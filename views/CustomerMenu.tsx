@@ -20,6 +20,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [activeCategory, setActiveCategory] = useState<string>('');
     const [orderSent, setOrderSent] = useState(false);
     const [isSending, setIsSending] = useState(false);
+    const [lastTakeoutNumber, setLastTakeoutNumber] = useState<number>(0);
 
     // BILL REQUEST STATE
     const [isRequestingBill, setIsRequestingBill] = useState(false);
@@ -216,9 +217,9 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
             setOrderSent(true);
 
-            // If takeout, show the number in alert (or toast) before clearing
+            // Store takeout number to display in UI
             if (takeoutNumber > 0) {
-                alert(`¡Orden Recibida!\n\nTu número de entrega es: #${takeoutNumber}\n\nEspera a que te llamen.`);
+                setLastTakeoutNumber(takeoutNumber);
             }
 
             setTimeout(() => {
@@ -634,11 +635,28 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                         <div className="flex-1 overflow-y-auto p-6 space-y-6">
                             {orderSent ? (
                                 <div className="py-12 text-center">
-                                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-[bounce_1s_infinite]">
-                                        <Receipt className="w-10 h-10 text-green-600" />
-                                    </div>
-                                    <h3 className="text-2xl font-serif font-bold text-brand-900 mb-2">¡Orden Enviada!</h3>
-                                    <p className="text-gray-500">La cocina ha recibido tu pedido.</p>
+                                    {lastTakeoutNumber > 0 ? (
+                                        <>
+                                            <div className="w-24 h-24 bg-orange-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                <span className="text-4xl font-serif font-bold text-orange-600">#{lastTakeoutNumber}</span>
+                                            </div>
+                                            <h3 className="text-2xl font-serif font-bold text-brand-900 mb-2">¡Orden Recibida!</h3>
+                                            <p className="text-gray-500 mb-4">Tu número de entrega es:</p>
+                                            <div className="inline-flex items-center gap-2 bg-orange-50 text-orange-700 font-bold text-xl px-6 py-3 rounded-full border-2 border-orange-200">
+                                                <ShoppingBag className="w-5 h-5" />
+                                                Orden #{lastTakeoutNumber}
+                                            </div>
+                                            <p className="text-sm text-gray-400 mt-4">Espera a que te llamen</p>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-[bounce_1s_infinite]">
+                                                <Receipt className="w-10 h-10 text-green-600" />
+                                            </div>
+                                            <h3 className="text-2xl font-serif font-bold text-brand-900 mb-2">¡Orden Enviada!</h3>
+                                            <p className="text-gray-500">La cocina ha recibido tu pedido.</p>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 cart.map((item) => (
