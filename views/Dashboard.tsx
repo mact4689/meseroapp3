@@ -28,6 +28,7 @@ import {
     X,
     Calendar,
     Filter,
+    Download,
     Trophy,
     ArrowRight,
     Settings,
@@ -136,33 +137,88 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     }, [filteredOrdersForStats, menu]);
 
     // --- LÓGICA DE VENTAS POR DÍA (HISTORIAL MODAL) ---
-    const salesByDay = useMemo(() => {
-        type DayData = { total: number; count: number; rawDate: number };
-        const grouped = completedOrders.reduce((acc, order) => {
-            if (!order.created_at) return acc;
 
-            const dateObj = new Date(order.created_at);
-            if (isNaN(dateObj.getTime())) return acc;
+    // --- ANALÍTICA DE VENTAS (MODAL MEJORADO) ---
+    const [salesHistoryDate, setSalesHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-            const dateKey = dateObj.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    const dailyStats = useMemo(() => {
+        // 1. Filtrar órdenes por fecha seleccionada
+        const filteredOrders = completedOrders.filter(order => {
+            if (!order.created_at) return false;
+            return new Date(order.created_at).toLocaleDateString('en-CA') === salesHistoryDate;
+        });
 
-            if (!acc[dateKey]) {
-                acc[dateKey] = { total: 0, count: 0, rawDate: dateObj.getTime() };
+        // 2. Calcular Totales Básicos
+        const total = filteredOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        const count = filteredOrders.length;
+        const avgTicket = count > 0 ? total / count : 0;
+
+        // 3. Top Platillos
+        const productMap = new Map<string, { name: string, count: number, total: number }>();
+        filteredOrders.forEach(order => {
+            order.items.forEach(item => {
+                const existing = productMap.get(item.name) || { name: item.name, count: 0, total: 0 };
+                existing.count += item.quantity;
+                existing.total += item.quantity * parseFloat(item.price);
+                productMap.set(item.name, existing);
+            });
+        });
+        const topProducts = Array.from(productMap.values())
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+
+        // 4. Horas Pico
+        const hoursMap = new Array(24).fill(0);
+        filteredOrders.forEach(order => {
+            if (order.created_at) {
+                const hour = new Date(order.created_at).getHours();
+                hoursMap[hour]++;
             }
+        });
+        // Simplificar para mostrar solo horas relevantes (ej. 12pm a 11pm o las que tengan ventas)
+        // Por ahora tomamos un rango fijo o dinámico. Haremos dinámico simple:
+        const activeHours = hoursMap.map((count, hour) => ({
+            hour: `${hour}:00`,
+            count
+        })).filter((_, idx) => {
+            // Mostrar rango razonable si hay datos, si no todo el día
+            return true;
+        }).slice(8, 24); // Mostrar de 8am a 12pm por defecto para limpieza visual
 
-            acc[dateKey].total += (order.total || 0);
-            acc[dateKey].count += 1;
-            return acc;
-        }, {} as Record<string, DayData>);
+        return { total, count, avgTicket, topProducts, peakHours: activeHours };
+    }, [completedOrders, salesHistoryDate]);
 
-        return Object.entries(grouped)
-            .map(([date, data]: [string, DayData]) => ({
-                date,
-                total: data.total,
-                count: data.count,
-                rawDate: data.rawDate
-            }))
-    }, [completedOrders]);
+    const handleExportReport = () => {
+        // Generar CSV
+        const headers = ['Orden ID', 'Hora', 'Mesa', 'Total', 'Items'];
+        const rows = completedOrders
+            .filter(o => new Date(o.created_at).toLocaleDateString('en-CA') === salesHistoryDate)
+            .map(o => [
+                o.id.slice(0, 6),
+                new Date(o.created_at).toLocaleTimeString(),
+                o.table_number,
+                o.total.toFixed(2),
+                o.items.map(i => `${i.quantity}x ${i.name}`).join(' | ')
+            ]);
+
+        const csvContent = [
+            `Reporte de Ventas - ${salesHistoryDate}`,
+            `Total: $${dailyStats.total.toFixed(2)} | Pedidos: ${dailyStats.count} | Ticket Prom: $${dailyStats.avgTicket.toFixed(2)}`,
+            '',
+            headers.join(','),
+            ...rows.map(r => r.join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.setAttribute('download', `reporte_ventas_${salesHistoryDate}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
 
 
     // --- HISTORIAL DE ÓRDENES CON FECHA ---
@@ -477,45 +533,117 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
                             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
-                                <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+                                <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                                            <Calendar className="w-4 h-4" />
+                                            <TrendingUp className="w-4 h-4" />
                                         </div>
-                                        <h3 className="font-bold text-brand-900">Historial de Ventas</h3>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900 leading-none">Reporte de Ventas</h3>
+                                            <p className="text-[10px] text-gray-400 font-medium">Resumen diario</p>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => setShowSalesModal(false)}
-                                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
-                                    >
-                                        <X className="w-5 h-5" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="date"
+                                            value={salesHistoryDate}
+                                            onChange={(e) => setSalesHistoryDate(e.target.value)}
+                                            className="bg-gray-50 border border-gray-200 rounded-lg py-1.5 px-3 text-sm font-medium text-brand-900 focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none"
+                                        />
+                                        <button
+                                            onClick={() => setShowSalesModal(false)}
+                                            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    </div>
                                 </div>
 
-                                <div className="overflow-y-auto p-2">
-                                    {salesByDay.length === 0 ? (
-                                        <div className="text-center py-8 px-4">
-                                            <p className="text-gray-400 text-sm">No hay registros de ventas anteriores.</p>
+                                <div className="overflow-y-auto p-4 bg-gray-50/50 min-h-[400px]">
+                                    {dailyStats.count === 0 ? (
+                                        <div className="text-center py-12 px-4 flex flex-col items-center justify-center h-full">
+                                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 text-gray-200 shadow-sm">
+                                                <Calendar className="w-8 h-8" />
+                                            </div>
+                                            <h4 className="font-bold text-gray-900 mb-1">Sin ventas</h4>
+                                            <p className="text-gray-400 text-sm">No hay ventas registradas para esta fecha.</p>
                                         </div>
                                     ) : (
-                                        <div className="space-y-1">
-                                            {salesByDay.map((day, idx) => (
-                                                <div key={day.date} className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-xl transition-colors">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex flex-col items-center justify-center w-10 h-10 bg-gray-100 rounded-lg text-gray-500">
-                                                            <span className="text-[10px] font-bold uppercase leading-none">{day.date.split(' ')[0]}</span>
-                                                            <span className="text-xs font-bold leading-none mt-0.5">{day.date.split(' ')[1]}</span>
-                                                        </div>
-                                                        <div>
-                                                            <p className="text-sm font-bold text-brand-900 capitalize">{day.date}</p>
-                                                            <p className="text-xs text-gray-500">{day.count} órdenes</p>
-                                                        </div>
-                                                    </div>
-                                                    <span className="text-base font-bold text-brand-900">
-                                                        ${day.total.toFixed(2)}
-                                                    </span>
+                                        <div className="space-y-6">
+                                            {/* KPI Cards */}
+                                            <div className="grid grid-cols-3 gap-3">
+                                                <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Ventas</p>
+                                                    <p className="text-lg font-bold text-brand-900">${dailyStats.total.toFixed(2)}</p>
                                                 </div>
-                                            ))}
+                                                <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Pedidos</p>
+                                                    <p className="text-lg font-bold text-brand-900">{dailyStats.count}</p>
+                                                </div>
+                                                <div className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm">
+                                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-1">Ticket Prom.</p>
+                                                    <p className="text-lg font-bold text-brand-900">${dailyStats.avgTicket.toFixed(2)}</p>
+                                                </div>
+                                            </div>
+
+                                            {/* Top Dishes */}
+                                            <div>
+                                                <h4 className="font-bold text-brand-900 text-sm mb-3 flex items-center gap-2">
+                                                    <UtensilsCrossed className="w-4 h-4 text-orange-500" />
+                                                    Lo más vendido
+                                                </h4>
+                                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                                                    {dailyStats.topProducts.map((item, idx) => (
+                                                        <div key={idx} className="flex items-center justify-between p-3 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-6 h-6 rounded-full bg-orange-50 text-orange-600 flex items-center justify-center text-xs font-bold">
+                                                                    {idx + 1}
+                                                                </div>
+                                                                <span className="text-sm font-medium text-gray-700 truncate max-w-[140px]">{item.name}</span>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="block text-xs font-bold text-brand-900">{item.count} un.</span>
+                                                                <span className="text-[10px] text-gray-400">${item.total.toFixed(2)}</span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Peak Hours */}
+                                            <div>
+                                                <h4 className="font-bold text-brand-900 text-sm mb-3 flex items-center gap-2">
+                                                    <Clock className="w-4 h-4 text-blue-500" />
+                                                    Horas Pico
+                                                </h4>
+                                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+                                                    <div className="flex items-end justify-between h-24 gap-2">
+                                                        {dailyStats.peakHours.map((hour, idx) => {
+                                                            const maxCount = Math.max(...dailyStats.peakHours.map(h => h.count));
+                                                            const heightPercent = maxCount > 0 ? (hour.count / maxCount) * 100 : 0;
+                                                            return (
+                                                                <div key={idx} className="flex flex-col items-center gap-1 flex-1 group">
+                                                                    <div className="w-full bg-blue-50 rounded-t-sm relative group-hover:bg-blue-100 transition-colors" style={{ height: `${Math.max(heightPercent, 10)}%` }}>
+                                                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-brand-900 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
+                                                                            {hour.count} pedidos
+                                                                        </div>
+                                                                    </div>
+                                                                    <span className="text-[10px] text-gray-400 font-mono">{hour.hour}</span>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Export Button */}
+                                            <button
+                                                onClick={handleExportReport}
+                                                className="w-full py-3 bg-brand-900 text-white rounded-xl font-bold text-sm shadow-lg shadow-brand-900/20 hover:bg-brand-800 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <Download className="w-4 h-4" />
+                                                Exportar Reporte Excel
+                                            </button>
                                         </div>
                                     )}
                                 </div>
