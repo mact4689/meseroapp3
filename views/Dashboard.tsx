@@ -570,13 +570,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                         {/* Order Header */}
                                         <div className="p-4 flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
-                                                    <span className="text-[10px] font-medium opacity-80">Mesa</span>
-                                                    <span className="text-xl font-bold">{order.table_number}</span>
-                                                </div>
+                                                {/* Table/Takeout Badge */}
+                                                {order.table_number.startsWith('LLEVAR') ? (
+                                                    <div className="bg-orange-500 text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none">
+                                                        <span className="text-[8px] font-medium opacity-80">🛍️</span>
+                                                        <span className="text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
+                                                    </div>
+                                                ) : (
+                                                    <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
+                                                        <span className="text-[10px] font-medium opacity-80">Mesa</span>
+                                                        <span className="text-xl font-bold">{order.table_number}</span>
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <div className="flex items-center gap-2">
-                                                        {isHelp ? (
+                                                        {order.table_number.startsWith('LLEVAR') ? (
+                                                            <span className="font-bold text-orange-600 flex items-center gap-1.5">
+                                                                🛍️ Para Llevar #{order.table_number.split('-')[1] || '?'}
+                                                            </span>
+                                                        ) : isHelp ? (
                                                             <span className="font-bold text-yellow-700 flex items-center gap-1.5">
                                                                 <Hand className="w-4 h-4" />
                                                                 🆘 AYUDA - Mesa {order.table_number}
@@ -595,11 +607,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         </span>
                                                     </div>
                                                     <p className="text-sm text-gray-600">
-                                                        {isHelp
-                                                            ? <span className="text-yellow-700 font-medium">{order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}</span>
-                                                            : isBill
-                                                                ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
-                                                                : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
+                                                        {order.table_number.startsWith('LLEVAR')
+                                                            ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
+                                                            : isHelp
+                                                                ? <span className="text-yellow-700 font-medium">{order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}</span>
+                                                                : isBill
+                                                                    ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
+                                                                    : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
                                                     </p>
                                                 </div>
                                             </div>
