@@ -92,6 +92,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                     }
 
                     if (menuData) {
+                        console.log('[Promo Debug] Raw menu data from DB:', menuData.map(m => ({ name: m.name, is_promoted: m.is_promoted, available: m.available })));
                         const mappedItems = menuData.map((m: any) => ({
                             id: m.id,
                             name: m.name,
@@ -106,6 +107,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             options: m.options || null,
                             isPromoted: !!m.is_promoted
                         }));
+                        console.log('[Promo Debug] Mapped items:', mappedItems.map(m => ({ name: m.name, isPromoted: m.isPromoted, available: m.available })));
                         setGuestMenu(mappedItems);
                     }
                 } catch (error: any) {
