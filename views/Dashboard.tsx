@@ -36,7 +36,9 @@ import {
     Copy,
     Terminal,
     Receipt,
-    Hand
+    Hand,
+    ShoppingBag,
+    Star
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -46,7 +48,7 @@ interface DashboardProps {
 type TimeRange = 'today' | '7days' | '30days' | 'all';
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-    const { state, logout, completeOrder } = useAppStore();
+    const { state, logout, completeOrder, promoteItem } = useAppStore();
     const { business, menu, tables, user, orders } = state;
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
@@ -54,7 +56,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
     const [copyFeedback, setCopyFeedback] = useState(false);
     const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
+    const [activeOrdersView, setActiveOrdersView] = useState<'pending' | 'completed'>('pending');
     const [printingAll, setPrintingAll] = useState(false);
+    const [promotingItemId, setPromotingItemId] = useState<string | null>(null);
 
     // Filter orders by status
     const pendingOrders = orders.filter(o => o.status === 'pending');
@@ -753,7 +757,27 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         <span className="text-[10px] text-gray-400">{item.category}</span>
                                                     </div>
                                                 </div>
-                                                <button className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2" onClick={() => onNavigate(AppView.MENU_SETUP)}>Promocionar</button>
+                                                <button
+                                                    className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    onClick={async () => {
+                                                        if (promotingItemId) return;
+                                                        setPromotingItemId(item.id);
+                                                        try {
+                                                            await promoteItem(item.id);
+                                                        } catch (error) {
+                                                            console.error('Error promoting item:', error);
+                                                        } finally {
+                                                            setPromotingItemId(null);
+                                                        }
+                                                    }}
+                                                    disabled={promotingItemId === item.id}
+                                                >
+                                                    {promotingItemId === item.id ? 'Promoviendo...' : (
+                                                        <>
+                                                            Promover <Star className="w-3 h-3 fill-current" />
+                                                        </>
+                                                    )}
+                                                </button>
                                             </div>
                                         ))}
                                     </div>
