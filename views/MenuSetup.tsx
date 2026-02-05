@@ -760,61 +760,68 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                       return (
                         <div
                           key={item.id}
-                          onClick={() => handleEditItem(item)}
                           className={`
-                          relative flex gap-3 bg-white p-3 rounded-xl border shadow-sm transition-all cursor-pointer group/card
-                          ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'}
-                          ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
-                        `}
+                            relative bg-white p-3 rounded-xl border shadow-sm transition-all group/card
+                            ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'}
+                            ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
+                          `}
                         >
-                          <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                <ImageIcon className="w-6 h-6" />
-                              </div>
-                            )}
+                          {/* Clickable Content Area */}
+                          <div
+                            className="flex gap-3 cursor-pointer"
+                            onClick={() => handleEditItem(item)}
+                          >
+                            <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
+                              {item.image ? (
+                                <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                  <ImageIcon className="w-6 h-6" />
+                                </div>
+                              )}
 
-                            {/* Sold Out Overlay Badge */}
-                            {!isAvailable && (
-                              <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
-                                <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
-                              </div>
-                            )}
-                          </div>
-
-                          <div className="flex-1 min-w-0 pr-8">
-                            <div className="flex justify-between items-start">
-                              <h4 className={`font-bold truncate group-hover/card:text-brand-900 transition-colors ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
-                              <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
+                              {/* Sold Out Overlay Badge */}
+                              {!isAvailable && (
+                                <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
+                                  <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
+                                </div>
+                              )}
                             </div>
 
-                            {item.description && (
-                              <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
-                            )}
-
-                            {/* Station indicator */}
-                            {assignedStation && (
-                              <div className="flex items-center mt-1.5 gap-3">
-                                <div
-                                  className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
-                                  style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
-                                >
-                                  <ChefHat className="w-3 h-3" />
-                                  <span className="font-medium">{assignedStation.name}</span>
-                                </div>
+                            <div className="flex-1 min-w-0 pr-8">
+                              <div className="flex justify-between items-start">
+                                <h4 className={`font-bold truncate group-hover/card:text-brand-900 transition-colors ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
+                                <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
                               </div>
-                            )}
+
+                              {item.description && (
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
+                              )}
+
+                              {/* Station indicator */}
+                              {assignedStation && (
+                                <div className="flex items-center mt-1.5 gap-3">
+                                  <div
+                                    className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
+                                    style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
+                                  >
+                                    <ChefHat className="w-3 h-3" />
+                                    <span className="font-medium">{assignedStation.name}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
 
-                          {/* Action Buttons */}
+                          {/* Action Buttons - Sibling to content, sits on top */}
                           <div
-                            className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10"
+                            className="absolute top-2 right-2 flex flex-col gap-1 items-end z-20 pointer-events-auto"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 handleRemoveItem(item.id);
                               }}
@@ -832,13 +839,19 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                                   : 'text-gray-300 group-hover/card:text-brand-900 group-hover/card:bg-gray-100'}
                             `}
                               title="Editar"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditItem(item);
+                              }}
                             >
                               <Pencil className="w-4 h-4" />
                             </div>
 
                             {/* Toggle Availability Button */}
                             <button
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 handleToggleAvailability(item.id);
                               }}
