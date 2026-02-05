@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check } from 'lucide-react';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
@@ -42,6 +42,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [showOptionsModal, setShowOptionsModal] = useState(false);
     const [selectedItemForOptions, setSelectedItemForOptions] = useState<MenuItem | null>(null);
     const [currentSelections, setCurrentSelections] = useState<Record<string, string[]>>({}); // groupId -> optionIds[]
+    const [showPromotionModal, setShowPromotionModal] = useState(false);
+    const [hasShownPromotion, setHasShownPromotion] = useState(false);
 
     // URL Params
     const query = new URLSearchParams(window.location.search);
@@ -95,7 +97,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             available: m.available !== false,
                             printerId: m.printer_id,
                             stationId: m.station_id,
-                            options: m.options || null
+                            options: m.options || null,
+                            isPromoted: !!m.is_promoted
                         }));
                         setGuestMenu(mappedItems);
                     }
@@ -113,7 +116,18 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
     useEffect(() => {
         loadData();
-    }, [uid, state.user?.id]);
+    }, [uid]);
+
+    // Show promotion once data is loaded
+    useEffect(() => {
+        if (!isLoading && menu.length > 0 && !hasShownPromotion) {
+            const promotedItem = menu.find(item => item.isPromoted && item.available);
+            if (promotedItem) {
+                setShowPromotionModal(true);
+                setHasShownPromotion(true);
+            }
+        }
+    }, [isLoading, menu, hasShownPromotion]);
 
     const groupedItems = useMemo(() => {
         return menu.reduce((acc, item) => {
@@ -678,6 +692,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 )}
             </div>
 
+
             {/* Bottom Cart Bar */}
             {cartCount > 0 && !isCartOpen && (
                 <div className="fixed bottom-6 left-6 right-6 z-50 animate-in slide-in-from-bottom-4">
@@ -1086,6 +1101,85 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                     </div>
                                 );
                             })()}
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* FOOTER ACTIONS */}
+            {!isAdminPreview && !isLoading && (
+                <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-50">
+                    <Button
+                        fullWidth
+                        onClick={() => setIsCartOpen(true)}
+                        className="h-14 bg-brand-900 text-white font-bold rounded-2xl shadow-xl shadow-brand-900/20 relative"
+                    >
+                        <ShoppingBag className="w-5 h-5 mr-2" />
+                        Ver Mi Orden
+                        {cart.length > 0 && (
+                            <span className="absolute top-3 right-4 bg-accent-500 text-white text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center border-2 border-white">
+                                {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                            </span>
+                        )}
+                    </Button>
+                </div>
+            )}
+
+            {/* PROMOTIONAL POPUP */}
+            {showPromotionModal && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
+                        <button
+                            onClick={() => setShowPromotionModal(false)}
+                            className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10"
+                        >
+                            <X className="w-5 h-5 text-gray-500" />
+                        </button>
+
+                        {menu.find(i => i.isPromoted)?.image && (
+                            <div className="h-48 w-full relative">
+                                <img
+                                    src={menu.find(i => i.isPromoted)?.image!}
+                                    alt="Promoted"
+                                    className="w-full h-full object-cover"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                                    <div className="flex items-center gap-2 bg-brand-900/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">
+                                        <Sparkles className="w-3 h-3" />
+                                        Recomendado
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="p-8 text-center">
+                            <h3 className="text-2xl font-bold text-brand-900 mb-2">
+                                {menu.find(i => i.isPromoted)?.name}
+                            </h3>
+                            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                                ¡Prueba nuestra recomendación estrella del día! Te encantará su sabor único.
+                            </p>
+
+                            <Button
+                                fullWidth
+                                onClick={() => {
+                                    const item = menu.find(i => i.isPromoted);
+                                    if (item) {
+                                        handleAddToCart(item);
+                                        setShowPromotionModal(false);
+                                    }
+                                }}
+                                className="h-14 bg-brand-900 hover:bg-brand-950 text-white font-bold rounded-2xl shadow-lg shadow-brand-900/20"
+                                icon={<Plus className="w-5 h-5" />}
+                            >
+                                ¡Lo quiero! (${menu.find(i => i.isPromoted)?.price})
+                            </Button>
+
+                            <button
+                                onClick={() => setShowPromotionModal(false)}
+                                className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest transition-colors"
+                            >
+                                Quizás más tarde
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy, Star } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -13,7 +13,7 @@ interface MenuSetupProps {
 }
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
-  const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability } = useAppStore();
+  const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability, promoteItem } = useAppStore();
   const { isOnboarding, stations } = state;
 
   // Use global state for items
@@ -859,6 +859,25 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                                   <span>Activ</span>
                                 </>
                               )}
+                            </button>
+
+                            {/* Promote Button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                promoteItem(item.id);
+                              }}
+                              className={`
+                                flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
+                                ${item.isPromoted
+                                  ? 'bg-amber-100 border-amber-300 text-amber-600 shadow-sm shadow-amber-200'
+                                  : 'bg-white border-gray-100 text-gray-400 hover:text-amber-500 hover:bg-amber-50'
+                                }
+                              `}
+                              title={item.isPromoted ? "Platillo Promocionado" : "Promocionar este platillo"}
+                            >
+                              <Star className={`w-3 h-3 ${item.isPromoted ? 'fill-amber-500' : ''}`} />
+                              <span>{item.isPromoted ? 'Promo' : 'Promover'}</span>
                             </button>
                           </div>
                         </div>

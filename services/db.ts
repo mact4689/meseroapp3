@@ -164,7 +164,8 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
     available: item.available ?? true,
     printer_id: item.printerId || null,
     station_id: item.stationId || null,
-    options: item.options || null
+    options: item.options || null,
+    is_promoted: item.isPromoted ?? false
   };
 
   const attemptInsert = async () => {
@@ -211,7 +212,8 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
     available: item.available,
     printer_id: item.printerId,
     station_id: item.stationId,
-    options: item.options || null
+    options: item.options || null,
+    is_promoted: item.isPromoted
   };
 
   const attemptUpdate = async () => {
@@ -234,6 +236,33 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
     return null;
   } catch (error: any) {
     console.error('Error updating item:', error);
+    return error;
+  }
+};
+
+export const promoteMenuItem = async (userId: string, itemId: string) => {
+  const attemptPromote = async () => {
+    // 1. Unset all promoted items for this user
+    await supabase
+      .from('menu_items')
+      .update({ is_promoted: false })
+      .eq('user_id', userId);
+
+    // 2. Set the new promoted item
+    const { error } = await supabase
+      .from('menu_items')
+      .update({ is_promoted: true })
+      .eq('id', itemId);
+
+    if (error) throw error;
+    return null;
+  };
+
+  try {
+    await withRetry(attemptPromote);
+    return null;
+  } catch (error: any) {
+    console.error('Error promoting item:', error);
     return error;
   }
 };

@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { MenuItem, User, Order, KitchenStation, TicketConfig } from '../types';
-import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb } from '../services/db';
+import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb, promoteMenuItem } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
 
@@ -34,6 +34,7 @@ interface AppContextType {
   updateMenuItem: (id: string, item: MenuItem) => Promise<void>;
   removeMenuItem: (id: string) => Promise<void>;
   toggleItemAvailability: (id: string) => Promise<void>;
+  promoteItem: (id: string) => Promise<void>;
   updateTables: (count: string, generated: any[]) => void;
   updateTicketConfig: (data: Partial<TicketConfig>) => void;
   completeOrder: (id: string) => Promise<void>;
@@ -238,7 +239,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           available: m.available !== false,
           printerId: m.printer_id,
           stationId: m.station_id,
-          options: m.options || null
+          options: m.options || null,
+          isPromoted: !!m.is_promoted
         })) : [],
         tables: profileData?.tables_count ? {
           count: profileData.tables_count.toString(),
@@ -379,6 +381,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await updateMenuItem(id, updatedItem);
   };
 
+  const promoteItem = async (id: string) => {
+    if (!state.user) return;
+
+    // Optimistically update state
+    setState(prev => ({
+      ...prev,
+      menu: prev.menu.map(item => ({
+        ...item,
+        isPromoted: item.id === id ? !item.isPromoted : false
+      }))
+    }));
+
+    try {
+      await promoteMenuItem(state.user.id, id);
+    } catch (err: any) {
+      console.error("Error promoting item:", err);
+      // We could revert here if critical, but typically a reload or next update will fix it.
+      throw new Error("No se pudo actualizar la promoción");
+    }
+  };
+
   const removeMenuItem = async (id: string) => {
     if (!state.user) return;
 
@@ -506,6 +529,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateMenuItem,
       removeMenuItem,
       toggleItemAvailability,
+      promoteItem,
       updateTables,
       updateTicketConfig,
       completeOrder,

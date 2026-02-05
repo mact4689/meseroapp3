@@ -74,6 +74,7 @@ export interface MenuItem {
   printerId?: string; // ID of the printer where this item should be printed
   stationId?: string; // ID of the kitchen station (KDS)
   options?: ItemOptionsConfig | null; // Configured options/variations
+  isPromoted?: boolean; // Flag for special promotion
 }
 
 export interface OrderItem extends MenuItem {
