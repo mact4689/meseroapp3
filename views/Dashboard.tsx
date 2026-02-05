@@ -642,21 +642,48 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                     Horas Pico
                                                 </h4>
                                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-                                                    <div className="flex items-end justify-between h-24 gap-2">
-                                                        {dailyStats.peakHours.map((hour, idx) => {
-                                                            const maxCount = Math.max(...dailyStats.peakHours.map(h => h.count));
-                                                            const heightPercent = maxCount > 0 ? (hour.count / maxCount) * 100 : 0;
-                                                            return (
-                                                                <div key={idx} className="flex flex-col items-center gap-1 flex-1 group">
-                                                                    <div className="w-full bg-blue-50 rounded-t-sm relative group-hover:bg-blue-100 transition-colors" style={{ height: `${Math.max(heightPercent, 10)}%` }}>
-                                                                        <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-brand-900 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10">
-                                                                            {hour.count} pedidos
+                                                    <div className="overflow-x-auto pb-2 scrollbar-hide">
+                                                        <div className="flex items-end h-40 gap-3 min-w-[600px] px-2 pt-6">
+                                                            {dailyStats.peakHours.map((hour, idx) => {
+                                                                const maxCount = Math.max(...dailyStats.peakHours.map(h => h.count), 1); // Prevent div by zero
+                                                                const heightPercent = (hour.count / maxCount) * 100;
+                                                                const isZero = hour.count === 0;
+
+                                                                return (
+                                                                    <div key={idx} className="flex flex-col items-center gap-2 flex-1 group relative min-w-[30px]">
+                                                                        <div className="w-full relative flex items-end justify-center" style={{ height: '100%' }}>
+                                                                            {/* Tooltip floating above */}
+                                                                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-brand-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none transform translate-y-2 group-hover:translate-y-0 duration-200">
+                                                                                {hour.count} pedidos
+                                                                                <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 bg-brand-900 rotate-45"></div>
+                                                                            </div>
+
+                                                                            {/* Statistics Bar */}
+                                                                            <div
+                                                                                className={`w-full rounded-t-md transition-all duration-300 relative ${isZero
+                                                                                        ? 'bg-gray-50 h-[4px]'
+                                                                                        : 'bg-blue-100 group-hover:bg-blue-200'
+                                                                                    }`}
+                                                                                style={{
+                                                                                    height: isZero ? '4px' : `${Math.max(heightPercent, 4)}%`
+                                                                                }}
+                                                                            >
+                                                                                {/* Filled portion gradient for visual flair */}
+                                                                                {!isZero && (
+                                                                                    <div className="absolute bottom-0 left-0 right-0 h-full bg-gradient-to-t from-blue-500/10 to-transparent rounded-t-md opacity-50"></div>
+                                                                                )}
+
+                                                                                {/* Top line highlighter */}
+                                                                                {!isZero && (
+                                                                                    <div className="absolute top-0 left-0 right-0 h-1 bg-blue-400 rounded-t-md opacity-40"></div>
+                                                                                )}
+                                                                            </div>
                                                                         </div>
+                                                                        <span className="text-[10px] text-gray-400 font-medium font-mono whitespace-nowrap">{hour.hour}</span>
                                                                     </div>
-                                                                    <span className="text-[10px] text-gray-400 font-mono">{hour.hour}</span>
-                                                                </div>
-                                                            );
-                                                        })}
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
