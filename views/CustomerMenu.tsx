@@ -1147,37 +1147,61 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 }
 
                 return (
-                    <div className="fixed top-0 left-0 right-0 z-[200] p-4 pt-6 animate-in slide-in-from-top-4 duration-300 bg-gradient-to-b from-black/40 to-transparent">
-                        <div className="bg-white w-full max-w-md mx-auto rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                    <div
+                        style={{
+                            position: 'fixed',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            zIndex: 9999,
+                            padding: '16px',
+                            paddingTop: '24px',
+                            background: 'linear-gradient(to bottom, rgba(0,0,0,0.4), transparent)'
+                        }}
+                    >
+                        <div style={{
+                            backgroundColor: 'white',
+                            width: '100%',
+                            maxWidth: '448px',
+                            margin: '0 auto',
+                            borderRadius: '16px',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            border: '1px solid #f3f4f6',
+                            overflow: 'hidden'
+                        }}>
                             {/* Header with image */}
-                            <div className="flex items-stretch">
+                            <div style={{ display: 'flex' }}>
                                 {promotedItem.image && (
-                                    <div className="w-28 h-28 shrink-0">
+                                    <div style={{ width: '112px', height: '112px', flexShrink: 0 }}>
                                         <img
                                             src={promotedItem.image}
                                             alt={promotedItem.name}
-                                            className="w-full h-full object-cover"
+                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                                         />
                                     </div>
                                 )}
 
                                 {/* Content */}
-                                <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
-                                    <div className="flex items-center gap-1.5 mb-1">
+                                <div style={{ flex: 1, padding: '16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
                                         <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Recomendado del día</span>
+                                        <span style={{ fontSize: '10px', fontWeight: 'bold', color: '#d97706', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Recomendado del día</span>
                                     </div>
-                                    <h4 className="font-bold text-brand-900 text-base leading-tight">{promotedItem.name}</h4>
-                                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">{promotedItem.description || '¡Pruébalo hoy!'}</p>
-                                    <p className="text-sm font-bold text-accent-600 mt-1">${promotedItem.price}</p>
+                                    <h4 style={{ fontWeight: 'bold', color: '#1a202c', fontSize: '16px', lineHeight: '1.25' }}>{promotedItem.name}</h4>
+                                    <p style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                        {promotedItem.description || '¡Pruébalo hoy!'}
+                                    </p>
+                                    <p style={{ fontSize: '14px', fontWeight: 'bold', color: '#dc2626', marginTop: '4px' }}>${promotedItem.price}</p>
                                 </div>
                             </div>
 
                             {/* Action buttons */}
-                            <div className="flex border-t border-gray-100">
+                            <div style={{ display: 'flex', borderTop: '1px solid #f3f4f6' }}>
                                 <button
                                     onClick={() => setShowPromotionModal(false)}
-                                    className="flex-1 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                                    style={{ flex: 1, padding: '12px', fontSize: '14px', fontWeight: '500', color: '#6b7280', backgroundColor: 'transparent', border: 'none', cursor: 'pointer' }}
+                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9fafb'}
+                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                                 >
                                     No, gracias
                                 </button>
@@ -1186,7 +1210,9 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                         handleAddToCart(promotedItem);
                                         setShowPromotionModal(false);
                                     }}
-                                    className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-950 transition-colors flex items-center justify-center gap-2"
+                                    style={{ flex: 1, padding: '12px', fontSize: '14px', fontWeight: 'bold', color: 'white', backgroundColor: '#1a202c', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0f172a'}
+                                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#1a202c'}
                                 >
                                     <Plus className="w-4 h-4" />
                                     ¡Lo quiero!
