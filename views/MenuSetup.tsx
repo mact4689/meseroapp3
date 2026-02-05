@@ -863,7 +863,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
                             {/* Promote Button */}
                             <button
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
                                 promoteItem(item.id);
                               }}
