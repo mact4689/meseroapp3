@@ -745,165 +745,180 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               <p className="text-sm text-gray-500">Tu menú está vacío</p>
             </div>
           ) : (
-            <div className="space-y-6 pb-4">
-              {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
-                <div key={cat} className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
-                  <h3 className="text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10 shadow-sm px-2 -mx-2 rounded-lg">
-                    <span className="w-1.5 h-1.5 bg-accent-500 rounded-full mr-2"></span>
-                    {cat}
-                  </h3>
-                  <div className="space-y-3">
-                    {catItems.map((item) => {
-                      const isAvailable = item.available !== false;
-                      const assignedStation = stations.find(s => s.id === item.stationId);
+            <div className="p-4 space-y-4 pb-24">
 
-                      return (
-                        <div
-                          key={item.id}
-                          className={`
-                            relative bg-white p-3 rounded-xl border shadow-sm transition-all group/card
-                            ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'}
-                            ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
-                          `}
-                        >
-                          {/* Clickable Content Area */}
+              {/* Promotion Info Banner */}
+              <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl flex items-start gap-3">
+                <div className="bg-blue-100 p-1.5 rounded-full text-blue-600 mt-0.5">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-900 font-medium">¿Quieres vender más?</p>
+                  <p className="text-xs text-blue-700 mt-0.5">
+                    Utiliza el botón <span className="font-bold inline-flex items-center gap-0.5"><Star className="w-3 h-3 inline fill-amber-500 text-amber-500" /> Promover</span> en tus platillos para destacarlos ante tus clientes.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-6 pb-4">
+                {Object.entries(groupedItems).map(([cat, catItems]: [string, MenuItem[]]) => (
+                  <div key={cat} className="space-y-3 animate-in fade-in slide-in-from-bottom-2">
+                    <h3 className="text-lg font-bold text-brand-900 flex items-center bg-white sticky top-0 py-2 z-10 shadow-sm px-2 -mx-2 rounded-lg">
+                      <span className="w-1.5 h-1.5 bg-accent-500 rounded-full mr-2"></span>
+                      {cat}
+                    </h3>
+                    <div className="space-y-3">
+                      {catItems.map((item) => {
+                        const isAvailable = item.available !== false;
+                        const assignedStation = stations.find(s => s.id === item.stationId);
+
+                        return (
                           <div
-                            className="flex gap-3 cursor-pointer"
-                            onClick={() => handleEditItem(item)}
+                            key={item.id}
+                            className={`
+                                relative bg-white p-3 rounded-xl border shadow-sm transition-all group/card
+                                ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'}
+                                ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
+                              `}
                           >
-                            <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
-                              {item.image ? (
-                                <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                  <ImageIcon className="w-6 h-6" />
-                                </div>
-                              )}
+                            {/* Clickable Content Area */}
+                            <div
+                              className="flex gap-3 cursor-pointer"
+                              onClick={() => handleEditItem(item)}
+                            >
+                              <div className="w-16 h-16 rounded-lg bg-gray-100 shrink-0 overflow-hidden border border-gray-100 relative">
+                                {item.image ? (
+                                  <img src={item.image} alt={item.name} className={`w-full h-full object-cover ${!isAvailable ? 'grayscale' : ''}`} />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                    <ImageIcon className="w-6 h-6" />
+                                  </div>
+                                )}
 
-                              {/* Sold Out Overlay Badge */}
-                              {!isAvailable && (
-                                <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
-                                  <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex-1 min-w-0 pr-8">
-                              <div className="flex justify-between items-start">
-                                <h4 className={`font-bold truncate group-hover/card:text-brand-900 transition-colors ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
-                                <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
+                                {/* Sold Out Overlay Badge */}
+                                {!isAvailable && (
+                                  <div className="absolute inset-0 bg-gray-900/40 flex items-center justify-center">
+                                    <span className="text-[10px] font-bold text-white uppercase bg-black/50 px-1 py-0.5 rounded">Agotado</span>
+                                  </div>
+                                )}
                               </div>
 
-                              {item.description && (
-                                <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
-                              )}
-
-                              {/* Station indicator */}
-                              {assignedStation && (
-                                <div className="flex items-center mt-1.5 gap-3">
-                                  <div
-                                    className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
-                                    style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
-                                  >
-                                    <ChefHat className="w-3 h-3" />
-                                    <span className="font-medium">{assignedStation.name}</span>
-                                  </div>
+                              <div className="flex-1 min-w-0 pr-10"> {/* Added pr-10 to avoid text overlap with buttons */}
+                                <div className="flex justify-between items-start">
+                                  <h4 className={`font-bold truncate group-hover/card:text-brand-900 transition-colors ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
+                                  <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
                                 </div>
-                              )}
+
+                                {item.description && (
+                                  <p className="text-xs text-gray-500 line-clamp-2 mt-0.5">{item.description}</p>
+                                )}
+
+                                {/* Station indicator */}
+                                <div className="flex items-center mt-2 gap-2 flex-wrap">
+                                  {assignedStation && (
+                                    <div
+                                      className="flex items-center text-[10px] gap-1 px-1.5 py-0.5 rounded-full"
+                                      style={{ backgroundColor: assignedStation.color + '20', color: assignedStation.color }}
+                                    >
+                                      <ChefHat className="w-3 h-3" />
+                                      <span className="font-medium">{assignedStation.name}</span>
+                                    </div>
+                                  )}
+
+                                  {/* Promote Button - Custom Style */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      promoteItem(item.id);
+                                    }}
+                                    className={`
+                                      flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold transition-colors
+                                      ${item.isPromoted
+                                        ? 'bg-blue-100 text-blue-700 ring-1 ring-blue-200'
+                                        : 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                      }
+                                    `}
+                                  >
+                                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                                    <span>{item.isPromoted ? 'Promovido' : 'Promover'}</span>
+                                  </button>
+
+                                  {/* Toggle Availability Button */}
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      handleToggleAvailability(item.id);
+                                    }}
+                                    className={`
+                                        flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-md transition-all border whitespace-nowrap
+                                        ${isAvailable
+                                        ? 'bg-white border-red-100 text-red-500 hover:bg-red-50'
+                                        : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
+                                      }
+                                    `}
+                                    title={isAvailable ? "Marcar como Agotado" : "Marcar como Disponible"}
+                                  >
+                                    {isAvailable ? (
+                                      <>
+                                        <Ban className="w-3.5 h-3.5" />
+                                        <span>Agotar</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <CheckCircle className="w-3.5 h-3.5" />
+                                        <span>Activ</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </div>
+                              </div>
                             </div>
-                          </div>
 
-                          {/* Action Buttons - Sibling to content, sits on top */}
-                          <div
-                            className="absolute top-2 right-2 flex flex-col gap-1 items-end z-20 pointer-events-auto"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleRemoveItem(item.id);
-                              }}
-                              className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                              title="Eliminar"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-
+                            {/* Action Buttons - Sibling to content, sits on top */}
                             <div
-                              className={`
-                              p-1.5 rounded-full transition-colors mb-1
-                              ${editingId === item.id
-                                  ? 'text-accent-600 bg-accent-50'
-                                  : 'text-gray-300 group-hover/card:text-brand-900 group-hover/card:bg-gray-100'}
-                            `}
-                              title="Editar"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleEditItem(item);
-                              }}
+                              className="absolute top-2 right-2 flex flex-col gap-1 items-end z-20 pointer-events-auto"
+                              onClick={(e) => e.stopPropagation()}
                             >
-                              <Pencil className="w-4 h-4" />
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleRemoveItem(item.id);
+                                }}
+                                className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                title="Eliminar"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+
+                              <div
+                                className={`
+                                  p-1.5 rounded-full transition-colors mb-1 cursor-pointer
+                                  ${editingId === item.id
+                                    ? 'text-accent-600 bg-accent-50'
+                                    : 'text-gray-300 group-hover/card:text-brand-900 group-hover/card:bg-gray-100'}
+                                `}
+                                title="Editar"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEditItem(item);
+                                }}
+                              >
+                                <Pencil className="w-4 h-4" />
+                              </div>
                             </div>
-
-                            {/* Toggle Availability Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                handleToggleAvailability(item.id);
-                              }}
-                              className={`
-                                flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
-                                ${isAvailable
-                                  ? 'bg-white border-red-100 text-red-500 hover:bg-red-50'
-                                  : 'bg-green-50 border-green-200 text-green-600 hover:bg-green-100'
-                                }
-                            `}
-                              title={isAvailable ? "Marcar como Agotado" : "Marcar como Disponible"}
-                            >
-                              {isAvailable ? (
-                                <>
-                                  <Ban className="w-3 h-3" />
-                                  <span>Agotar</span>
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-3 h-3" />
-                                  <span>Activ</span>
-                                </>
-                              )}
-                            </button>
-
-                            {/* Promote Button */}
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                promoteItem(item.id);
-                              }}
-                              className={`
-                                flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
-                                ${item.isPromoted
-                                  ? 'bg-amber-100 border-amber-300 text-amber-600 shadow-sm shadow-amber-200'
-                                  : 'bg-white border-gray-100 text-gray-400 hover:text-amber-500 hover:bg-amber-50'
-                                }
-                              `}
-                              title={item.isPromoted ? "Platillo Promocionado" : "Promocionar este platillo"}
-                            >
-                              <Star className={`w-3 h-3 ${item.isPromoted ? 'fill-amber-500' : ''}`} />
-                              <span>{item.isPromoted ? 'Promo' : 'Promover'}</span>
-                            </button>
                           </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
           )}
         </div>
