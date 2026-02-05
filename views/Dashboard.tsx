@@ -134,7 +134,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         })).sort((a, b) => b.soldCount - a.soldCount);
 
         const topItems = sortedStats.slice(0, 5).filter(i => i.soldCount > 0);
-        const bottomItems = sortedStats.filter(i => i.soldCount === 0).slice(0, 5);
+        const bottomItems = sortedStats.filter(i => i.soldCount < opportunitiesThreshold).slice(0, 5);
         const maxSales = topItems.length > 0 ? topItems[0].soldCount : 1;
 
         return { topItems, bottomItems, maxSales };
@@ -742,7 +742,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <div className="pt-8 md:pt-0 pl-0 md:pl-8">
                                 <div className="flex justify-between items-center mb-5">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-orange-500 flex items-center"><AlertCircle className="w-4 h-4 mr-2" /> Oportunidades</h4>
-                                    <span className="text-[10px] bg-orange-50 text-orange-600 px-2 py-0.5 rounded-full font-bold">Sin ventas</span>
+                                    <div className="flex items-center gap-2 bg-orange-50 px-2 py-1 rounded-lg">
+                                        <span className="text-[10px] font-medium text-orange-700">Menos de</span>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            max="100"
+                                            value={opportunitiesThreshold}
+                                            onChange={(e) => setOpportunitiesThreshold(Math.max(0, parseInt(e.target.value) || 0))}
+                                            className="w-8 text-center text xs font-bold text-orange-700 bg-white border border-orange-200 rounded focus:outline-none focus:border-orange-500 px-0.5"
+                                        />
+                                        <span className="text-[10px] font-medium text-orange-700">ventas</span>
+                                    </div>
                                 </div>
                                 {itemStats.bottomItems.length > 0 ? (
                                     <div className="space-y-3">
@@ -759,8 +770,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                 </div>
                                                 <button
                                                     className={`text-xs font-bold px-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${item.isPromoted
-                                                            ? 'text-blue-600 hover:text-blue-700'
-                                                            : 'text-accent-600 hover:text-accent-700 hover:underline'
+                                                        ? 'text-blue-600 hover:text-blue-700'
+                                                        : 'text-accent-600 hover:text-accent-700 hover:underline'
                                                         }`}
                                                     onClick={async () => {
                                                         if (promotingItemId) return;
