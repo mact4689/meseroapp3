@@ -504,7 +504,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50 pb-24">
+        <div className="flex flex-col min-h-screen bg-gray-50 pb-48">
             {/* ADMIN PREVIEW HEADER */}
             {isAdminPreview && (
                 <div className="bg-accent-500 text-brand-900 px-6 py-2.5 flex items-center justify-between sticky top-0 z-[100] shadow-md">
