@@ -31,6 +31,36 @@ export interface KitchenStation {
   color: string;
 }
 
+// --- MENU ITEM OPTIONS/VARIATIONS ---
+export interface ItemOption {
+  id: string;
+  name: string;
+  priceModifier: number; // Price to add (can be 0 for included options)
+}
+
+export interface OptionGroup {
+  id: string;
+  name: string; // e.g. "Escoge tu sabor", "Tamaño", "Extras"
+  required: boolean; // Must select at least minSelect options
+  minSelect: number; // Minimum selections (usually 1 for required)
+  maxSelect: number; // Maximum selections (1 for single choice, more for multi)
+  options: ItemOption[];
+}
+
+export interface ItemOptionsConfig {
+  hasOptions: boolean;
+  groups: OptionGroup[];
+}
+
+export interface SelectedOption {
+  groupId: string;
+  groupName: string;
+  optionId: string;
+  optionName: string;
+  priceModifier: number;
+}
+// --- END OPTIONS ---
+
 export interface MenuItem {
   id: string;
   name: string;
@@ -43,11 +73,13 @@ export interface MenuItem {
   available?: boolean; // New field for stock status
   printerId?: string; // ID of the printer where this item should be printed
   stationId?: string; // ID of the kitchen station (KDS)
+  options?: ItemOptionsConfig | null; // Configured options/variations
 }
 
 export interface OrderItem extends MenuItem {
   quantity: number;
   notes?: string;
+  selectedOptions?: SelectedOption[]; // Options chosen by customer
 }
 
 export interface PreparedItem {

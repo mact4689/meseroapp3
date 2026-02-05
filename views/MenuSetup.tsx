@@ -3,8 +3,8 @@ import React, { useState } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
-import { AppView, MenuItem } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat } from 'lucide-react';
+import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -28,6 +28,10 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [selectedStationId, setSelectedStationId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Options/Variations State
+  const [hasOptions, setHasOptions] = useState(false);
+  const [optionGroups, setOptionGroups] = useState<OptionGroup[]>([]);
 
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -111,6 +115,11 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         finalImageUrl = null;
       }
 
+      // Build options config if enabled
+      const optionsConfig: ItemOptionsConfig | null = hasOptions && optionGroups.length > 0
+        ? { hasOptions: true, groups: optionGroups }
+        : null;
+
       const newItem: MenuItem = {
         id: editingId ? editingId : generateId(),
         name: itemName,
@@ -121,7 +130,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         image: finalImageUrl,
         imageFile: null,
         available: true,
-        stationId: selectedStationId || undefined
+        stationId: selectedStationId || undefined,
+        options: optionsConfig
       };
 
       if (editingId) {
@@ -143,6 +153,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       // No limpiamos printerId/stationId para facilitar entrada en batch
       setImagePreview(null);
       setImageFile(null);
+      setHasOptions(false);
+      setOptionGroups([]);
 
       // Scroll suave al listado para confirmar visualmente
       const listElement = document.getElementById('menu-list');
@@ -168,6 +180,14 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setSelectedStationId(item.stationId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
+    // Load options if they exist
+    if (item.options && item.options.hasOptions) {
+      setHasOptions(true);
+      setOptionGroups(item.options.groups || []);
+    } else {
+      setHasOptions(false);
+      setOptionGroups([]);
+    }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -181,6 +201,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setSelectedStationId('');
     setImagePreview(null);
     setImageFile(null);
+    setHasOptions(false);
+    setOptionGroups([]);
   };
 
   const handleLoadSample = () => {
@@ -238,6 +260,65 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       alert("Error: No se pudo cambiar la disponibilidad. Revisa la consola o recarga la página.");
     }
   };
+
+  // --- OPTIONS MANAGEMENT FUNCTIONS ---
+  const addOptionGroup = () => {
+    const newGroup: OptionGroup = {
+      id: generateId(),
+      name: '',
+      required: true,
+      minSelect: 1,
+      maxSelect: 1,
+      options: []
+    };
+    setOptionGroups([...optionGroups, newGroup]);
+  };
+
+  const updateOptionGroup = (groupId: string, updates: Partial<OptionGroup>) => {
+    setOptionGroups(groups =>
+      groups.map(g => g.id === groupId ? { ...g, ...updates } : g)
+    );
+  };
+
+  const removeOptionGroup = (groupId: string) => {
+    setOptionGroups(groups => groups.filter(g => g.id !== groupId));
+  };
+
+  const addOptionToGroup = (groupId: string) => {
+    const newOption: ItemOption = {
+      id: generateId(),
+      name: '',
+      priceModifier: 0
+    };
+    setOptionGroups(groups =>
+      groups.map(g => g.id === groupId
+        ? { ...g, options: [...g.options, newOption] }
+        : g
+      )
+    );
+  };
+
+  const updateOptionInGroup = (groupId: string, optionId: string, updates: Partial<ItemOption>) => {
+    setOptionGroups(groups =>
+      groups.map(g => g.id === groupId
+        ? {
+          ...g,
+          options: g.options.map(o => o.id === optionId ? { ...o, ...updates } : o)
+        }
+        : g
+      )
+    );
+  };
+
+  const removeOptionFromGroup = (groupId: string, optionId: string) => {
+    setOptionGroups(groups =>
+      groups.map(g => g.id === groupId
+        ? { ...g, options: g.options.filter(o => o.id !== optionId) }
+        : g
+      )
+    );
+  };
+  // --- END OPTIONS MANAGEMENT ---
 
   const groupedItems = items.reduce((acc, item) => {
     if (!acc[item.category]) {
@@ -440,6 +521,186 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               className="bg-white"
             />
 
+            {/* --- OPTIONS/VARIATIONS SECTION --- */}
+            <div className="border-t border-gray-100 pt-4 mt-2">
+              {/* Toggle Switch */}
+              <button
+                type="button"
+                onClick={() => {
+                  const newHasOptions = !hasOptions;
+                  setHasOptions(newHasOptions);
+                  // Auto-add first group when enabling AND no groups exist
+                  if (newHasOptions && optionGroups.length === 0) {
+                    const firstGroup: OptionGroup = {
+                      id: generateId(),
+                      name: '',
+                      required: true,
+                      minSelect: 1,
+                      maxSelect: 1,
+                      options: []
+                    };
+                    setOptionGroups([firstGroup]);
+                  }
+                }}
+                className={`
+                  w-full flex items-center justify-between p-3 rounded-xl border transition-all
+                  ${hasOptions
+                    ? 'bg-brand-50 border-brand-200 text-brand-900'
+                    : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'}
+                `}
+              >
+                <div className="flex items-center gap-2">
+                  <Layers className="w-4 h-4" />
+                  <span className="text-sm font-medium">¿Tiene opciones o variantes?</span>
+                </div>
+                <div className={`
+                  w-10 h-6 rounded-full p-0.5 transition-colors
+                  ${hasOptions ? 'bg-brand-900' : 'bg-gray-300'}
+                `}>
+                  <div className={`
+                    w-5 h-5 rounded-full bg-white shadow transform transition-transform
+                    ${hasOptions ? 'translate-x-4' : 'translate-x-0'}
+                  `} />
+                </div>
+              </button>
+              <p className="text-[11px] text-gray-400 mt-1 pl-1">
+                Ej: Sabores de helado, tamaños, extras con costo adicional
+              </p>
+
+              {/* Option Groups Editor */}
+              {hasOptions && (
+                <div className="mt-4 space-y-4">
+                  {optionGroups.length === 0 ? (
+                    <div className="text-center py-4 text-gray-500 text-sm">
+                      <p>Cargando grupo de opciones...</p>
+                    </div>
+                  ) : (
+                    optionGroups.map((group, groupIndex) => (
+                      <div
+                        key={group.id}
+                        className="bg-gray-50 rounded-xl p-3 border border-gray-200 space-y-3"
+                      >
+                        {/* Group Header */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold text-gray-500 uppercase">
+                            Grupo {groupIndex + 1}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => removeOptionGroup(group.id)}
+                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+
+                        {/* Group Name */}
+                        <input
+                          type="text"
+                          placeholder="Nombre del grupo (ej: Escoge sabor)"
+                          value={group.name}
+                          onChange={(e) => updateOptionGroup(group.id, { name: e.target.value })}
+                          className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 focus:border-brand-900 focus:ring-1 focus:ring-brand-900 outline-none"
+                        />
+
+                        {/* Group Settings */}
+                        <div className="flex flex-wrap gap-2 text-xs">
+                          <label className="flex items-center gap-1.5 bg-white px-2 py-1.5 rounded-lg border border-gray-200">
+                            <input
+                              type="checkbox"
+                              checked={group.required}
+                              onChange={(e) => updateOptionGroup(group.id, { required: e.target.checked })}
+                              className="rounded border-gray-300 text-brand-900 focus:ring-brand-900"
+                            />
+                            <span className="text-gray-600">Obligatorio</span>
+                          </label>
+
+                          <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-lg border border-gray-200">
+                            <span className="text-gray-500">Mín:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              max="10"
+                              value={group.minSelect}
+                              onChange={(e) => updateOptionGroup(group.id, { minSelect: parseInt(e.target.value) || 0 })}
+                              className="w-10 text-center border-0 p-0 focus:ring-0 text-sm"
+                            />
+                          </div>
+
+                          <div className="flex items-center gap-1 bg-white px-2 py-1.5 rounded-lg border border-gray-200">
+                            <span className="text-gray-500">Máx:</span>
+                            <input
+                              type="number"
+                              min="1"
+                              max="10"
+                              value={group.maxSelect}
+                              onChange={(e) => updateOptionGroup(group.id, { maxSelect: parseInt(e.target.value) || 1 })}
+                              className="w-10 text-center border-0 p-0 focus:ring-0 text-sm"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Options List */}
+                        <div className="space-y-2">
+                          {group.options.map((option) => (
+                            <div key={option.id} className="flex items-center gap-2">
+                              <input
+                                type="text"
+                                placeholder="Opción (ej: Vainilla)"
+                                value={option.name}
+                                onChange={(e) => updateOptionInGroup(group.id, option.id, { name: e.target.value })}
+                                className="flex-1 px-2.5 py-1.5 text-sm rounded-lg border border-gray-200 focus:border-brand-900 focus:ring-1 focus:ring-brand-900 outline-none bg-white"
+                              />
+                              <div className="flex items-center gap-0.5 bg-white border border-gray-200 rounded-lg px-2 py-1.5">
+                                <span className="text-gray-400 text-xs">+$</span>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="1"
+                                  placeholder="0"
+                                  value={option.priceModifier || ''}
+                                  onChange={(e) => updateOptionInGroup(group.id, option.id, { priceModifier: parseFloat(e.target.value) || 0 })}
+                                  className="w-12 text-sm border-0 p-0 focus:ring-0 text-right"
+                                />
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => removeOptionFromGroup(group.id, option.id)}
+                                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                              >
+                                <X className="w-4 h-4" />
+                              </button>
+                            </div>
+                          ))}
+
+                          {/* Add Option Button */}
+                          <button
+                            type="button"
+                            onClick={() => addOptionToGroup(group.id)}
+                            className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-medium text-brand-900 bg-white border border-dashed border-brand-200 rounded-lg hover:bg-brand-50 transition-colors"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Añadir opción
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+
+                  {/* Add Group Button */}
+                  <button
+                    type="button"
+                    onClick={addOptionGroup}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 text-sm font-medium text-gray-600 bg-white border border-dashed border-gray-300 rounded-xl hover:border-brand-900 hover:text-brand-900 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Añadir otro grupo de opciones
+                  </button>
+                </div>
+              )}
+            </div>
+            {/* --- END OPTIONS SECTION --- */}
+
             <Button
               type="submit"
               variant={editingId ? 'secondary' : 'primary'}
@@ -476,9 +737,10 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                       return (
                         <div
                           key={item.id}
+                          onClick={() => handleEditItem(item)}
                           className={`
-                          relative flex gap-3 bg-white p-3 rounded-xl border shadow-sm transition-all
-                          ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200'}
+                          relative flex gap-3 bg-white p-3 rounded-xl border shadow-sm transition-all cursor-pointer group/card
+                          ${editingId === item.id ? 'border-accent-500 ring-1 ring-accent-500' : 'border-gray-100 hover:border-gray-200 hover:shadow-md'}
                           ${!isAvailable ? 'opacity-80 bg-gray-50' : ''}
                         `}
                         >
@@ -501,7 +763,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
                           <div className="flex-1 min-w-0 pr-8">
                             <div className="flex justify-between items-start">
-                              <h4 className={`font-bold truncate ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
+                              <h4 className={`font-bold truncate group-hover/card:text-brand-900 transition-colors ${!isAvailable ? 'text-gray-500 line-through decoration-gray-400' : 'text-gray-900'}`}>{item.name}</h4>
                               <span className={`font-bold text-sm ${!isAvailable ? 'text-gray-400' : 'text-brand-900'}`}>${item.price}</span>
                             </div>
 
@@ -526,29 +788,34 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                           {/* Action Buttons */}
                           <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
                             <button
-                              onClick={() => handleRemoveItem(item.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveItem(item.id);
+                              }}
                               className="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
                               title="Eliminar"
                             >
                               <Trash2 className="w-4 h-4" />
                             </button>
 
-                            <button
-                              onClick={() => handleEditItem(item)}
+                            <div
                               className={`
                               p-1.5 rounded-full transition-colors mb-1
                               ${editingId === item.id
                                   ? 'text-accent-600 bg-accent-50'
-                                  : 'text-gray-300 hover:text-brand-900 hover:bg-gray-100'}
+                                  : 'text-gray-300 group-hover/card:text-brand-900 group-hover/card:bg-gray-100'}
                             `}
                               title="Editar"
                             >
                               <Pencil className="w-4 h-4" />
-                            </button>
+                            </div>
 
                             {/* Toggle Availability Button */}
                             <button
-                              onClick={() => handleToggleAvailability(item.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleAvailability(item.id);
+                              }}
                               className={`
                                 flex items-center gap-1 text-[10px] font-bold px-2 py-1 rounded-full transition-all border
                                 ${isAvailable

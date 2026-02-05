@@ -163,7 +163,8 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
     image_url: item.image,
     available: item.available ?? true,
     printer_id: item.printerId || null,
-    station_id: item.stationId || null
+    station_id: item.stationId || null,
+    options: item.options || null
   };
 
   const attemptInsert = async () => {
@@ -209,7 +210,8 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
     image_url: item.image,
     available: item.available,
     printer_id: item.printerId,
-    station_id: item.stationId
+    station_id: item.stationId,
+    options: item.options || null
   };
 
   const attemptUpdate = async () => {

@@ -237,7 +237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           image: m.image_url,
           available: m.available !== false,
           printerId: m.printer_id,
-          stationId: m.station_id
+          stationId: m.station_id,
+          options: m.options || null
         })) : [],
         tables: profileData?.tables_count ? {
           count: profileData.tables_count.toString(),

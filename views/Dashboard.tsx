@@ -333,7 +333,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             {/* Navbar */}
             <header className="bg-white px-6 py-4 shadow-sm sticky top-0 z-50">
                 <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
-                    <div className="flex items-center space-x-3">
+                    <button
+                        onClick={() => onNavigate(AppView.BUSINESS_SETUP)}
+                        className="flex items-center space-x-3 hover:opacity-80 transition-opacity text-left cursor-pointer"
+                        title="Editar perfil del restaurante"
+                    >
                         {business.logo ? (
                             <img src={business.logo} alt="Logo" className="w-10 h-10 rounded-full object-cover border border-gray-200" />
                         ) : (
@@ -349,7 +353,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 {user?.name ? `Hola, ${user.name}` : (business.cuisine || 'Panel de Control')}
                             </p>
                         </div>
-                    </div>
+                    </button>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={scrollToOrders}
@@ -378,21 +382,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+                    {/* MENÚ CARD */}
+                    <div
+                        onClick={() => onNavigate(AppView.MENU_SETUP)}
+                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
+                    >
                         <div className="flex items-center space-x-2 text-accent-600 mb-2">
                             <UtensilsCrossed className="w-4 h-4" />
                             <span className="text-xs font-bold uppercase tracking-wider">Menú</span>
                         </div>
                         <p className="text-2xl font-bold text-brand-900">{menu.length}</p>
-                        <p className="text-xs text-gray-500">Items activos</p>
+                        <div className="flex justify-between items-center mt-1">
+                            <p className="text-xs text-gray-500">Editar platillos</p>
+                            <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                        </div>
                     </div>
-                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+
+                    {/* MESAS CARD */}
+                    <div
+                        onClick={() => onNavigate(AppView.TABLE_SETUP)}
+                        className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
+                    >
                         <div className="flex items-center space-x-2 text-blue-600 mb-2">
                             <Grid2X2 className="w-4 h-4" />
                             <span className="text-xs font-bold uppercase tracking-wider">Mesas</span>
                         </div>
                         <p className="text-2xl font-bold text-brand-900">{tables.count || 0}</p>
-                        <p className="text-xs text-gray-500">Códigos QR</p>
+                        <div className="flex justify-between items-center mt-1">
+                            <p className="text-xs text-gray-500">Administrar QR</p>
+                            <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                        </div>
                     </div>
 
                     {/* VENTAS CARD - CLICKABLE */}
@@ -406,7 +425,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         </div>
                         <p className="text-2xl font-bold text-brand-900">${todayTotal.toFixed(2)}</p>
                         <div className="flex justify-between items-center mt-1">
-                            <p className="text-xs text-gray-500">Ver historial completo</p>
+                            <p className="text-xs text-gray-500">Ver historial</p>
                             <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
                         </div>
                     </div>

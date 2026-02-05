@@ -1,8 +1,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
-import { AppView, MenuItem, OrderItem } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand } from 'lucide-react';
+import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check } from 'lucide-react';
 import { Button } from '../components/Button';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
@@ -37,6 +37,11 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [guestMenu, setGuestMenu] = useState<MenuItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [fetchError, setFetchError] = useState<string | null>(null);
+
+    // OPTIONS SELECTION MODAL STATE
+    const [showOptionsModal, setShowOptionsModal] = useState(false);
+    const [selectedItemForOptions, setSelectedItemForOptions] = useState<MenuItem | null>(null);
+    const [currentSelections, setCurrentSelections] = useState<Record<string, string[]>>({}); // groupId -> optionIds[]
 
     // URL Params
     const query = new URLSearchParams(window.location.search);
@@ -89,7 +94,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             image: m.image_url,
                             available: m.available !== false,
                             printerId: m.printer_id,
-                            stationId: m.station_id
+                            stationId: m.station_id,
+                            options: m.options || null
                         }));
                         setGuestMenu(mappedItems);
                     }
@@ -127,16 +133,100 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }, [categories, activeCategory]);
 
     // Cart Logic
-    const addToCart = (item: MenuItem) => {
+    const handleAddToCart = (item: MenuItem) => {
         // Check if available
         if (item.available === false) return;
 
+        // If item has options, open the options modal
+        if (item.options && item.options.hasOptions && item.options.groups.length > 0) {
+            setSelectedItemForOptions(item);
+            setCurrentSelections({});
+            setShowOptionsModal(true);
+            return;
+        }
+
+        // No options - add directly
+        addToCartDirect(item);
+    };
+
+    const addToCartDirect = (item: MenuItem, selectedOptions?: SelectedOption[]) => {
+        // Generate a unique cart key for items with options
+        const cartKey = selectedOptions && selectedOptions.length > 0
+            ? `${item.id}-${selectedOptions.map(o => o.optionId).sort().join('-')}`
+            : item.id;
+
         setCart(prev => {
-            const existing = prev.find(i => i.id === item.id);
+            const existing = prev.find(i => i.id === cartKey);
             if (existing) {
-                return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i);
+                return prev.map(i => i.id === cartKey ? { ...i, quantity: i.quantity + 1 } : i);
             }
-            return [...prev, { ...item, quantity: 1 }];
+            return [...prev, {
+                ...item,
+                id: cartKey, // Use unique key for cart
+                quantity: 1,
+                selectedOptions: selectedOptions || []
+            }];
+        });
+    };
+
+    const handleConfirmOptionsSelection = () => {
+        if (!selectedItemForOptions || !selectedItemForOptions.options) return;
+
+        // Validate required groups
+        const groups = selectedItemForOptions.options.groups;
+        for (const group of groups) {
+            const selected = currentSelections[group.id] || [];
+            if (group.required && selected.length < group.minSelect) {
+                alert(`Por favor selecciona al menos ${group.minSelect} opción(es) en "${group.name}"`);
+                return;
+            }
+        }
+
+        // Build selected options array
+        const selectedOptions: SelectedOption[] = [];
+        for (const group of groups) {
+            const selectedIds = currentSelections[group.id] || [];
+            for (const optId of selectedIds) {
+                const option = group.options.find(o => o.id === optId);
+                if (option) {
+                    selectedOptions.push({
+                        groupId: group.id,
+                        groupName: group.name,
+                        optionId: option.id,
+                        optionName: option.name,
+                        priceModifier: option.priceModifier
+                    });
+                }
+            }
+        }
+
+        addToCartDirect(selectedItemForOptions, selectedOptions);
+        setShowOptionsModal(false);
+        setSelectedItemForOptions(null);
+        setCurrentSelections({});
+    };
+
+    const toggleOptionSelection = (groupId: string, optionId: string, maxSelect: number) => {
+        setCurrentSelections(prev => {
+            const current = prev[groupId] || [];
+            const isSelected = current.includes(optionId);
+
+            if (isSelected) {
+                // Deselect
+                return { ...prev, [groupId]: current.filter(id => id !== optionId) };
+            } else {
+                // Select (respect maxSelect)
+                if (maxSelect === 1) {
+                    // Single select - replace
+                    return { ...prev, [groupId]: [optionId] };
+                } else {
+                    // Multi select - add if under limit
+                    if (current.length < maxSelect) {
+                        return { ...prev, [groupId]: [...current, optionId] };
+                    }
+                    return prev; // At limit, don't add
+                }
+            }
         });
     };
 
@@ -157,11 +247,16 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     };
 
     const getItemQty = (itemId: string) => {
-        return cart.find(i => i.id === itemId)?.quantity || 0;
+        // Sum all cart items that match the base item ID (for items with options)
+        return cart.filter(i => i.id === itemId || i.id.startsWith(`${itemId}-`)).reduce((sum, i) => sum + i.quantity, 0);
     };
 
-    // Safe calculations with defaults
-    const cartTotal = cart.reduce((acc, item) => acc + ((parseFloat(item.price) || 0) * item.quantity), 0);
+    // Safe calculations with defaults (including option price modifiers)
+    const cartTotal = cart.reduce((acc, item) => {
+        const basePrice = parseFloat(item.price) || 0;
+        const optionsPrice = (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceModifier || 0), 0);
+        return acc + ((basePrice + optionsPrice) * item.quantity);
+    }, 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     const scrollToCategory = (category: string) => {
@@ -503,7 +598,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                     <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-1 rounded-full">No disponible</span>
                                                 ) : qty === 0 ? (
                                                     <button
-                                                        onClick={() => addToCart(item)}
+                                                        onClick={() => handleAddToCart(item)}
                                                         className="bg-gray-50 hover:bg-brand-900 hover:text-white text-brand-900 p-2 rounded-full transition-colors"
                                                     >
                                                         <Plus className="w-5 h-5" />
@@ -518,7 +613,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                         </button>
                                                         <span className="w-8 text-center font-bold text-sm text-brand-900">{qty}</span>
                                                         <button
-                                                            onClick={() => addToCart(item)}
+                                                            onClick={() => handleAddToCart(item)}
                                                             className="w-7 h-7 bg-brand-900 rounded-full flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
                                                         >
                                                             <Plus className="w-4 h-4" />
@@ -671,8 +766,22 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                         <div className="flex-1">
                                             <div className="flex justify-between items-start mb-1">
                                                 <h4 className="font-bold text-brand-900 text-sm">{item.name}</h4>
-                                                <span className="font-bold text-gray-900 text-sm">${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}</span>
+                                                <span className="font-bold text-gray-900 text-sm">
+                                                    ${(((parseFloat(item.price) || 0) + (item.selectedOptions || []).reduce((sum, opt) => sum + (opt.priceModifier || 0), 0)) * item.quantity).toFixed(2)}
+                                                </span>
                                             </div>
+
+                                            {/* Show selected options */}
+                                            {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                                <div className="text-xs text-gray-500 mb-2">
+                                                    {item.selectedOptions.map((opt, idx) => (
+                                                        <span key={opt.optionId}>
+                                                            {opt.optionName}{opt.priceModifier > 0 && ` (+$${opt.priceModifier})`}
+                                                            {idx < item.selectedOptions!.length - 1 && ', '}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
 
                                             <div className="flex items-center justify-between mb-3">
                                                 <div className="flex items-center bg-gray-50 rounded-lg p-1 border border-gray-100">
@@ -684,7 +793,16 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                     </button>
                                                     <span className="w-10 text-center font-bold text-sm text-brand-900">{item.quantity}</span>
                                                     <button
-                                                        onClick={() => addToCart(item)}
+                                                        onClick={() => {
+                                                            // For items with options, just increase quantity directly
+                                                            if (item.selectedOptions && item.selectedOptions.length > 0) {
+                                                                setCart(prev => prev.map(i =>
+                                                                    i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+                                                                ));
+                                                            } else {
+                                                                handleAddToCart(item);
+                                                            }
+                                                        }}
                                                         className="w-8 h-8 bg-white rounded-md flex items-center justify-center text-brand-900 shadow-sm border border-gray-100 active:bg-gray-50"
                                                     >
                                                         <Plus className="w-4 h-4" />
@@ -788,6 +906,138 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             >
                                 Enviar Solicitud
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* OPTIONS SELECTION MODAL */}
+            {showOptionsModal && selectedItemForOptions && selectedItemForOptions.options && (
+                <div className="fixed inset-0 bg-black/60 z-[70] flex items-end sm:items-center justify-center animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md max-h-[85vh] rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col animate-in slide-in-from-bottom-4 duration-300">
+                        {/* Header */}
+                        <div className="p-5 border-b border-gray-100 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                {selectedItemForOptions.image && (
+                                    <img
+                                        src={selectedItemForOptions.image}
+                                        alt={selectedItemForOptions.name}
+                                        className="w-12 h-12 rounded-lg object-cover"
+                                    />
+                                )}
+                                <div>
+                                    <h3 className="font-bold text-brand-900">{selectedItemForOptions.name}</h3>
+                                    <p className="text-sm text-gray-500">Personaliza tu pedido</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setShowOptionsModal(false);
+                                    setSelectedItemForOptions(null);
+                                    setCurrentSelections({});
+                                }}
+                                className="p-2 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+                            >
+                                <X className="w-5 h-5 text-gray-500" />
+                            </button>
+                        </div>
+
+                        {/* Options Groups */}
+                        <div className="flex-1 overflow-y-auto p-5 space-y-6">
+                            {selectedItemForOptions.options.groups.map((group) => {
+                                const selectedCount = (currentSelections[group.id] || []).length;
+                                const isComplete = group.required
+                                    ? selectedCount >= group.minSelect
+                                    : true;
+
+                                return (
+                                    <div key={group.id} className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h4 className="font-bold text-gray-900">{group.name}</h4>
+                                                <p className="text-xs text-gray-500">
+                                                    {group.required ? 'Obligatorio' : 'Opcional'}
+                                                    {group.maxSelect > 1 && ` • Máx ${group.maxSelect}`}
+                                                </p>
+                                            </div>
+                                            {group.required && (
+                                                <span className={`text-xs font-medium px-2 py-1 rounded-full ${isComplete
+                                                    ? 'bg-green-100 text-green-700'
+                                                    : 'bg-amber-100 text-amber-700'
+                                                    }`}>
+                                                    {selectedCount}/{group.minSelect}
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            {group.options.map((option) => {
+                                                const isSelected = (currentSelections[group.id] || []).includes(option.id);
+
+                                                return (
+                                                    <button
+                                                        key={option.id}
+                                                        type="button"
+                                                        onClick={() => toggleOptionSelection(group.id, option.id, group.maxSelect)}
+                                                        className={`
+                                                            w-full flex items-center justify-between p-3 rounded-xl border transition-all
+                                                            ${isSelected
+                                                                ? 'bg-brand-50 border-brand-900 ring-1 ring-brand-900'
+                                                                : 'bg-gray-50 border-gray-200 hover:border-gray-300'}
+                                                        `}
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className={`
+                                                                w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
+                                                                ${isSelected
+                                                                    ? 'bg-brand-900 border-brand-900'
+                                                                    : 'border-gray-300'}
+                                                            `}>
+                                                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                                                            </div>
+                                                            <span className={`font-medium ${isSelected ? 'text-brand-900' : 'text-gray-700'}`}>
+                                                                {option.name}
+                                                            </span>
+                                                        </div>
+                                                        {option.priceModifier > 0 && (
+                                                            <span className={`text-sm font-medium ${isSelected ? 'text-brand-900' : 'text-gray-500'}`}>
+                                                                +${option.priceModifier}
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer with calculated price */}
+                        <div className="p-5 border-t border-gray-100 bg-gray-50">
+                            {(() => {
+                                const basePrice = parseFloat(selectedItemForOptions.price) || 0;
+                                const optionsPrice = Object.entries(currentSelections).reduce((total, [groupId, optionIds]) => {
+                                    const group = selectedItemForOptions.options!.groups.find(g => g.id === groupId);
+                                    if (!group) return total;
+                                    return total + optionIds.reduce((sum, optId) => {
+                                        const opt = group.options.find(o => o.id === optId);
+                                        return sum + (opt?.priceModifier || 0);
+                                    }, 0);
+                                }, 0);
+                                const totalPrice = basePrice + optionsPrice;
+
+                                return (
+                                    <Button
+                                        onClick={handleConfirmOptionsSelection}
+                                        fullWidth
+                                        className="h-14 text-lg font-bold"
+                                        icon={<Plus className="w-5 h-5" />}
+                                    >
+                                        Agregar por ${totalPrice.toFixed(2)}
+                                    </Button>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>
