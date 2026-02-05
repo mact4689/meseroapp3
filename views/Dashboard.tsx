@@ -758,7 +758,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                     </div>
                                                 </div>
                                                 <button
-                                                    className="text-xs font-bold text-accent-600 hover:text-accent-700 hover:underline px-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                    className={`text-xs font-bold px-2 flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed ${item.isPromoted
+                                                            ? 'text-blue-600 hover:text-blue-700'
+                                                            : 'text-accent-600 hover:text-accent-700 hover:underline'
+                                                        }`}
                                                     onClick={async () => {
                                                         if (promotingItemId) return;
                                                         setPromotingItemId(item.id);
