@@ -70,6 +70,8 @@ export interface MenuItem {
   ingredients?: string;
   image?: string | null; // URL string for preview
   imageFile?: File | null;
+  additional_images?: string[]; // Array of URLs for additional photos
+  additionalImageFiles?: File[]; // Array of Files for new additional photos
   available?: boolean; // New field for stock status
   printerId?: string; // ID of the printer where this item should be printed
   stationId?: string; // ID of the kitchen station (KDS)

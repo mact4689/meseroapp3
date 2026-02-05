@@ -4,6 +4,7 @@ import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
 import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles } from 'lucide-react';
 import { Button } from '../components/Button';
+import { ItemGallery } from '../components/ItemGallery';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
 interface CustomerMenuProps {
@@ -105,6 +106,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             printerId: m.printer_id,
                             stationId: m.station_id,
                             options: m.options || null,
+                            additional_images: m.additional_images || [],
                             isPromoted: !!m.is_promoted
                         }));
                         console.log('[Promo Debug] Mapped items:', mappedItems.map(m => ({ name: m.name, isPromoted: m.isPromoted, available: m.available })));
@@ -593,20 +595,25 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                 return (
                                     <div key={item.id} className={`bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-3 transition-all ${!isAvailable ? 'opacity-70 grayscale' : 'active:scale-[0.99]'}`}>
                                         <div className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative">
-                                            {item.image ? (
-                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                            ) : (
-                                                <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                    <Utensils className="w-8 h-8" />
-                                                </div>
-                                            )}
+                                            <div className="w-full h-full relative z-10">
+                                                {item.image || (item.additional_images && item.additional_images.length > 0) ? (
+                                                    <ItemGallery
+                                                        images={[item.image, ...(item.additional_images || [])]}
+                                                        name={item.name}
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                        <Utensils className="w-8 h-8" />
+                                                    </div>
+                                                )}
+                                            </div>
                                             {qty > 0 && isAvailable && (
-                                                <div className="absolute inset-0 bg-brand-900/60 flex items-center justify-center backdrop-blur-[1px]">
+                                                <div className="absolute inset-0 bg-brand-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
                                                     <span className="text-white font-bold text-xl">{qty}</span>
                                                 </div>
                                             )}
                                             {!isAvailable && (
-                                                <div className="absolute inset-0 bg-gray-900/60 flex items-center justify-center backdrop-blur-[1px]">
+                                                <div className="absolute inset-0 bg-gray-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
                                                     <span className="text-[10px] text-white font-bold uppercase border border-white px-1 py-0.5 rounded">Agotado</span>
                                                 </div>
                                             )}

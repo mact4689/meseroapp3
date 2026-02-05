@@ -240,6 +240,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           printerId: m.printer_id,
           stationId: m.station_id,
           options: m.options || null,
+          additional_images: m.additional_images || [],
           isPromoted: !!m.is_promoted
         })) : [],
         tables: profileData?.tables_count ? {

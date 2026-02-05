@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
+import { GalleryUpload } from '../components/GalleryUpload';
 import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
 import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy, Star } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
@@ -28,6 +29,10 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   const [selectedStationId, setSelectedStationId] = useState<string>('');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
+
+  // Gallery State
+  const [additionalImages, setAdditionalImages] = useState<string[]>([]);
+  const [additionalImageFiles, setAdditionalImageFiles] = useState<File[]>([]);
 
   // Options/Variations State
   const [hasOptions, setHasOptions] = useState(false);
@@ -110,10 +115,28 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             finalImageUrl = null;
           }
         }
-      } else if (imagePreview && imagePreview.startsWith('blob:')) {
         // Limpieza de blob urls huerfanas si no se subió
         finalImageUrl = null;
       }
+
+      // ---------------------------------------------------------
+      // UPLOAD ADDITIONAL IMAGES
+      // ---------------------------------------------------------
+      const uploadedAdditionalUrls: string[] = [];
+
+      // 1. Upload new files
+      for (const file of additionalImageFiles) {
+        try {
+          const path = `menu/gallery/${state.user.id}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          const url = await uploadImage(file, path);
+          if (url) uploadedAdditionalUrls.push(url);
+        } catch (err) {
+          console.error("Failed to upload gallery image", err);
+        }
+      }
+
+      // 2. Combine with existing URLs (that were not removed)
+      const finalAdditionalImages = [...additionalImages, ...uploadedAdditionalUrls];
 
       // Build options config if enabled
       const optionsConfig: ItemOptionsConfig | null = hasOptions && optionGroups.length > 0
@@ -131,7 +154,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
         imageFile: null,
         available: true,
         stationId: selectedStationId || undefined,
-        options: optionsConfig
+        options: optionsConfig,
+        additional_images: finalAdditionalImages
       };
 
       if (editingId) {
@@ -153,6 +177,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       // No limpiamos printerId/stationId para facilitar entrada en batch
       setImagePreview(null);
       setImageFile(null);
+      setAdditionalImages([]);
+      setAdditionalImageFiles([]);
       setHasOptions(false);
       setOptionGroups([]);
 
@@ -180,6 +206,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setSelectedStationId(item.stationId || '');
     setImagePreview(item.image || null);
     setImageFile(null);
+    setAdditionalImages(item.additional_images || []);
+    setAdditionalImageFiles([]);
     // Load options if they exist
     if (item.options && item.options.hasOptions) {
       setHasOptions(true);
@@ -201,6 +229,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setSelectedStationId('');
     setImagePreview(null);
     setImageFile(null);
+    setAdditionalImages([]);
+    setAdditionalImageFiles([]);
     setHasOptions(false);
     setOptionGroups([]);
   };
@@ -525,6 +555,18 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
               icon={<Carrot className="w-4 h-4" />}
               className="bg-white"
             />
+
+            {/* Gallery Upload Section */}
+            <div className="bg-gray-50/50 p-4 rounded-xl border border-gray-100">
+              <GalleryUpload
+                existingImages={additionalImages}
+                newFiles={additionalImageFiles}
+                onUpdate={(updateExisting, updatedFiles) => {
+                  setAdditionalImages(updateExisting);
+                  setAdditionalImageFiles(updatedFiles);
+                }}
+              />
+            </div>
 
             {/* --- OPTIONS/VARIATIONS SECTION --- */}
             <div className="border-t border-gray-100 pt-4 mt-2">

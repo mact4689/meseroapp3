@@ -165,6 +165,7 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
     printer_id: item.printerId || null,
     station_id: item.stationId || null,
     options: item.options || null,
+    additional_images: item.additional_images || null,
     is_promoted: item.isPromoted ?? false
   };
 
@@ -213,6 +214,7 @@ export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
     printer_id: item.printerId,
     station_id: item.stationId,
     options: item.options || null,
+    additional_images: item.additional_images || null,
     is_promoted: item.isPromoted
   };
 
