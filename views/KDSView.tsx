@@ -397,8 +397,19 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                                                             <span className={`font-bold ${isPrepared ? 'text-green-400 line-through' : 'text-white'}`}>
                                                                 {item.name}
                                                             </span>
+                                                            {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                                                <div className="mt-1 space-y-0.5 pl-1 border-l-2 border-gray-600">
+                                                                    {item.selectedOptions.map((opt, idx) => (
+                                                                        <p key={idx} className="text-xs text-blue-300">
+                                                                            <span className="opacity-70">{opt.groupName}:</span> {opt.optionName}
+                                                                        </p>
+                                                                    ))}
+                                                                </div>
+                                                            )}
                                                             {item.notes && (
-                                                                <p className="text-xs text-yellow-400 mt-0.5">📝 {item.notes}</p>
+                                                                <p className="text-xs text-yellow-400 mt-1 font-bold bg-yellow-400/10 px-1 py-0.5 rounded inline-block">
+                                                                    📝 {item.notes}
+                                                                </p>
                                                             )}
                                                         </div>
                                                     </div>
