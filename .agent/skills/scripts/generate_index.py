@@ -2,21 +2,21 @@ import os
 import json
 import re
 
+import yaml
+
 def parse_frontmatter(content):
     """
-    Simple frontmatter parser using regex (consistent with validate_skills.py).
+    Parses YAML frontmatter using PyYAML for standard compliance.
     """
     fm_match = re.search(r'^---\s*\n(.*?)\n---', content, re.DOTALL)
     if not fm_match:
         return {}
     
-    fm_text = fm_match.group(1)
-    metadata = {}
-    for line in fm_text.split('\n'):
-        if ':' in line:
-            key, val = line.split(':', 1)
-            metadata[key.strip()] = val.strip().strip('"').strip("'")
-    return metadata
+    try:
+        return yaml.safe_load(fm_match.group(1)) or {}
+    except yaml.YAMLError as e:
+        print(f"⚠️ YAML parsing error: {e}")
+        return {}
 
 def generate_index(skills_dir, output_file):
     print(f"🏗️ Generating index from: {skills_dir}")
@@ -80,7 +80,7 @@ def generate_index(skills_dir, output_file):
             skills.append(skill_info)
 
     # Sort validation: by name
-    skills.sort(key=lambda x: x["name"].lower())
+    skills.sort(key=lambda x: (x["name"].lower(), x["id"].lower()))
 
     with open(output_file, 'w', encoding='utf-8') as f:
         json.dump(skills, f, indent=2)

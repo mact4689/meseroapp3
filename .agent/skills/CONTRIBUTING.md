@@ -1,11 +1,11 @@
-# 🤝 Contributing Guide - V3 Enterprise Edition
+# 🤝 Contributing Guide - V4 Enterprise Edition
 
 **Thank you for wanting to make this repo better!** This guide shows you exactly how to contribute, even if you're new to open source.
-With V3, we raised the bar for quality. Please read the **new Quality Standards** below carefully.
+With V4, we raised the bar for quality. Please read the **new Quality Standards** below carefully.
 
 ---
 
-## 🧐 The "Quality Bar" (V3 Standard)
+## 🧐 The "Quality Bar" (V4 Standard)
 
 **Critical for new skills:** Every skill submitted must pass our **5-Point Quality Check** (see `docs/QUALITY_BAR.md` for details):
 
@@ -45,6 +45,23 @@ You don't need to be an expert! Here are ways anyone can help:
 - Try skills and report what works/doesn't work
 - Test on different AI tools
 - Suggest improvements
+
+---
+
+## Local development setup
+
+To run validation, index generation, and README updates locally:
+
+1. **Node.js** (for catalog and installer): `npm ci`
+2. **Python 3** (for validate, index, readme scripts): install dependencies with
+   ```bash
+   pip install -r requirements.txt
+   ```
+   Then you can run `npm run chain` (validate → index → readme) and `npm run catalog`.
+
+**Validation:** The canonical validator is **Python** (`scripts/validate_skills.py`). Use `npm run validate` (or `npm run validate:strict` for CI-style checks). The JavaScript validator (`scripts/validate-skills.js`) is legacy/optional and uses a different schema; CI and PR checks rely on the Python validator only.
+
+**npm audit:** CI runs `npm audit --audit-level=high`. To fix issues locally: run `npm audit`, then `npm update` or `npm audit fix` as appropriate; for breaking changes, update dependencies manually and run tests.
 
 ---
 
@@ -112,16 +129,13 @@ code example here
 - ❌ Don't do this
 ```
 
-#### Step 4: Validate (CRITICAL V3 STEP)
+#### Step 4: Validate (CRITICAL V4 STEP)
 
-Run the validation script locally. **We will not merge PRs that fail this check.**
+Use the canonical validator `scripts/validate_skills.py` via `npm run validate`. **We will not merge PRs that fail this check.**
 
 ```bash
-# Soft mode (warnings only)
-python3 scripts/validate_skills.py
-
-# Hard mode (what CI runs)
-python3 scripts/validate_skills.py --strict
+npm run validate        # soft mode (warnings only)
+npm run validate:strict # strict mode (what CI runs)
 ```
 
 This checks:

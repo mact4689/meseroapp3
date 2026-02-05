@@ -52,6 +52,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { business, menu, tables, user, orders } = state;
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
+    const [showFullPerformanceModal, setShowFullPerformanceModal] = useState(false);
     // Eliminated unused showSqlModal state
     const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
     const [copyFeedback, setCopyFeedback] = useState(false);
@@ -138,7 +139,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const bottomItems = sortedStats.filter(i => i.soldCount < opportunitiesThreshold).slice(0, 5);
         const maxSales = topItems.length > 0 ? topItems[0].soldCount : 1;
 
-        return { topItems, bottomItems, maxSales };
+        return { topItems, bottomItems, maxSales, allItems: sortedStats };
     }, [filteredOrdersForStats, menu]);
 
     // --- LÓGICA DE VENTAS POR DÍA (HISTORIAL MODAL) ---
@@ -680,6 +681,106 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     )
                 }
 
+                {/* MODAL: FULL PERFORMANCE */}
+                {showFullPerformanceModal && (
+                    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowFullPerformanceModal(false)}></div>
+                        <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[85vh]">
+                            <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
+                                        <BarChart3 className="w-4 h-4" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-brand-900 leading-none">Rendimiento Completo</h3>
+                                        <p className="text-[10px] text-gray-400 font-medium">Todos los platillos ({itemStats.allItems.length})</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowFullPerformanceModal(false)}
+                                    className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 transition-colors"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+
+                            <div className="overflow-y-auto p-0 bg-gray-50/50 flex-1">
+                                {itemStats.allItems.length === 0 ? (
+                                    <div className="text-center py-12 px-4 flex flex-col items-center justify-center h-full">
+                                        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 text-gray-200 shadow-sm">
+                                            <UtensilsCrossed className="w-8 h-8" />
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 mb-1">Sin datos</h4>
+                                        <p className="text-gray-400 text-sm">No hay ventas registradas en este periodo.</p>
+                                    </div>
+                                ) : (
+                                    <div className="bg-white">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead className="bg-gray-50/80 sticky top-0 z-10 backdrop-blur-sm">
+                                                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100">
+                                                    <th className="px-4 py-3 w-12 text-center">#</th>
+                                                    <th className="px-4 py-3">Platillo</th>
+                                                    <th className="px-4 py-3 hidden sm:table-cell">Categoría</th>
+                                                    <th className="px-4 py-3 text-right">Ventas</th>
+                                                    <th className="px-4 py-3 text-right">Ingresos</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-gray-50">
+                                                {itemStats.allItems.map((item, idx) => (
+                                                    <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                                        <td className="px-4 py-3 text-center text-sm font-bold text-gray-300 group-hover:text-brand-900">
+                                                            {idx + 1}
+                                                        </td>
+                                                        <td className="px-4 py-3">
+                                                            <div className="flex items-center gap-3">
+                                                                <div className="w-10 h-10 rounded-lg bg-gray-100 border border-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                                                                    {item.image ? (
+                                                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <UtensilsCrossed className="w-4 h-4 text-gray-300" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="min-w-0">
+                                                                    <p className="font-bold text-brand-900 text-sm truncate max-w-[180px] sm:max-w-xs">{item.name}</p>
+                                                                    <p className="text-xs text-gray-400 sm:hidden">{item.category}</p>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-sm text-gray-500 hidden sm:table-cell">
+                                                            <span className="bg-gray-100 px-2 py-1 rounded-md text-xs font-medium">
+                                                                {item.category}
+                                                            </span>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <div className="flex flex-col items-end">
+                                                                <span className="font-bold text-brand-900 text-sm">{item.soldCount}</span>
+                                                                <div className="w-16 h-1 bg-gray-100 rounded-full mt-1 overflow-hidden">
+                                                                    <div
+                                                                        className="h-full bg-blue-500 rounded-full"
+                                                                        style={{ width: `${(item.soldCount / itemStats.maxSales) * 100}%` }}
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="px-4 py-3 text-right">
+                                                            <span className="font-bold text-green-600 text-sm">
+                                                                ${item.revenue.toFixed(2)}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-3 bg-gray-50 border-t border-gray-100 text-center text-xs text-gray-400">
+                                Ordenado por cantidad de ventas
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 {/* REMOVED SQL MODAL */}
 
                 {/* ANALYTICS SECTION */}
@@ -690,6 +791,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 <BarChart3 className="w-5 h-5" />
                             </div>
                             <h3 className="font-bold text-brand-900 text-lg">Rendimiento del Menú</h3>
+                            <button
+                                onClick={() => setShowFullPerformanceModal(true)}
+                                className="ml-2 p-1.5 text-gray-400 hover:text-brand-900 hover:bg-gray-100 rounded-lg transition-colors"
+                                title="Ver todo el rendimiento"
+                            >
+                                <Eye className="w-4 h-4" />
+                            </button>
                         </div>
 
                         <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
