@@ -1135,68 +1135,56 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             {showPromotionModal && (() => {
                 const promotedItem = menu.find(i => i.isPromoted && i.available);
                 if (!promotedItem) {
-                    // No promoted item found, close modal immediately
                     setTimeout(() => setShowPromotionModal(false), 0);
                     return null;
                 }
 
-                // Auto-dismiss after 5 seconds
-                setTimeout(() => setShowPromotionModal(false), 5000);
-
                 return (
-                    <div
-                        className="fixed bottom-20 left-4 right-4 z-[200] animate-in slide-in-from-bottom-4 duration-300"
-                        onClick={() => setShowPromotionModal(false)}
-                    >
-                        <div className="bg-white w-full rounded-2xl shadow-2xl border border-gray-100 overflow-hidden flex items-stretch">
-                            {/* Image */}
-                            {promotedItem.image && (
-                                <div className="w-24 h-24 shrink-0">
-                                    <img
-                                        src={promotedItem.image}
-                                        alt={promotedItem.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                </div>
-                            )}
+                    <div className="fixed top-0 left-0 right-0 z-[200] p-4 pt-6 animate-in slide-in-from-top-4 duration-300 bg-gradient-to-b from-black/40 to-transparent">
+                        <div className="bg-white w-full max-w-md mx-auto rounded-2xl shadow-2xl border border-gray-100 overflow-hidden">
+                            {/* Header with image */}
+                            <div className="flex items-stretch">
+                                {promotedItem.image && (
+                                    <div className="w-28 h-28 shrink-0">
+                                        <img
+                                            src={promotedItem.image}
+                                            alt={promotedItem.name}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                )}
 
-                            {/* Content */}
-                            <div className="flex-1 p-3 flex flex-col justify-center min-w-0">
-                                <div className="flex items-center gap-1.5 mb-1">
-                                    <Sparkles className="w-3 h-3 text-amber-500 shrink-0" />
-                                    <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Recomendado</span>
+                                {/* Content */}
+                                <div className="flex-1 p-4 flex flex-col justify-center min-w-0">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Sparkles className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                                        <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">Recomendado del día</span>
+                                    </div>
+                                    <h4 className="font-bold text-brand-900 text-base leading-tight">{promotedItem.name}</h4>
+                                    <p className="text-xs text-gray-500 line-clamp-2 mt-1">{promotedItem.description || '¡Pruébalo hoy!'}</p>
+                                    <p className="text-sm font-bold text-accent-600 mt-1">${promotedItem.price}</p>
                                 </div>
-                                <h4 className="font-bold text-brand-900 text-sm truncate">{promotedItem.name}</h4>
-                                <p className="text-xs text-gray-500 truncate">{promotedItem.description || '¡Pruébalo hoy!'}</p>
                             </div>
 
-                            {/* CTA */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleAddToCart(promotedItem);
-                                    setShowPromotionModal(false);
-                                }}
-                                className="bg-brand-900 text-white px-4 flex items-center justify-center shrink-0 hover:bg-brand-950 transition-colors"
-                            >
-                                <Plus className="w-5 h-5" />
-                            </button>
-
-                            {/* Close button */}
-                            <button
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShowPromotionModal(false);
-                                }}
-                                className="absolute top-1 right-1 p-1 bg-gray-100/80 rounded-full hover:bg-gray-200 transition-colors"
-                            >
-                                <X className="w-3 h-3 text-gray-500" />
-                            </button>
-                        </div>
-
-                        {/* Auto-dismiss progress bar */}
-                        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gray-200 rounded-b-2xl overflow-hidden">
-                            <div className="h-full bg-brand-900 animate-[shrink_5s_linear_forwards]" style={{ width: '100%' }} />
+                            {/* Action buttons */}
+                            <div className="flex border-t border-gray-100">
+                                <button
+                                    onClick={() => setShowPromotionModal(false)}
+                                    className="flex-1 py-3 text-sm font-medium text-gray-500 hover:bg-gray-50 transition-colors"
+                                >
+                                    No, gracias
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleAddToCart(promotedItem);
+                                        setShowPromotionModal(false);
+                                    }}
+                                    className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-950 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <Plus className="w-4 h-4" />
+                                    ¡Lo quiero!
+                                </button>
+                            </div>
                         </div>
                     </div>
                 );
