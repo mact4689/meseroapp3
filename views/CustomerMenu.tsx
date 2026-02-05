@@ -651,7 +651,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             </main>
 
             {/* Floating Actions - Hide for takeout orders */}
-            <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3 items-end">
+            {/* Move up when cart bar is visible */}
+            <div className={`fixed right-6 z-40 flex flex-col gap-3 items-end transition-all ${cartCount > 0 ? 'bottom-24' : 'bottom-6'}`}>
 
                 {tableId !== 'LLEVAR' && (
                     <button
@@ -1111,8 +1112,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                     </div>
                 </div>
             )}
-            {/* FOOTER ACTIONS */}
-            {!isAdminPreview && !isLoading && (
+            {/* FOOTER ACTIONS - Only show when cart has items */}
+            {!isAdminPreview && !isLoading && cartCount > 0 && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t border-gray-100 z-50">
                     <Button
                         fullWidth
