@@ -1125,65 +1125,68 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             )}
 
             {/* PROMOTIONAL POPUP */}
-            {showPromotionModal && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-                    <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
-                        <button
-                            onClick={() => setShowPromotionModal(false)}
-                            className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10"
-                        >
-                            <X className="w-5 h-5 text-gray-500" />
-                        </button>
+            {/* PROMOTIONAL POPUP */}
+            {showPromotionModal && (() => {
+                const promotedItem = menu.find(i => i.isPromoted && i.available);
+                if (!promotedItem) return null;
 
-                        {menu.find(i => i.isPromoted)?.image && (
-                            <div className="h-48 w-full relative">
-                                <img
-                                    src={menu.find(i => i.isPromoted)?.image!}
-                                    alt="Promoted"
-                                    className="w-full h-full object-cover"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
-                                    <div className="flex items-center gap-2 bg-brand-900/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">
-                                        <Sparkles className="w-3 h-3" />
-                                        Recomendado
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="p-8 text-center">
-                            <h3 className="text-2xl font-bold text-brand-900 mb-2">
-                                {menu.find(i => i.isPromoted)?.name}
-                            </h3>
-                            <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-                                ¡Prueba nuestra recomendación estrella del día! Te encantará su sabor único.
-                            </p>
-
-                            <Button
-                                fullWidth
-                                onClick={() => {
-                                    const item = menu.find(i => i.isPromoted);
-                                    if (item) {
-                                        handleAddToCart(item);
-                                        setShowPromotionModal(false);
-                                    }
-                                }}
-                                className="h-14 bg-brand-900 hover:bg-brand-950 text-white font-bold rounded-2xl shadow-lg shadow-brand-900/20"
-                                icon={<Plus className="w-5 h-5" />}
-                            >
-                                ¡Lo quiero! (${menu.find(i => i.isPromoted)?.price})
-                            </Button>
-
+                return (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center p-6 bg-black/80 animate-in fade-in duration-300">
+                        <div className="bg-white w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl relative animate-in zoom-in-95 duration-300">
                             <button
                                 onClick={() => setShowPromotionModal(false)}
-                                className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest transition-colors"
+                                className="absolute top-4 right-4 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors z-10"
                             >
-                                Quizás más tarde
+                                <X className="w-5 h-5 text-gray-500" />
                             </button>
+
+                            {promotedItem.image && (
+                                <div className="h-48 w-full relative">
+                                    <img
+                                        src={promotedItem.image}
+                                        alt="Promoted"
+                                        className="w-full h-full object-cover"
+                                    />
+                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-6">
+                                        <div className="flex items-center gap-2 bg-brand-900/90 text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider backdrop-blur-sm">
+                                            <Sparkles className="w-3 h-3" />
+                                            Recomendado
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="p-8 text-center">
+                                <h3 className="text-2xl font-bold text-brand-900 mb-2">
+                                    {promotedItem.name}
+                                </h3>
+                                <p className="text-gray-500 text-sm mb-6 leading-relaxed">
+                                    {promotedItem.description || "¡Prueba nuestra recomendación estrella del día! Te encantará su sabor único."}
+                                </p>
+
+                                <Button
+                                    fullWidth
+                                    onClick={() => {
+                                        handleAddToCart(promotedItem);
+                                        setShowPromotionModal(false);
+                                    }}
+                                    className="h-14 bg-brand-900 hover:bg-brand-950 text-white font-bold rounded-2xl shadow-lg shadow-brand-900/20"
+                                    icon={<Plus className="w-5 h-5" />}
+                                >
+                                    ¡Lo quiero! (${promotedItem.price})
+                                </Button>
+
+                                <button
+                                    onClick={() => setShowPromotionModal(false)}
+                                    className="mt-4 text-xs font-bold text-gray-400 hover:text-gray-600 uppercase tracking-widest transition-colors"
+                                >
+                                    Quizás más tarde
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };
