@@ -128,9 +128,14 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     useEffect(() => {
         if (!isLoading && menu.length > 0 && !hasShownPromotion) {
             const promotedItem = menu.find(item => item.isPromoted && item.available);
+            console.log('[Promo Debug] Menu loaded:', menu.length, 'items. Promoted:', promotedItem?.name || 'none');
             if (promotedItem) {
-                setShowPromotionModal(true);
-                setHasShownPromotion(true);
+                // Small delay to ensure DOM is ready
+                setTimeout(() => {
+                    setShowPromotionModal(true);
+                    setHasShownPromotion(true);
+                    console.log('[Promo Debug] Modal opened for:', promotedItem.name);
+                }, 100);
             }
         }
     }, [isLoading, menu, hasShownPromotion]);
