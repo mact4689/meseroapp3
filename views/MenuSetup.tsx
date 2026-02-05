@@ -4,7 +4,7 @@ import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -282,6 +282,19 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
   const removeOptionGroup = (groupId: string) => {
     setOptionGroups(groups => groups.filter(g => g.id !== groupId));
+  };
+
+  const duplicateOptionGroup = (group: OptionGroup) => {
+    const newGroup: OptionGroup = {
+      ...group,
+      id: generateId(),
+      name: `${group.name} (Copia)`,
+      options: group.options.map(opt => ({
+        ...opt,
+        id: generateId()
+      }))
+    };
+    setOptionGroups([...optionGroups, newGroup]);
   };
 
   const addOptionToGroup = (groupId: string) => {
@@ -585,13 +598,23 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                           <span className="text-xs font-bold text-gray-500 uppercase">
                             Grupo {groupIndex + 1}
                           </span>
-                          <button
-                            type="button"
-                            onClick={() => removeOptionGroup(group.id)}
-                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => duplicateOptionGroup(group)}
+                              title="Duplicar grupo"
+                              className="p-1 text-gray-400 hover:text-brand-900 hover:bg-brand-50 rounded-full transition-colors"
+                            >
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeOptionGroup(group.id)}
+                              className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
 
                         {/* Group Name */}

@@ -771,14 +771,22 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                 </span>
                                             </div>
 
-                                            {/* Show selected options */}
+                                            {/* Show selected options grouped by category */}
                                             {item.selectedOptions && item.selectedOptions.length > 0 && (
-                                                <div className="text-xs text-gray-500 mb-2">
-                                                    {item.selectedOptions.map((opt, idx) => (
-                                                        <span key={opt.optionId}>
-                                                            {opt.optionName}{opt.priceModifier > 0 && ` (+$${opt.priceModifier})`}
-                                                            {idx < item.selectedOptions!.length - 1 && ', '}
-                                                        </span>
+                                                <div className="text-[10px] leading-relaxed text-gray-500 mb-2 space-y-0.5">
+                                                    {Object.entries(
+                                                        item.selectedOptions.reduce((acc, opt) => {
+                                                            if (!acc[opt.groupName]) acc[opt.groupName] = [];
+                                                            acc[opt.groupName].push(opt);
+                                                            return acc;
+                                                        }, {} as Record<string, typeof item.selectedOptions>)
+                                                    ).map(([groupName, opts]) => (
+                                                        <div key={groupName} className="flex gap-1.5">
+                                                            <span className="font-semibold text-gray-600 shrink-0">{groupName}:</span>
+                                                            <span className="break-words">
+                                                                {opts.map(o => o.optionName + (o.priceModifier > 0 ? ` (+$${o.priceModifier})` : '')).join(', ')}
+                                                            </span>
+                                                        </div>
                                                     ))}
                                                 </div>
                                             )}
@@ -942,9 +950,26 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                             </button>
                         </div>
 
+                        {/* Progress Bar for Required Steps */}
+                        {selectedItemForOptions.options.groups.some(g => g.required) && (
+                            <div className="w-full h-1.5 bg-gray-100 flex">
+                                {selectedItemForOptions.options.groups.map((group) => {
+                                    if (!group.required) return null;
+                                    const isComplete = (currentSelections[group.id] || []).length >= group.minSelect;
+                                    return (
+                                        <div
+                                            key={group.id}
+                                            className={`flex-1 h-full transition-all duration-300 border-r border-white last:border-0 ${isComplete ? 'bg-green-500' : 'bg-brand-200'
+                                                }`}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        )}
+
                         {/* Options Groups */}
                         <div className="flex-1 overflow-y-auto p-5 space-y-6">
-                            {selectedItemForOptions.options.groups.map((group) => {
+                            {selectedItemForOptions.options.groups.map((group, groupIndex) => {
                                 const selectedCount = (currentSelections[group.id] || []).length;
                                 const isComplete = group.required
                                     ? selectedCount >= group.minSelect
@@ -954,9 +979,15 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                     <div key={group.id} className="space-y-3">
                                         <div className="flex items-center justify-between">
                                             <div>
-                                                <h4 className="font-bold text-gray-900">{group.name}</h4>
-                                                <p className="text-xs text-gray-500">
+                                                <div className="flex items-center gap-2">
+                                                    <span className="flex items-center justify-center w-5 h-5 rounded-full bg-brand-100 text-[10px] font-bold text-brand-900">
+                                                        {groupIndex + 1}
+                                                    </span>
+                                                    <h4 className="font-bold text-gray-900">{group.name}</h4>
+                                                </div>
+                                                <p className="text-xs text-gray-500 mt-0.5">
                                                     {group.required ? 'Obligatorio' : 'Opcional'}
+                                                    {group.minSelect > 1 && ` • Mín ${group.minSelect}`}
                                                     {group.maxSelect > 1 && ` • Máx ${group.maxSelect}`}
                                                 </p>
                                             </div>
@@ -965,7 +996,11 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                     ? 'bg-green-100 text-green-700'
                                                     : 'bg-amber-100 text-amber-700'
                                                     }`}>
-                                                    {selectedCount}/{group.minSelect}
+                                                    {isComplete ? (
+                                                        <span className="flex items-center gap-1"><Check className="w-3 h-3" /> Completo</span>
+                                                    ) : (
+                                                        `Selecciona ${group.minSelect - selectedCount} más`
+                                                    )}
                                                 </span>
                                             )}
                                         </div>
@@ -980,28 +1015,26 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                         type="button"
                                                         onClick={() => toggleOptionSelection(group.id, option.id, group.maxSelect)}
                                                         className={`
-                                                            w-full flex items-center justify-between p-3 rounded-xl border transition-all
+                                                            w-full flex items-center justify-between p-4 rounded-xl border transition-all
                                                             ${isSelected
-                                                                ? 'bg-brand-50 border-brand-900 ring-1 ring-brand-900'
-                                                                : 'bg-gray-50 border-gray-200 hover:border-gray-300'}
+                                                                ? 'bg-brand-50 border-brand-900 ring-1 ring-brand-900 shadow-sm'
+                                                                : 'bg-white border-gray-200 hover:border-gray-300'}
                                                         `}
                                                     >
                                                         <div className="flex items-center gap-3">
                                                             <div className={`
-                                                                w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors
-                                                                ${isSelected
-                                                                    ? 'bg-brand-900 border-brand-900'
-                                                                    : 'border-gray-300'}
+                                                                w-5 h-5 rounded-full border flex items-center justify-center transition-colors
+                                                                ${isSelected ? 'bg-brand-900 border-brand-900' : 'bg-white border-gray-300'}
                                                             `}>
                                                                 {isSelected && <Check className="w-3 h-3 text-white" />}
                                                             </div>
-                                                            <span className={`font-medium ${isSelected ? 'text-brand-900' : 'text-gray-700'}`}>
+                                                            <span className={`font-medium text-sm ${isSelected ? 'text-brand-900' : 'text-gray-700'}`}>
                                                                 {option.name}
                                                             </span>
                                                         </div>
                                                         {option.priceModifier > 0 && (
-                                                            <span className={`text-sm font-medium ${isSelected ? 'text-brand-900' : 'text-gray-500'}`}>
-                                                                +${option.priceModifier}
+                                                            <span className={`text-sm font-bold ${isSelected ? 'text-brand-900' : 'text-gray-900'}`}>
+                                                                +${option.priceModifier.toFixed(2)}
                                                             </span>
                                                         )}
                                                     </button>
@@ -1017,25 +1050,40 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                         <div className="p-5 border-t border-gray-100 bg-gray-50">
                             {(() => {
                                 const basePrice = parseFloat(selectedItemForOptions.price) || 0;
-                                const optionsPrice = Object.entries(currentSelections).reduce((total, [groupId, optionIds]) => {
-                                    const group = selectedItemForOptions.options!.groups.find(g => g.id === groupId);
-                                    if (!group) return total;
-                                    return total + optionIds.reduce((sum, optId) => {
-                                        const opt = group.options.find(o => o.id === optId);
-                                        return sum + (opt?.priceModifier || 0);
-                                    }, 0);
-                                }, 0);
+                                let optionsPrice = 0;
+                                selectedItemForOptions.options!.groups.forEach(group => {
+                                    const selectedIds = currentSelections[group.id] || [];
+                                    selectedIds.forEach(id => {
+                                        const opt = group.options.find(o => o.id === id);
+                                        if (opt) optionsPrice += opt.priceModifier;
+                                    });
+                                });
                                 const totalPrice = basePrice + optionsPrice;
 
+                                // Check if all required groups are satisfied
+                                const missingRequired = selectedItemForOptions.options!.groups.filter(group => {
+                                    const selectedIds = currentSelections[group.id] || [];
+                                    return group.required && selectedIds.length < group.minSelect;
+                                });
+                                const canAdd = missingRequired.length === 0;
+
                                 return (
-                                    <Button
-                                        onClick={handleConfirmOptionsSelection}
-                                        fullWidth
-                                        className="h-14 text-lg font-bold"
-                                        icon={<Plus className="w-5 h-5" />}
-                                    >
-                                        Agregar por ${totalPrice.toFixed(2)}
-                                    </Button>
+                                    <div className="space-y-3">
+                                        {!canAdd && (
+                                            <p className="text-center text-xs text-amber-600 font-medium">
+                                                Faltan selecciones obligatorias ({missingRequired.length})
+                                            </p>
+                                        )}
+                                        <Button
+                                            onClick={handleConfirmOptionsSelection}
+                                            fullWidth
+                                            disabled={!canAdd}
+                                            className={`h-14 text-lg font-bold ${!canAdd ? 'opacity-50 grayscale' : ''}`}
+                                            icon={<Plus className="w-5 h-5" />}
+                                        >
+                                            {canAdd ? `Agregar por $${totalPrice.toFixed(2)}` : 'Completa tu pedido'}
+                                        </Button>
+                                    </div>
                                 );
                             })()}
                         </div>
