@@ -59,6 +59,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const [activeOrdersView, setActiveOrdersView] = useState<'pending' | 'completed'>('pending');
     const [printingAll, setPrintingAll] = useState(false);
     const [promotingItemId, setPromotingItemId] = useState<string | null>(null);
+    const [opportunitiesThreshold, setOpportunitiesThreshold] = useState(3);
 
     // Filter orders by status
     const pendingOrders = orders.filter(o => o.status === 'pending');
