@@ -354,15 +354,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <button
-              onClick={handleLoadSample}
-              className="text-xs font-medium text-accent-600 bg-accent-50 hover:bg-accent-100 px-3 py-1.5 rounded-full flex items-center transition-colors disabled:opacity-50"
-              type="button"
-              disabled={isSubmittingItem}
-            >
-              <Sparkles className="w-3 h-3 mr-1.5" />
-              Simular Menú
-            </button>
+
           </div>
 
           {isOnboarding ? (
