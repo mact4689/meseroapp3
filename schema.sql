@@ -16,13 +16,15 @@ create extension if not exists "pgcrypto";
 
 -- 3. TABLAS
 
--- TABLA: profiles (Restaurantes)
+-- TABLA: profiles (Restaurantes y Staff)
 create table public.profiles (
   id uuid references auth.users(id) on delete cascade primary key,
   name text,
   cuisine text,
   logo_url text,
   tables_count int default 0,
+  role text default 'owner', -- 'owner' | 'waiter' | 'cook'
+  restaurant_id uuid references public.profiles(id) on delete cascade, -- For staff linking to restaurant owner
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );

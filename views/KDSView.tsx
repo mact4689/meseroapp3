@@ -1,20 +1,25 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AppView, Order, OrderItem, KitchenStation, PreparedItem } from '../types';
-import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle } from 'lucide-react';
+import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle, Sun } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
 import { getStations, getOrders, updateOrderPreparedItems } from '../services/db';
 import { supabase } from '../services/client';
+import { useWakeLock } from '../hooks/useWakeLock';
 
 interface KDSViewProps {
     onNavigate: (view: AppView) => void;
 }
+
 
 export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [lastOrderCount, setLastOrderCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+
+    // Keep screen awake for kitchen tablets
+    const { isActive: wakeLockActive, isSupported: wakeLockSupported } = useWakeLock(true);
 
     // Data loaded from Supabase
     const [stations, setStations] = useState<KitchenStation[]>([]);
@@ -287,6 +292,19 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
+                        {/* Wake Lock Status Indicator */}
+                        {wakeLockSupported && (
+                            <div
+                                className={`
+                                    p-2 rounded-lg transition-colors
+                                    ${wakeLockActive ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}
+                                `}
+                                title={wakeLockActive ? 'Pantalla siempre activa' : 'Pantalla puede apagarse'}
+                            >
+                                <Sun className="w-5 h-5" />
+                            </div>
+                        )}
+
                         {/* Sound Toggle */}
                         <button
                             onClick={() => setSoundEnabled(!soundEnabled)}

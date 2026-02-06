@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { MenuItem, User, Order, KitchenStation, TicketConfig } from '../types';
+import { MenuItem, User, Order, KitchenStation, TicketConfig, UserRole } from '../types';
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb, promoteMenuItem } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
@@ -79,10 +79,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
-        const user = {
+        const user: User = {
           id: session.user.id,
           email: session.user.email!,
-          name: session.user.user_metadata?.full_name || 'Usuario'
+          name: session.user.user_metadata?.full_name || 'Usuario',
+          role: 'owner' as UserRole // Default role, will be updated from profile
         };
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
@@ -93,10 +94,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        const user = {
+        const user: User = {
           id: session.user.id,
           email: session.user.email!,
-          name: session.user.user_metadata?.full_name || 'Usuario'
+          name: session.user.user_metadata?.full_name || 'Usuario',
+          role: 'owner' as UserRole // Default role, will be updated from profile
         };
         // Update user state immediately
         setState(prev => ({ ...prev, user }));
@@ -219,8 +221,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // But to fix the "Redirect loop", let's trust the data.
       const shouldBeOnboarding = !hasBusinessName || (!hasMenu && !hasTables);
 
+      // Get role from profile (defaults to 'owner' if not set)
+      const userRole: UserRole = (profileData.role as UserRole) || 'owner';
+
       setState(prev => ({
         ...prev,
+        // Update user with role from profile
+        user: prev.user ? { ...prev.user, role: userRole } : prev.user,
         // Only force onboarding if we are significantly lacking data, otherwise let the user navigate
         isOnboarding: shouldBeOnboarding,
         business: {

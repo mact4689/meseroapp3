@@ -15,14 +15,23 @@ export enum AppView {
   CUSTOMER_MENU = 'CUSTOMER_MENU',
   KDS_SETUP = 'KDS_SETUP',
   KDS_VIEW = 'KDS_VIEW',
+  STAFF_MANAGEMENT = 'STAFF_MANAGEMENT',
   TERMS = 'TERMS',
   PRIVACY = 'PRIVACY'
 }
+
+// --- USER ROLES ---
+// owner: Full access (Dashboard, Menu, Config, Reports)
+// waiter: Orders access, can mark as completed
+// cook: KDS only (via direct link, no login required)
+export type UserRole = 'owner' | 'waiter' | 'cook';
 
 export interface User {
   id: string;
   name: string;
   email: string;
+  role: UserRole;
+  restaurantId?: string; // For staff that belongs to a restaurant
 }
 
 export interface KitchenStation {
