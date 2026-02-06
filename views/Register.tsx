@@ -94,7 +94,8 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         register({
           id: data.user!.id,
           email: data.user!.email!,
-          name: formData.fullName
+          name: formData.fullName,
+          role: 'owner'
         });
 
         // Ir a la bienvenida para iniciar el flujo de configuración

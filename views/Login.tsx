@@ -14,7 +14,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
   const { login } = useAppStore(); // Usamos el nuevo método login
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -36,20 +36,21 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
 
       if (authError) {
         if (authError.message.includes("Invalid login credentials")) {
-             setError("Correo o contraseña incorrectos.");
+          setError("Correo o contraseña incorrectos.");
         } else if (authError.message.includes("Email not confirmed")) {
-             setError("Por favor confirma tu correo electrónico antes de iniciar sesión.");
+          setError("Por favor confirma tu correo electrónico antes de iniciar sesión.");
         } else {
-             setError(authError.message);
+          setError(authError.message);
         }
       } else if (data?.user) {
         // Cargar datos del usuario
         login({
           id: data.user.id,
           email: data.user.email!,
-          name: data.user.user_metadata?.full_name || 'Usuario'
+          name: data.user.user_metadata?.full_name || 'Usuario',
+          role: 'owner' // Default for initial login payload, will be updated by profile fetch
         });
-        
+
         // Ir directamente al dashboard
         onNavigate(AppView.DASHBOARD);
       }
@@ -65,7 +66,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
         {/* Header */}
         <div className="mb-8">
-          <button 
+          <button
             onClick={() => onNavigate(AppView.LANDING)}
             className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
           >
@@ -88,10 +89,10 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-6 flex-1">
           <div className="space-y-4">
-            <Input 
-              label="Correo electrónico" 
-              name="email" 
-              type="email" 
+            <Input
+              label="Correo electrónico"
+              name="email"
+              type="email"
               placeholder="ejemplo@mesero.app"
               icon={<Mail className="w-5 h-5" />}
               value={formData.email}
@@ -99,10 +100,10 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
               required
             />
             <div className="space-y-1">
-              <Input 
-                label="Contraseña" 
+              <Input
+                label="Contraseña"
                 name="password"
-                type="password" 
+                type="password"
                 placeholder="••••••••"
                 icon={<Lock className="w-5 h-5" />}
                 value={formData.password}
@@ -123,18 +124,18 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
             </Button>
           </div>
         </form>
-        
+
         <div className="mt-auto pt-6 text-center">
-             <p className="text-sm text-gray-500">
-              ¿No tienes cuenta?{' '}
-              <button 
-                type="button"
-                onClick={() => onNavigate(AppView.REGISTER)} 
-                className="font-semibold text-brand-900 hover:underline"
-              >
-                Regístrate
-              </button>
-            </p>
+          <p className="text-sm text-gray-500">
+            ¿No tienes cuenta?{' '}
+            <button
+              type="button"
+              onClick={() => onNavigate(AppView.REGISTER)}
+              className="font-semibold text-brand-900 hover:underline"
+            >
+              Regístrate
+            </button>
+          </p>
         </div>
       </div>
     </div>
