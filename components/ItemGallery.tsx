@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, Utensils, Image as ImageIcon } from 'lucide-react';
 
 interface ItemGalleryProps {
@@ -11,6 +12,18 @@ export const ItemGallery: React.FC<ItemGalleryProps> = ({ images, name }) => {
     const validImages = images.filter((img): img is string => typeof img === 'string' && img.length > 0);
     const [isOpen, setIsOpen] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
+
+    // Lock body scroll when open
+    useEffect(() => {
+        if (isOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [isOpen]);
 
     // If no images at all, show placeholder
     if (validImages.length === 0) {
@@ -36,12 +49,66 @@ export const ItemGallery: React.FC<ItemGalleryProps> = ({ images, name }) => {
         if (validImages.length > 0) setIsOpen(true);
     }
 
+    const handleClose = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsOpen(false);
+    };
+
+    const modalContent = (
+        <div
+            className="fixed inset-0 z-[9999] bg-black/95 flex flex-col justify-center animate-in fade-in duration-200"
+            onClick={handleClose} // Clicking backdrop closes
+            style={{ touchAction: 'none' }} // Prevent scrolling on mobile
+        >
+            <button
+                onClick={handleClose}
+                className="absolute top-4 right-4 p-3 text-white/70 hover:text-white bg-white/10 rounded-full z-[10000] backdrop-blur-md active:scale-95 transition-all"
+            >
+                <X className="w-8 h-8" />
+            </button>
+
+            <div className="relative w-full h-full flex items-center justify-center px-2 py-10" onClick={(e) => e.stopPropagation()}>
+                <img
+                    src={validImages[currentIndex]}
+                    alt={`${name} ${currentIndex + 1}`}
+                    className="max-w-full max-h-[85vh] object-contain shadow-2xl rounded-lg bg-black"
+                    style={{ boxShadow: '0 0 50px rgba(0,0,0,0.5)' }}
+                />
+
+                {validImages.length > 1 && (
+                    <>
+                        <button onClick={prev} className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-sm transition-colors active:scale-90">
+                            <ChevronLeft className="w-8 h-8" />
+                        </button>
+                        <button onClick={next} className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-sm transition-colors active:scale-90">
+                            <ChevronRight className="w-8 h-8" />
+                        </button>
+                    </>
+                )}
+            </div>
+
+            <div className="absolute bottom-8 left-0 right-0 text-center pointer-events-none">
+                <h3 className="text-white font-bold text-lg drop-shadow-md mb-4 px-4">{name}</h3>
+                {validImages.length > 1 && (
+                    <div className="flex justify-center gap-2 pointer-events-auto">
+                        {validImages.map((_, idx) => (
+                            <button
+                                key={idx}
+                                onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
+                                className={`h-2 rounded-full transition-all duration-300 shadow-sm ${idx === currentIndex ? 'bg-white w-6' : 'bg-white/30 w-2 hover:bg-white/50'}`}
+                            />
+                        ))}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <>
             <div onClick={openGallery} className="w-full h-full relative cursor-pointer group">
                 <img src={validImages[0]} alt={name} className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-500" />
 
-                {/* Overlay gradient for better text visibility if we had text, but here just style */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
 
                 {validImages.length > 1 && (
@@ -52,48 +119,7 @@ export const ItemGallery: React.FC<ItemGalleryProps> = ({ images, name }) => {
                 )}
             </div>
 
-            {isOpen && (
-                <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col justify-center animate-in fade-in duration-200" onClick={() => setIsOpen(false)}>
-                    <button onClick={() => setIsOpen(false)} className="absolute top-4 right-4 p-2 text-white/70 hover:text-white bg-white/10 rounded-full z-20 backdrop-blur-md">
-                        <X className="w-6 h-6" />
-                    </button>
-
-                    <div className="relative w-full max-h-[80vh] flex items-center justify-center px-4" onClick={(e) => e.stopPropagation()}>
-                        <img
-                            src={validImages[currentIndex]}
-                            alt={`${name} ${currentIndex + 1}`}
-                            className="max-w-full max-h-[70vh] object-contain shadow-2xl rounded-lg bg-black"
-                            style={{ boxShadow: '0 0 50px rgba(0,0,0,0.5)' }}
-                        />
-
-                        {validImages.length > 1 && (
-                            <>
-                                <button onClick={prev} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-sm transition-colors">
-                                    <ChevronLeft className="w-6 h-6" />
-                                </button>
-                                <button onClick={next} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-white/10 text-white rounded-full hover:bg-white/20 backdrop-blur-sm transition-colors">
-                                    <ChevronRight className="w-6 h-6" />
-                                </button>
-                            </>
-                        )}
-                    </div>
-
-                    <div className="mt-6 text-center">
-                        <h3 className="text-white font-bold text-lg">{name}</h3>
-                        {validImages.length > 1 && (
-                            <div className="flex justify-center gap-2 mt-3">
-                                {validImages.map((_, idx) => (
-                                    <button
-                                        key={idx}
-                                        onClick={(e) => { e.stopPropagation(); setCurrentIndex(idx); }}
-                                        className={`w-2 h-2 rounded-full transition-all duration-300 ${idx === currentIndex ? 'bg-white w-4' : 'bg-white/30 hover:bg-white/50'}`}
-                                    />
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            )}
+            {isOpen && createPortal(modalContent, document.body)}
         </>
     );
 };
