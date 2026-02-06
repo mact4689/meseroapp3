@@ -714,29 +714,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             </div>
 
 
-            {/* Bottom Cart Bar */}
-            {cartCount > 0 && !isCartOpen && (
-                <div className="fixed bottom-6 left-6 right-6 z-50 animate-in slide-in-from-bottom-4">
-                    <button
-                        onClick={() => setIsCartOpen(true)}
-                        className="w-full bg-brand-900 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between group active:scale-[0.98] transition-all ring-2 ring-white/50"
-                    >
-                        <div className="flex items-center gap-3">
-                            <div className="bg-accent-500 text-brand-900 font-bold w-8 h-8 rounded-full flex items-center justify-center">
-                                {cartCount}
-                            </div>
-                            <div className="flex flex-col items-start">
-                                <span className="text-xs text-brand-100 font-medium">Ver tu pedido</span>
-                                <span className="font-bold text-lg">${(cartTotal || 0).toFixed(2)}</span>
-                            </div>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">Ir al carrito</span>
-                            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </div>
-                    </button>
-                </div>
-            )}
+
 
             {/* Cart Modal */}
             {isCartOpen && (
