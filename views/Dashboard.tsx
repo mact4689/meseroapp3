@@ -661,8 +661,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                                             {/* Statistics Bar */}
                                                                             <div
                                                                                 className={`w-full rounded-t-md transition-all duration-300 relative ${isZero
-                                                                                        ? 'bg-gray-50 h-[4px]'
-                                                                                        : 'bg-blue-100 group-hover:bg-blue-200'
+                                                                                    ? 'bg-gray-50 h-[4px]'
+                                                                                    : 'bg-blue-100 group-hover:bg-blue-200'
                                                                                     }`}
                                                                                 style={{
                                                                                     height: isZero ? '4px' : `${Math.max(heightPercent, 4)}%`
@@ -1023,73 +1023,80 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     `}
                                     >
                                         {/* Order Header */}
-                                        <div className="p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-4">
+                                        <div className="p-3 sm:p-4">
+                                            <div className="flex items-start gap-3 sm:gap-4">
                                                 {/* Table/Takeout Badge */}
                                                 {order.table_number.startsWith('LLEVAR') ? (
-                                                    <div className="bg-orange-500 text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none">
+                                                    <div className="bg-orange-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0">
                                                         <span className="text-[8px] font-medium opacity-80">🛍️</span>
-                                                        <span className="text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
+                                                        <span className="text-base sm:text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
                                                     </div>
                                                 ) : (
-                                                    <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-12 h-12 rounded-lg flex flex-col items-center justify-center leading-none`}>
-                                                        <span className="text-[10px] font-medium opacity-80">Mesa</span>
-                                                        <span className="text-xl font-bold">{order.table_number}</span>
+                                                    <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0`}>
+                                                        <span className="text-[9px] sm:text-[10px] font-medium opacity-80">Mesa</span>
+                                                        <span className="text-lg sm:text-xl font-bold">{order.table_number}</span>
                                                     </div>
                                                 )}
-                                                <div>
-                                                    <div className="flex items-center gap-2">
+
+                                                {/* Order Info - flexible */}
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                                                         {order.table_number.startsWith('LLEVAR') ? (
-                                                            <span className="font-bold text-orange-600 flex items-center gap-1.5">
-                                                                🛍️ Para Llevar #{order.table_number.split('-')[1] || '?'}
+                                                            <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5 text-sm sm:text-base">
+                                                                🛍️ <span className="hidden xs:inline">Para Llevar </span>#{order.table_number.split('-')[1] || '?'}
                                                             </span>
                                                         ) : isHelp ? (
-                                                            <span className="font-bold text-yellow-700 flex items-center gap-1.5">
-                                                                <Hand className="w-4 h-4" />
+                                                            <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5 text-sm sm:text-base">
+                                                                <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                                 🆘 AYUDA - Mesa {order.table_number}
                                                             </span>
                                                         ) : isBill ? (
-                                                            <span className="font-bold text-green-700 flex items-center gap-1.5">
-                                                                <Receipt className="w-4 h-4" />
+                                                            <span className="font-bold text-green-700 flex items-center gap-1 sm:gap-1.5 text-sm sm:text-base">
+                                                                <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                                                                 Cuenta Cerrada
                                                             </span>
                                                         ) : (
-                                                            <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
+                                                            <span className="font-bold text-brand-900 text-sm sm:text-base">Orden #{order.id.slice(0, 4)}</span>
                                                         )}
-                                                        <span className="text-xs text-gray-500 flex items-center">
-                                                            <Clock className="w-3 h-3 mr-1" />
+                                                        <span className="text-[11px] sm:text-xs text-gray-500 flex items-center">
+                                                            <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
                                                             {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-600">
+                                                    <p className="text-xs sm:text-sm text-gray-600 mt-0.5">
                                                         {order.table_number.startsWith('LLEVAR')
                                                             ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
                                                             : isHelp
-                                                                ? <span className="text-yellow-700 font-medium">{order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}</span>
+                                                                ? <span className="text-yellow-700 font-medium line-clamp-1">{order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}</span>
                                                                 : isBill
                                                                     ? <span className="text-green-600 font-medium">El cliente solicita el ticket</span>
                                                                     : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
                                                     </p>
                                                 </div>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <button
-                                                    onClick={(e) => handlePrintOrder(order.id, e)}
-                                                    className={`p-2 ${isHelp ? 'text-yellow-600 hover:bg-yellow-100' : isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
-                                                    title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
-                                                    disabled={printingOrderId === order.id}
-                                                >
-                                                    <Printer className={`w-5 h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
-                                                </button>
-                                                <Button
-                                                    onClick={(e) => handleCompleteOrder(order.id, e)}
-                                                    className={`h-9 px-4 text-xs ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700' : isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent`}
-                                                    icon={<Check className="w-4 h-4" />}
-                                                >
-                                                    {isHelp ? 'Atendido' : isBill ? 'Entregada' : 'Listo'}
-                                                </Button>
-                                                <div className="text-gray-400">
-                                                    {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+
+                                                {/* Action Buttons - shrink-0 to prevent squishing */}
+                                                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                                                    <button
+                                                        onClick={(e) => handlePrintOrder(order.id, e)}
+                                                        className={`p-1.5 sm:p-2 ${isHelp ? 'text-yellow-600 hover:bg-yellow-100' : isBill ? 'text-green-600 hover:bg-green-100' : 'text-blue-600 hover:bg-blue-50'} rounded-lg transition-colors`}
+                                                        title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                                                        disabled={printingOrderId === order.id}
+                                                    >
+                                                        <Printer className={`w-4 h-4 sm:w-5 sm:h-5 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
+                                                    </button>
+                                                    <Button
+                                                        onClick={(e) => handleCompleteOrder(order.id, e)}
+                                                        className={`h-8 sm:h-9 px-2 sm:px-4 text-xs ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700' : isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent whitespace-nowrap`}
+                                                        icon={<Check className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                                                    >
+                                                        <span className="hidden sm:inline">{isHelp ? 'Atendido' : isBill ? 'Entregada' : 'Listo'}</span>
+                                                    </Button>
+                                                    <button
+                                                        onClick={() => toggleOrder(order.id)}
+                                                        className="text-gray-400 p-0.5"
+                                                    >
+                                                        {expandedOrder === order.id ? <ChevronUp className="w-4 h-4 sm:w-5 sm:h-5" /> : <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5" />}
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
