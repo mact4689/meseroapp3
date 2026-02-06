@@ -7,8 +7,8 @@
     <!-- Mobile App Config -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#fafafa">
     <meta name="format-detection" content="telephone=no">
     
     <!-- PWA Manifest -->
@@ -71,6 +71,10 @@
       }
     </script>
     <style>
+      html, body {
+        overflow-x: hidden;
+        width: 100%;
+      }
       body {
         -webkit-tap-highlight-color: transparent;
         overscroll-behavior-y: none; /* Prevent pull-to-refresh on mobile */
