@@ -1105,7 +1105,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 </div>
             )}
             {/* FOOTER ACTIONS - Only show when cart has items */}
-            {!isAdminPreview && !isLoading && cartCount > 0 && !isCartOpen && (
+            {!isAdminPreview && !isLoading && cartCount > 0 && !isCartOpen && !selectedItemForOptions && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-[100]">
                     <Button
                         fullWidth
