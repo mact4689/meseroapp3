@@ -277,61 +277,202 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         );
     }
 
-    // ========================================
-    // 🚨 DIAGNOSTIC MODE OVERRIDE 🚨
-    // This runs BEFORE any logic to diagnose why KDS shows blank
-    // ========================================
-    return (
-        <div style={{
-            backgroundColor: '#004400',
-            height: '100vh',
-            width: '100vw',
-            padding: '40px',
-            color: 'white',
-            fontFamily: 'monospace',
-            fontSize: '16px',
-            overflow: 'auto'
-        }}>
-            <h1 style={{ fontSize: '32px', color: '#00ff00', fontWeight: 'bold', marginBottom: '20px' }}>
-                🔍 KDS DIAGNOSTIC MODE
-            </h1>
-
-            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
-                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>URL PARAMETERS</h2>
-                <p><strong>Station ID:</strong> {stationId || '❌ MISSING'}</p>
-                <p><strong>User ID:</strong> {userId || '❌ MISSING'}</p>
-            </div>
-
-            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
-                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>STATE</h2>
-                <p><strong>Auth:</strong> {isAuthorized ? '✅ YES' : '❌ NO'}</p>
-                <p><strong>Loading:</strong> {isLoading ? '⏳ YES' : '✅ NO'}</p>
-                <p><strong>Error:</strong> {error ? `❌ ${error}` : '✅ None'}</p>
-                <p><strong>Saved PIN:</strong> {savedPin ? '✅ EXISTS' : '❌ MISSING'}</p>
-            </div>
-
-            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
-                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>DATA LOADED</h2>
-                <p><strong>Stations:</strong> {stations?.length || 0}</p>
-                <p><strong>Orders:</strong> {orders?.length || 0}</p>
-            </div>
-
-            <button
-                onClick={() => window.location.reload()}
-                style={{
-                    padding: '20px',
-                    fontSize: '20px',
-                    backgroundColor: '#00ff00',
-                    color: 'black',
-                    border: 'none',
-                    borderRadius: '8px',
-                    fontWeight: 'bold',
-                    cursor: 'pointer',
+    // PIN AUTHORIZATION SCREEN
+    // Simplified version with NO animations to ensure visibility
+    if (!savedPin || !isAuthorized) {
+        return (
+            <div style={{
+                backgroundColor: '#111827',
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '20px'
+            }}>
+                <div style={{
+                    backgroundColor: '#1f2937',
+                    padding: '40px',
+                    borderRadius: '16px',
+                    border: '1px solid #374151',
+                    maxWidth: '400px',
                     width: '100%'
-                }}
-            >
-                🔄 FORCE RELOAD PAGE
-            </button>
-        </div>
-    );
+                }}>
+                    <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                        <div style={{
+                            width: '64px',
+                            height: '64px',
+                            backgroundColor: '#3b82f620',
+                            borderRadius: '16px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            marginBottom: '16px'
+                        }}>
+                            <span style={{ fontSize: '32px' }}>🔐</span>
+                        </div>
+                        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
+                            Acceso a Cocina
+                        </h1>
+                        <p style={{ color: '#9ca3af', fontSize: '14px' }}>
+                            Ingresa el PIN de 4 números
+                        </p>
+                    </div>
+
+                    {/* PIN Display */}
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginBottom: '24px' }}>
+                        {[0, 1, 2, 3].map((i) => (
+                            <div
+                                key={i}
+                                style={{
+                                    width: '48px',
+                                    height: '64px',
+                                    borderRadius: '12px',
+                                    border: `2px solid ${enteringPin.length > i ? '#3b82f6' : '#374151'}`,
+                                    backgroundColor: enteringPin.length > i ? '#3b82f610' : '#111827',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontSize: '24px',
+                                    fontWeight: 'bold',
+                                    color: enteringPin.length > i ? 'white' : '#4b5563'
+                                }}
+                            >
+                                {enteringPin[i] ? '•' : ''}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Hidden input for mobile keyboards */}
+                    <input
+                        type="tel"
+                        maxLength={4}
+                        autoFocus
+                        value={enteringPin}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '');
+                            if (val.length <= 4) {
+                                setEnteringPin(val);
+                                if (val.length === 4) {
+                                    // Auto submit when 4 digits entered
+                                    localStorage.setItem('kds_pin', val);
+                                    setSavedPin(val);
+                                    setIsAuthorized(true);
+                                    setEnteringPin('');
+                                }
+                            }
+                        }}
+                        style={{
+                            position: 'fixed',
+                            opacity: 0,
+                            pointerEvents: 'none'
+                        }}
+                    />
+
+                    {/* Number Pad */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                            <button
+                                key={n}
+                                type="button"
+                                onClick={() => {
+                                    if (enteringPin.length < 4) {
+                                        const newPin = enteringPin + n;
+                                        setEnteringPin(newPin);
+                                        if (newPin.length === 4) {
+                                            // Auto submit
+                                            setTimeout(() => {
+                                                localStorage.setItem('kds_pin', newPin);
+                                                setSavedPin(newPin);
+                                                setIsAuthorized(true);
+                                                setEnteringPin('');
+                                            }, 200);
+                                        }
+                                    }
+                                }}
+                                style={{
+                                    height: '64px',
+                                    borderRadius: '12px',
+                                    backgroundColor: '#374151',
+                                    color: 'white',
+                                    fontSize: '20px',
+                                    fontWeight: 'bold',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                {n}
+                            </button>
+                        ))}
+                        <button
+                            type="button"
+                            onClick={() => setEnteringPin('')}
+                            style={{
+                                height: '64px',
+                                borderRadius: '12px',
+                                backgroundColor: '#7f1d1d20',
+                                color: '#ef4444',
+                                fontWeight: 'bold',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '14px'
+                            }}
+                        >
+                            Borrar
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                if (enteringPin.length < 4) {
+                                    const newPin = enteringPin + '0';
+                                    setEnteringPin(newPin);
+                                    if (newPin.length === 4) {
+                                        // Auto submit
+                                        setTimeout(() => {
+                                            localStorage.setItem('kds_pin', newPin);
+                                            setSavedPin(newPin);
+                                            setIsAuthorized(true);
+                                            setEnteringPin('');
+                                        }, 200);
+                                    }
+                                }
+                            }}
+                            style={{
+                                height: '64px',
+                                borderRadius: '12px',
+                                backgroundColor: '#374151',
+                                color: 'white',
+                                fontSize: '20px',
+                                fontWeight: 'bold',
+                                border: 'none',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            0
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setEnteringPin(prev => prev.slice(0, -1))}
+                            style={{
+                                height: '64px',
+                                borderRadius: '12px',
+                                backgroundColor: '#374151',
+                                color: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                border: 'none',
+                                cursor: 'pointer',
+                                fontSize: '24px'
+                            }}
+                        >
+                            ←
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // TODO: Add full KDS interface here (loading, error, main view)
+    return <div>KDS Authorized - Building interface...</div>;
 };
