@@ -44,6 +44,11 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         return stations.find(s => s.id === stationId);
     }, [stations, stationId]);
 
+    // Debug logging
+    useEffect(() => {
+        console.log('[KDS Debug] State:', { stationId, userId, isLoading, isAuthorized, savedPin, stations: stations.length, orders: orders.length, error });
+    }, [stationId, userId, isLoading, isAuthorized, savedPin, stations, orders, error]);
+
     // Load initial data
     const loadData = useCallback(async () => {
         if (!userId) {
