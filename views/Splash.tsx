@@ -32,8 +32,8 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       return;
     }
 
-    if (view === 'KDS' && station) {
-      window.location.replace(`/kds?station=${station}`);
+    if (view === 'KDS' && station && uid) {
+      window.location.replace(`/kds?station=${station}&uid=${uid}`);
       return;
     }
 
