@@ -405,7 +405,20 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-900 flex flex-col">
+        <div className="min-h-screen bg-gray-900 flex flex-col relative">
+            {/* DIAGNOSTIC OVERLAY - REMOVE AFTER FIXING */}
+            <div className="absolute top-0 left-0 bg-red-500 text-white p-2 z-50 text-xs opacity-75">
+                DEBUG:
+                StID: {stationId ? 'OK' : 'MISSING'} |
+                UID: {userId ? 'OK' : 'MISSING'} |
+                Stations: {stations.length} |
+                Orders: {orders.length} |
+                Auth: {isAuthorized ? 'YES' : 'NO'} |
+                Loading: {isLoading ? 'YES' : 'NO'} |
+                Error: {error || 'None'} |
+                StationFound: {station ? 'YES' : 'NO'}
+            </div>
+
             {/* Header */}
             <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
                 <div className="flex items-center justify-between">
