@@ -412,14 +412,19 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     <div className="flex items-center gap-3">
                         <div
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
-                            style={{ backgroundColor: station?.color || '#3b82f6' }}
+                            style={{ backgroundColor: station?.color || '#374151' }}
                         >
                             <ChefHat className="w-5 h-5 text-white" />
                         </div>
                         <div>
                             <h1 className="text-lg font-bold text-white">
-                                {station?.name || 'Estación Desconocida'}
+                                {station?.name || `Estación ${stationId?.slice(0, 4)}...`}
                             </h1>
+                            {!station && (
+                                <p className="text-xs text-red-400">
+                                    No encontrada en base de datos
+                                </p>
+                            )}
                             <p className="text-xs text-gray-400">
                                 {relevantOrders.length} órdenes pendientes
                             </p>
