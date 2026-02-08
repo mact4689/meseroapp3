@@ -119,6 +119,8 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     useEffect(() => {
         if (!userId) return;
 
+        console.log('[KDS Realtime] Setting up subscription for user:', userId);
+
         const channel = supabase
             .channel('kds-orders')
             .on(
@@ -130,14 +132,24 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     filter: `user_id=eq.${userId}`
                 },
                 (payload) => {
-                    console.log('Realtime update:', payload);
+                    console.log('[KDS Realtime] Order change detected:', payload.eventType, payload);
                     // Reload orders on any change
                     loadData();
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log('[KDS Realtime] Subscription status:', status);
+                if (status === 'SUBSCRIBED') {
+                    console.log('[KDS Realtime] ✅ Successfully connected to Realtime');
+                } else if (status === 'CHANNEL_ERROR') {
+                    console.error('[KDS Realtime] ❌ Connection error');
+                } else if (status === 'TIMED_OUT') {
+                    console.error('[KDS Realtime] ⏱️ Connection timed out');
+                }
+            });
 
         return () => {
+            console.log('[KDS Realtime] Cleaning up subscription');
             supabase.removeChannel(channel);
         };
     }, [userId, loadData]);

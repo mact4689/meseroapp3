@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { usePermissions } from '../hooks/usePermissions';
 import { AppView } from '../types';
@@ -41,6 +41,7 @@ import {
     ShoppingBag,
     Star
 } from 'lucide-react';
+import { supabase } from '../services/client';
 
 interface DashboardProps {
     onNavigate: (view: AppView) => void;
