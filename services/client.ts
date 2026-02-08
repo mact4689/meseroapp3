@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
-export const SUPABASE_URL = 'https://xskzykobzlexshjwaulw.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inhza3p5a29iemxleHNoandhdWx3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1MjcxNTQsImV4cCI6MjA4NDEwMzE1NH0.Oqd9gA1e1CI0BoEn4GC54vpQdZu-VumTZnP5v7IAao8';
+// Read from environment variables (set in .env or Vercel)
+export const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || 'https://xskzykobzlexshjwaulw.supabase.co';
+export const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+
+if (!SUPABASE_ANON_KEY) {
+  console.error('⚠️ VITE_SUPABASE_ANON_KEY not configured. Check your .env file.');
+}
 
 export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   auth: {
@@ -13,5 +18,4 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   db: {
     schema: 'public',
   },
-  // Aumentar timeouts globales si es necesario (manejado internamente por retry logic en db.ts)
 });
