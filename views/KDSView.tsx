@@ -289,6 +289,31 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         );
     }
 
+    // Error state - general error from loadData
+    if (error) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
+                <div className="text-center">
+                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                    <h1 className="text-2xl font-bold text-white mb-2">Error de Carga</h1>
+                    <p className="text-gray-400 mb-4">{error}</p>
+                    <button
+                        onClick={loadData}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold"
+                    >
+                        Reintentar
+                    </button>
+                    <button
+                        onClick={() => window.location.reload()}
+                        className="block w-full mt-4 text-sm text-gray-500 hover:text-gray-400"
+                    >
+                        Recargar Página
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // PIN AUTHORIZATION OVERLAY
     if (!savedPin || !isAuthorized) {
         return (
