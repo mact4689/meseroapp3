@@ -15,4 +15,14 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   db: {
     schema: 'public',
   },
+  realtime: {
+    params: {
+      eventsPerSecond: 10
+    }
+  },
+  global: {
+    headers: {
+      'x-application-name': 'meseroapp3'
+    }
+  }
 });
