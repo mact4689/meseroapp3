@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check, Plus, Camera } from 'lucide-react';
+import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check, Plus, Camera, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -21,7 +21,8 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
     businessName: state.business.name || '',
     cuisine: state.business.cuisine || '',
     logoUrl: state.business.logo,
-    logoFile: null as File | null
+    logoFile: null as File | null,
+    kdsPin: state.business.kds_pin || '0000'
   });
 
   // Sync local state if global state changes (e.g. on fetch)
@@ -31,7 +32,8 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
         ...prev,
         businessName: state.business.name,
         cuisine: state.business.cuisine || '',
-        logoUrl: state.business.logo
+        logoUrl: state.business.logo,
+        kdsPin: state.business.kds_pin || '0000'
       }));
     }
   }, [state.business]);
@@ -72,7 +74,8 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
     await updateBusiness({
       name: formData.businessName,
       cuisine: formData.cuisine,
-      logo: finalLogoUrl
+      logo: finalLogoUrl,
+      kds_pin: formData.kdsPin
     });
 
     return true;
@@ -236,6 +239,20 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
                   onChange={handleInputChange}
                   required
                   className="bg-gray-50 border-transparent focus:bg-white focus:border-brand-900 py-4"
+                />
+
+                <Input
+                  label="PIN de Cocina (KDS)"
+                  name="kdsPin"
+                  type="text"
+                  maxLength={4}
+                  placeholder="Ej. 1234"
+                  icon={<CheckCircle className="w-5 h-5" />}
+                  value={formData.kdsPin}
+                  onChange={handleInputChange}
+                  required
+                  className="bg-gray-50 border-transparent focus:bg-white focus:border-brand-900 py-4"
+                  helperText="Este código se pedirá en las tablets de cocina para marcar platos listos."
                 />
               </div>
             </div>

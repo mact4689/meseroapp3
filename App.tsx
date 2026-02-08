@@ -179,8 +179,6 @@ const App: React.FC = () => {
   return (
     <div className="w-full h-screen bg-white">
       <OfflineStatus />
-      {/* Handle legacy QR code redirects */}
-      <LegacyRedirectHandler />
 
       <Routes>
         {/* Public routes */}
@@ -202,7 +200,6 @@ const App: React.FC = () => {
         {/* Setup routes */}
         <Route path="/setup/business" element={<BusinessSetupRoute />} />
         <Route path="/setup/menu" element={<MenuSetupRoute />} />
-        <Route path="/setup/tables" element={<TableSetupRoute />} />
         <Route path="/setup/tables" element={<TableSetupRoute />} />
         <Route path="/setup/ticket" element={<TicketConfigRoute />} />
         <Route path="/setup/staff" element={<StaffManagementRoute />} />

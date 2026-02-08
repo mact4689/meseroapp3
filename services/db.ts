@@ -436,6 +436,28 @@ export const updateOrderPreparedItems = async (orderId: string, preparedItems: a
   }
 };
 
+// SECURE VERSION WITH PIN (FOR KDS TABLETS)
+export const updateOrderPreparedItemsSecure = async (orderId: string, preparedItems: any[], pin: string) => {
+  const attemptUpdate = async () => {
+    const { error } = await supabase
+      .rpc('secure_update_prepared_items', {
+        target_order_id: orderId,
+        new_prepared_items: preparedItems,
+        provided_pin: pin
+      });
+
+    if (error) throw error;
+    return null;
+  };
+
+  try {
+    return await withRetry(attemptUpdate);
+  } catch (error: any) {
+    console.error('Error securely updating KDS:', error);
+    throw error;
+  }
+};
+
 // Helper to get the last takeout order number
 export const getLastTakeoutOrderNumber = async (userId: string) => {
   const fetchLastRequest = async () => {

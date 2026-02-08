@@ -3,7 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { AppView, Order, OrderItem, KitchenStation, PreparedItem } from '../types';
 import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle, Sun } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
-import { getStations, getOrders, updateOrderPreparedItems } from '../services/db';
+import { getStations, getOrders, updateOrderPreparedItemsSecure } from '../services/db';
 import { supabase } from '../services/client';
 import { useWakeLock } from '../hooks/useWakeLock';
 
@@ -17,6 +17,9 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [lastOrderCount, setLastOrderCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isAuthorized, setIsAuthorized] = useState(!!localStorage.getItem('kds_pin'));
+    const [enteringPin, setEnteringPin] = useState('');
+    const [savedPin, setSavedPin] = useState<string | null>(localStorage.getItem('kds_pin'));
 
     // Keep screen awake for kitchen tablets
     const { isActive: wakeLockActive, isSupported: wakeLockSupported } = useWakeLock(true);
@@ -90,6 +93,22 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     useEffect(() => {
         loadData();
     }, [loadData]);
+
+    const handlePinSubmit = (e?: React.FormEvent) => {
+        if (e) e.preventDefault();
+        if (enteringPin.length === 4) {
+            localStorage.setItem('kds_pin', enteringPin);
+            setSavedPin(enteringPin);
+            setIsAuthorized(true);
+            setEnteringPin('');
+        }
+    };
+
+    const handleLogoutPin = () => {
+        localStorage.removeItem('kds_pin');
+        setSavedPin(null);
+        setIsAuthorized(false);
+    };
 
     // Subscribe to realtime updates
     useEffect(() => {
@@ -196,7 +215,22 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         ));
 
         // Save to database
-        await updateOrderPreparedItems(orderId, newPreparedItems);
+        try {
+            await updateOrderPreparedItemsSecure(orderId, newPreparedItems, savedPin || '');
+        } catch (err: any) {
+            console.error('Failed to update KDS - possibly invalid PIN');
+            // Revert optimistic update on error
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, prepared_items: currentPreparedItems } : o
+            ));
+
+            // If it was a PIN error, de-authorize
+            if (err.message?.includes('PIN')) {
+                setIsAuthorized(false);
+                setSavedPin(null);
+                localStorage.removeItem('kds_pin');
+            }
+        }
     };
 
     // Auto-refresh timer display
@@ -250,20 +284,91 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         );
     }
 
-    // Error state
-    if (error) {
+    // PIN AUTHORIZATION OVERLAY
+    if (!savedPin || !isAuthorized) {
         return (
             <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-                <div className="text-center">
-                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-white mb-2">Error</h1>
-                    <p className="text-gray-400 mb-4">{error}</p>
-                    <button
-                        onClick={loadData}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    >
-                        Reintentar
-                    </button>
+                <div className="bg-gray-800 p-8 rounded-3xl shadow-2xl border border-gray-700 w-full max-w-sm animate-in zoom-in-95 duration-200">
+                    <div className="text-center mb-8">
+                        <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <ChefHat className="w-8 h-8 text-blue-400" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-white mb-2">Acceso a Cocina</h1>
+                        <p className="text-gray-400 text-sm">Ingresa el PIN de 4 números de tu restaurante</p>
+                    </div>
+
+                    <form onSubmit={handlePinSubmit} className="space-y-6">
+                        <div className="flex justify-center gap-3">
+                            {[0, 1, 2, 3].map((i) => (
+                                <div
+                                    key={i}
+                                    className={`w-12 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold transition-all ${enteringPin.length > i ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-gray-700 bg-gray-900 text-gray-600'
+                                        }`}
+                                >
+                                    {enteringPin[i] ? '•' : ''}
+                                </div>
+                            ))}
+                        </div>
+
+                        <input
+                            type="tel"
+                            maxLength={4}
+                            autoFocus
+                            value={enteringPin}
+                            onChange={(e) => {
+                                const val = e.target.value.replace(/\D/g, '');
+                                if (val.length <= 4) {
+                                    setEnteringPin(val);
+                                    if (val.length === 4) {
+                                        // Auto submit
+                                        localStorage.setItem('kds_pin', val);
+                                        setSavedPin(val);
+                                        setIsAuthorized(true);
+                                        setEnteringPin('');
+                                    }
+                                }
+                            }}
+                            className="fixed opacity-0 pointer-events-none"
+                        />
+
+                        <div className="grid grid-cols-3 gap-3">
+                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                                <button
+                                    key={n}
+                                    type="button"
+                                    onClick={() => {
+                                        if (enteringPin.length < 4) setEnteringPin(prev => prev + n);
+                                    }}
+                                    className="h-16 rounded-xl bg-gray-700 text-white text-xl font-bold hover:bg-gray-600 active:scale-95 transition-all outline-none"
+                                >
+                                    {n}
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                onClick={() => setEnteringPin('')}
+                                className="h-16 rounded-xl bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition-all outline-none"
+                            >
+                                Borrar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    if (enteringPin.length < 4) setEnteringPin(prev => prev + '0');
+                                }}
+                                className="h-16 rounded-xl bg-gray-700 text-white text-xl font-bold hover:bg-gray-600 active:scale-95 transition-all outline-none"
+                            >
+                                0
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setEnteringPin(prev => prev.slice(0, -1))}
+                                className="h-16 rounded-xl bg-gray-700 text-white flex items-center justify-center hover:bg-gray-600 active:scale-95 transition-all outline-none"
+                            >
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         );
@@ -318,6 +423,14 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                         </button>
 
                         {/* Refresh */}
+                        <button
+                            onClick={handleLogoutPin}
+                            className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            title="Bloquear KDS"
+                        >
+                            <VolumeX className="w-5 h-5" />
+                        </button>
+
                         <button
                             onClick={loadData}
                             className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white transition-colors"

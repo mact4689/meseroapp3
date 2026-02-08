@@ -9,22 +9,35 @@ interface SplashProps {
   onNavigate: (view: AppView) => void;
 }
 
+import { useNavigate } from 'react-router-dom';
+
 export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   const { state } = useAppStore();
+  const navigate = useNavigate();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [showManualButton, setShowManualButton] = useState(false);
 
-  // Immediate check for QR codes to bypass splash animation
+  // HANDLE QR CODE REDIRECTS IMMEDIATELY
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (params.get('table')) {
-      onNavigate(AppView.CUSTOMER_MENU);
-    }
-  }, [onNavigate]);
+    const table = params.get('table');
+    const uid = params.get('uid');
+    const view = params.get('view');
+    const station = params.get('station');
 
-  useEffect(() => {
-    // Intentar navegación automática más rápida
-    // Solo marcamos que el tiempo mínimo ha pasado
+    if (table && uid) {
+      // FORCE BROWSER NAVIGATION to ensure params are preserved
+      // This bypasses React Router and any potential race conditions
+      window.location.replace(`/menu?table=${table}&uid=${uid}`);
+      return;
+    }
+
+    if (view === 'KDS' && station) {
+      window.location.replace(`/kds?station=${station}`);
+      return;
+    }
+
+    // Only start splash timers if NOT redirecting
     const timer = setTimeout(() => {
       setMinTimeElapsed(true);
     }, 1500);
@@ -37,7 +50,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       clearTimeout(timer);
       clearTimeout(fallbackTimer);
     };
-  }, []);
+  }, [navigate]);
 
   // Efecto que monitorea tanto el tiempo como la carga de datos
   useEffect(() => {
@@ -47,9 +60,11 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   }, [minTimeElapsed, state.isLoading, state.user, state.isOnboarding]);
 
   const handleRouting = () => {
+    // Check if this is a QR code URL - if so, don't navigate from here
+    // LegacyRedirectHandler in App.tsx will handle the redirect with params
     const params = new URLSearchParams(window.location.search);
-    if (params.get('table')) {
-      onNavigate(AppView.CUSTOMER_MENU);
+    if (params.get('table') || params.get('uid')) {
+      // Don't interfere with QR code redirects
       return;
     }
 
@@ -130,8 +145,20 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
         )}
       </div>
 
-      <div className="absolute bottom-8 text-white/20 text-xs">
-        v1.0.0
+      <div className="absolute bottom-8 text-white/20 text-xs flex flex-col items-center gap-1">
+        <span>v1.2 Debug</span>
+        {/* DEBUG INFO FOR QR ISSUES */}
+        <div className="text-[10px] max-w-xs text-center break-all opacity-50">
+          Search: {window.location.search || 'none'}
+        </div>
+        {window.location.search.includes('table') && (
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-red-500/20 px-2 py-1 rounded text-red-200 mt-2"
+          >
+            Reintentar
+          </button>
+        )}
       </div>
     </div>
   );

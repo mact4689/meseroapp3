@@ -11,6 +11,7 @@ interface AppState {
     name: string;
     cuisine: string;
     logo: string | null;
+    kds_pin?: string;
   };
   menu: MenuItem[];
   tables: {
@@ -59,7 +60,7 @@ const defaultTicketConfig: TicketConfig = {
 // Estado base
 const baseState: AppState = {
   user: null,
-  business: { name: '', cuisine: '', logo: null },
+  business: { name: '', cuisine: '', logo: null, kds_pin: '0000' },
   menu: [],
   tables: { count: '', generated: [] },
   ticketConfig: defaultTicketConfig,
@@ -233,7 +234,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         business: {
           name: profileData.name || '',
           cuisine: profileData.cuisine || '',
-          logo: profileData.logo_url
+          logo: profileData.logo_url,
+          kds_pin: profileData.kds_pin || '0000'
         },
         menu: menuData ? menuData.map((m: any) => ({
           id: m.id,

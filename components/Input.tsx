@@ -4,9 +4,10 @@ interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
   icon?: React.ReactNode;
+  helperText?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, icon, className = '', ...props }) => {
+export const Input: React.FC<InputProps> = ({ label, error, icon, helperText, className = '', ...props }) => {
   return (
     <div className="w-full space-y-1.5">
       {label && (
@@ -36,6 +37,7 @@ export const Input: React.FC<InputProps> = ({ label, error, icon, className = ''
         />
       </div>
       {error && <p className="text-sm text-red-500 ml-1">{error}</p>}
+      {helperText && !error && <p className="text-[10px] text-gray-500 ml-1 leading-tight">{helperText}</p>}
     </div>
   );
 };
