@@ -473,6 +473,250 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         );
     }
 
-    // TODO: Add full KDS interface here (loading, error, main view)
-    return <div>KDS Authorized - Building interface...</div>;
+    // LOADING STATE
+    if (isLoading) {
+        return (
+            <div style={{
+                backgroundColor: '#111827',
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}>
+                <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                        width: '48px',
+                        height: '48px',
+                        border: '4px solid #1f2937',
+                        borderTop: '4px solid #3b82f6',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite',
+                        margin: '0 auto 16px'
+                    }} />
+                    <p style={{ color: '#9ca3af' }}>Cargando pantalla de cocina...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // ERROR STATE
+    if (error) {
+        return (
+            <div style={{
+                backgroundColor: '#111827',
+                minHeight: '100vh',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '24px'
+            }}>
+                <div style={{ textAlign: 'center', maxWidth: '400px' }}>
+                    <div style={{ fontSize: '64px', marginBottom: '16px' }}>⚠️</div>
+                    <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: 'white', marginBottom: '8px' }}>
+                        Error de Carga
+                    </h1>
+                    <p style={{ color: '#9ca3af', marginBottom: '16px' }}>{error}</p>
+                    <button
+                        onClick={loadData}
+                        style={{
+                            padding: '12px 24px',
+                            backgroundColor: '#3b82f6',
+                            color: 'white',
+                            borderRadius: '8px',
+                            fontWeight: 'bold',
+                            border: 'none',
+                            cursor: 'pointer',
+                            marginRight: '8px'
+                        }}
+                    >
+                        Reintentar
+                    </button>
+                    <button
+                        onClick={() => window.location.reload()}
+                        style={{
+                            padding: '12px 24px',
+                            backgroundColor: 'transparent',
+                            color: '#9ca3af',
+                            borderRadius: '8px',
+                            border: 'none',
+                            cursor: 'pointer',
+                            textDecoration: 'underline'
+                        }}
+                    >
+                        Recargar Página
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // MAIN KDS INTERFACE
+    return (
+        <div className="min-h-screen bg-gray-900 flex flex-col">
+            {/* Header */}
+            <header className="bg-gray-800 border-b border-gray-700 px-4 py-3">
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <div
+                            className="w-10 h-10 rounded-lg flex items-center justify-center"
+                            style={{ backgroundColor: station?.color || '#374151' }}
+                        >
+                            <ChefHat className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h1 className="text-lg font-bold text-white">
+                                {station?.name || `Estación ${stationId?.slice(0, 8)}`}
+                            </h1>
+                            {!station && (
+                                <p className="text-xs text-red-400">
+                                    No encontrada en base de datos
+                                </p>
+                            )}
+                            <p className="text-xs text-gray-400">
+                                {relevantOrders.length} órdenes pendientes
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                        {/* Wake Lock Indicator */}
+                        {wakeLockSupported && (
+                            <div
+                                className={`p-2 rounded-lg transition-colors ${wakeLockActive ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}`}
+                                title={wakeLockActive ? 'Pantalla siempre activa' : 'Pantalla puede apagarse'}
+                            >
+                                <Sun className="w-5 h-5" />
+                            </div>
+                        )}
+
+                        {/* Sound Toggle */}
+                        <button
+                            onClick={() => setSoundEnabled(!soundEnabled)}
+                            className={`p-2 rounded-lg transition-colors ${soundEnabled ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-400'}`}
+                            title={soundEnabled ? 'Sonido activado' : 'Sonido desactivado'}
+                        >
+                            {soundEnabled ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+                        </button>
+
+                        {/* Refresh */}
+                        <button
+                            onClick={loadData}
+                            className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white transition-colors"
+                            title="Recargar"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                        </button>
+
+                        {/* Logout PIN */}
+                        <button
+                            onClick={handleLogoutPin}
+                            className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-red-400 transition-colors"
+                            title="Bloquear KDS"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            {/* Orders Grid */}
+            <main className="flex-1 p-4 overflow-auto">
+                {relevantOrders.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                        <div className="text-center">
+                            <ChefHat className="w-20 h-20 text-gray-700 mx-auto mb-4" />
+                            <h2 className="text-xl font-bold text-gray-500">Sin órdenes pendientes</h2>
+                            <p className="text-gray-600 text-sm mt-2">
+                                Las nuevas órdenes aparecerán aquí automáticamente
+                            </p>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                        {relevantOrders.map(order => {
+                            const minutes = getTimeElapsed(order.created_at);
+                            const allItemsPrepared = order.stationItems.every(item =>
+                                isItemPrepared(order, item.id)
+                            );
+
+                            return (
+                                <div
+                                    key={order.id}
+                                    className={`bg-gray-800 rounded-xl border-2 overflow-hidden transition-all ${allItemsPrepared ? 'border-green-500 opacity-60' : 'border-gray-700 hover:border-gray-600'}`}
+                                >
+                                    {/* Order Header */}
+                                    <div className="flex items-center justify-between px-4 py-3 bg-gray-700/50">
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-2xl font-bold text-white">
+                                                Mesa {order.table_number}
+                                            </span>
+                                            {allItemsPrepared && (
+                                                <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded-full">
+                                                    LISTO
+                                                </span>
+                                            )}
+                                        </div>
+                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-bold ${getTimeColor(minutes)}`}>
+                                            <Clock className="w-4 h-4" />
+                                            {minutes}m
+                                        </div>
+                                    </div>
+
+                                    {/* Items List */}
+                                    <div className="p-3 space-y-2">
+                                        {order.stationItems.map((item, idx) => {
+                                            const isPrepared = isItemPrepared(order, item.id);
+
+                                            return (
+                                                <button
+                                                    key={`${item.id}-${idx}`}
+                                                    onClick={() => handleItemClick(order.id, item.id)}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all ${isPrepared ? 'bg-green-600/20 border border-green-600/50' : 'bg-gray-700/50 border border-gray-600 hover:bg-gray-700'}`}
+                                                >
+                                                    <div className="flex items-center gap-3">
+                                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isPrepared ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>
+                                                            {isPrepared ? <Check className="w-4 h-4" /> : item.quantity}
+                                                        </span>
+                                                        <div>
+                                                            <span className={`font-bold ${isPrepared ? 'text-green-400 line-through' : 'text-white'}`}>
+                                                                {item.name}
+                                                            </span>
+                                                            {item.selectedOptions && item.selectedOptions.length > 0 && (
+                                                                <div className="mt-1 space-y-0.5 pl-1 border-l-2 border-gray-600">
+                                                                    {item.selectedOptions.map((opt, optIdx) => (
+                                                                        <p key={optIdx} className="text-xs text-blue-300">
+                                                                            <span className="opacity-70">{opt.groupName}:</span> {opt.optionName}
+                                                                        </p>
+                                                                    ))}
+                                                                </div>
+                                                            )}
+                                                            {item.notes && (
+                                                                <p className="text-xs text-yellow-400 mt-1 font-bold bg-yellow-400/10 px-1 py-0.5 rounded inline-block">
+                                                                    📝 {item.notes}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {!isPrepared && (
+                                                        <span className="text-xs text-gray-400">Tap para marcar</span>
+                                                    )}
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Order Footer */}
+                                    <div className="px-4 py-2 bg-gray-700/30 text-xs text-gray-500 flex justify-between">
+                                        <span>Orden #{order.id.slice(0, 6)}</span>
+                                        <span>{new Date(order.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </main>
+        </div>
+    );
 };
