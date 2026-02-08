@@ -277,165 +277,60 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         );
     }
 
-    // Loading state
-    if (isLoading) {
-        return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
-                    <p className="text-gray-400">Cargando pantalla de cocina...</p>
-                </div>
-            </div>
-        );
-    }
-
-    // Error state - general error from loadData
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-                <div className="text-center">
-                    <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h1 className="text-2xl font-bold text-white mb-2">Error de Carga</h1>
-                    <p className="text-gray-400 mb-4">{error}</p>
-                    <button
-                        onClick={loadData}
-                        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-bold"
-                    >
-                        Reintentar
-                    </button>
-                    <button
-                        onClick={() => window.location.reload()}
-                        className="block w-full mt-4 text-sm text-gray-500 hover:text-gray-400"
-                    >
-                        Recargar Página
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // PIN AUTHORIZATION OVERLAY
-    if (!savedPin || !isAuthorized) {
-        return (
-            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-6">
-                <div className="bg-gray-800 p-8 rounded-3xl shadow-2xl border border-gray-700 w-full max-w-sm animate-in zoom-in-95 duration-200">
-                    <div className="text-center mb-8">
-                        <div className="w-16 h-16 bg-blue-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <ChefHat className="w-8 h-8 text-blue-400" />
-                        </div>
-                        <h1 className="text-2xl font-bold text-white mb-2">Acceso a Cocina</h1>
-                        <p className="text-gray-400 text-sm">Ingresa el PIN de 4 números de tu restaurante</p>
-                    </div>
-
-                    <form onSubmit={handlePinSubmit} className="space-y-6">
-                        <div className="flex justify-center gap-3">
-                            {[0, 1, 2, 3].map((i) => (
-                                <div
-                                    key={i}
-                                    className={`w-12 h-16 rounded-xl border-2 flex items-center justify-center text-2xl font-bold transition-all ${enteringPin.length > i ? 'border-blue-500 bg-blue-500/10 text-white' : 'border-gray-700 bg-gray-900 text-gray-600'
-                                        }`}
-                                >
-                                    {enteringPin[i] ? '•' : ''}
-                                </div>
-                            ))}
-                        </div>
-
-                        <input
-                            type="tel"
-                            maxLength={4}
-                            autoFocus
-                            value={enteringPin}
-                            onChange={(e) => {
-                                const val = e.target.value.replace(/\D/g, '');
-                                if (val.length <= 4) {
-                                    setEnteringPin(val);
-                                    if (val.length === 4) {
-                                        // Auto submit
-                                        localStorage.setItem('kds_pin', val);
-                                        setSavedPin(val);
-                                        setIsAuthorized(true);
-                                        setEnteringPin('');
-                                    }
-                                }
-                            }}
-                            className="fixed opacity-0 pointer-events-none"
-                        />
-
-                        <div className="grid grid-cols-3 gap-3">
-                            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
-                                <button
-                                    key={n}
-                                    type="button"
-                                    onClick={() => {
-                                        if (enteringPin.length < 4) setEnteringPin(prev => prev + n);
-                                    }}
-                                    className="h-16 rounded-xl bg-gray-700 text-white text-xl font-bold hover:bg-gray-600 active:scale-95 transition-all outline-none"
-                                >
-                                    {n}
-                                </button>
-                            ))}
-                            <button
-                                type="button"
-                                onClick={() => setEnteringPin('')}
-                                className="h-16 rounded-xl bg-red-500/10 text-red-400 font-bold hover:bg-red-500/20 transition-all outline-none"
-                            >
-                                Borrar
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (enteringPin.length < 4) setEnteringPin(prev => prev + '0');
-                                }}
-                                className="h-16 rounded-xl bg-gray-700 text-white text-xl font-bold hover:bg-gray-600 active:scale-95 transition-all outline-none"
-                            >
-                                0
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setEnteringPin(prev => prev.slice(0, -1))}
-                                className="h-16 rounded-xl bg-gray-700 text-white flex items-center justify-center hover:bg-gray-600 active:scale-95 transition-all outline-none"
-                            >
-                                <X className="w-6 h-6" />
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        );
-    }
-
-    // --- DIAGNOSTIC MODE: "Nuclear Option" ---
+    // ========================================
+    // 🚨 DIAGNOSTIC MODE OVERRIDE 🚨
+    // This runs BEFORE any logic to diagnose why KDS shows blank
+    // ========================================
     return (
-        <div style={{ backgroundColor: '#004400', height: '100vh', width: '100vw', padding: '40px', color: 'white', fontFamily: 'monospace', fontSize: '18px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <h1 style={{ fontSize: '32px', color: '#00ff00', fontWeight: 'bold' }}>KDS DIAGNOSTIC MODE</h1>
-            <div style={{ border: '1px solid #00aa00', padding: '20px', borderRadius: '8px' }}>
-                <p><strong>Station ID:</strong> {stationId || 'MISSING'}</p>
-                <p><strong>User ID:</strong> {userId || 'MISSING'}</p>
-                <p><strong>Auth:</strong> {isAuthorized ? 'YES' : 'NO'}</p>
-                <p><strong>Loading:</strong> {isLoading ? 'YES' : 'NO'}</p>
-                <p><strong>Error:</strong> {error || 'None'}</p>
+        <div style={{
+            backgroundColor: '#004400',
+            height: '100vh',
+            width: '100vw',
+            padding: '40px',
+            color: 'white',
+            fontFamily: 'monospace',
+            fontSize: '16px',
+            overflow: 'auto'
+        }}>
+            <h1 style={{ fontSize: '32px', color: '#00ff00', fontWeight: 'bold', marginBottom: '20px' }}>
+                🔍 KDS DIAGNOSTIC MODE
+            </h1>
+
+            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
+                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>URL PARAMETERS</h2>
+                <p><strong>Station ID:</strong> {stationId || '❌ MISSING'}</p>
+                <p><strong>User ID:</strong> {userId || '❌ MISSING'}</p>
             </div>
 
-            <div style={{ border: '1px solid #00aa00', padding: '20px', borderRadius: '8px' }}>
-                <p><strong>Stations Loaded:</strong> {stations?.length || 0}</p>
-                <p><strong>Orders Loaded:</strong> {orders?.length || 0}</p>
+            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
+                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>STATE</h2>
+                <p><strong>Auth:</strong> {isAuthorized ? '✅ YES' : '❌ NO'}</p>
+                <p><strong>Loading:</strong> {isLoading ? '⏳ YES' : '✅ NO'}</p>
+                <p><strong>Error:</strong> {error ? `❌ ${error}` : '✅ None'}</p>
+                <p><strong>Saved PIN:</strong> {savedPin ? '✅ EXISTS' : '❌ MISSING'}</p>
+            </div>
+
+            <div style={{ border: '2px solid #00aa00', padding: '20px', borderRadius: '8px', marginBottom: '20px', backgroundColor: '#003300' }}>
+                <h2 style={{ color: '#00ff00', marginBottom: '10px' }}>DATA LOADED</h2>
+                <p><strong>Stations:</strong> {stations?.length || 0}</p>
+                <p><strong>Orders:</strong> {orders?.length || 0}</p>
             </div>
 
             <button
                 onClick={() => window.location.reload()}
                 style={{
-                    padding: '15px',
-                    marginTop: '20px',
+                    padding: '20px',
                     fontSize: '20px',
                     backgroundColor: '#00ff00',
                     color: 'black',
                     border: 'none',
                     borderRadius: '8px',
                     fontWeight: 'bold',
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    width: '100%'
                 }}
             >
-                FORCE RELOAD PAGE
+                🔄 FORCE RELOAD PAGE
             </button>
         </div>
     );
