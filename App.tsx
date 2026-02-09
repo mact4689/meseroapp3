@@ -21,6 +21,7 @@ import { KDSSetup } from './views/KDSSetup';
 import { KDSView } from './views/KDSView';
 import NotFound from './views/NotFound';
 import { AppView } from './types';
+import { diagnoseRealtimeConnection } from './services/realtimeDiagnostics';
 
 // --- LEGACY COMPATIBILITY WRAPPER ---
 // This hook allows old components (that use onNavigate) to work with React Router
@@ -176,6 +177,12 @@ const LegacyRedirectHandler = () => {
 
 
 const App: React.FC = () => {
+  // Expose diagnostic function to window for console access
+  useEffect(() => {
+    (window as any).diagnoseRealtime = diagnoseRealtimeConnection;
+    console.log('💡 Realtime diagnostic available: Run window.diagnoseRealtime() in console');
+  }, []);
+
   return (
     <div className="w-full h-screen bg-white">
       <OfflineStatus />

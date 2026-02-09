@@ -42,6 +42,7 @@ import {
     Star
 } from 'lucide-react';
 import { supabase } from '../services/client';
+import { diagnoseRealtimeConnection } from '../services/realtimeDiagnostics';
 
 interface DashboardProps {
     onNavigate: (view: AppView) => void;
