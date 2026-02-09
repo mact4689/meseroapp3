@@ -1178,22 +1178,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                     </div>
                                                 )}
                                                 <ul className="divide-y divide-gray-100">
-                                                    {(isHelp ? [] : isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item, idx) => (
-                                                        <li key={idx} className="py-3 flex justify-between items-start">
-                                                            <div className="flex gap-3">
-                                                                <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
-                                                                    {item.quantity}x
-                                                                </span>
-                                                                <div>
-                                                                    <p className="font-medium text-gray-900 text-sm">{item.name}</p>
-                                                                    {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
+                                                    {(isHelp ? [] : isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item, idx) => {
+                                                        // Check if this specific item instance is prepared
+                                                        // We need to count how many of this itemId are prepared vs total quantity
+                                                        const isPrepared = order.prepared_items?.some(p => p.itemId === item.id);
+
+                                                        return (
+                                                            <li key={idx} className="py-3 flex justify-between items-start">
+                                                                <div className="flex gap-3">
+                                                                    <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
+                                                                        {item.quantity}x
+                                                                    </span>
+                                                                    <div>
+                                                                        <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                                                                        {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
+
+                                                                        {/* Item Status Indicator */}
+                                                                        <div className="mt-1 flex items-center gap-1.5">
+                                                                            {isPrepared ? (
+                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
+                                                                                    <Check className="w-3 h-3" />
+                                                                                    Listo para entregar
+                                                                                </span>
+                                                                            ) : (
+                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                                                    <Clock className="w-3 h-3" />
+                                                                                    En preparación
+                                                                                </span>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                            <span className="text-sm font-medium text-gray-900">
-                                                                ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
-                                                            </span>
-                                                        </li>
-                                                    ))}
+                                                                <span className="text-sm font-medium text-gray-900">
+                                                                    ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
+                                                                </span>
+                                                            </li>
+                                                        )
+                                                    })}
                                                 </ul>
                                                 {isBill && (
                                                     <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
