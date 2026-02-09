@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { AppView, Order, OrderItem, KitchenStation, PreparedItem } from '../types';
 import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle, Sun } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
@@ -24,9 +24,16 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     // Keep screen awake for kitchen tablets
     const { isActive: wakeLockActive, isSupported: wakeLockSupported } = useWakeLock(true);
 
-    // Data loaded from Supabase
     const [stations, setStations] = useState<KitchenStation[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
+    const ordersRef = useRef<Order[]>([]);
+
+    // Sync ref with state
+    useEffect(() => {
+        ordersRef.current = orders;
+    }, [orders]);
+
+    const [pendingUpdates, setPendingUpdates] = useState<Set<string>>(new Set());
 
     // Get station ID and user ID from URL
     const stationId = useMemo(() => {
@@ -50,15 +57,17 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     }, [stationId, userId, isLoading, isAuthorized, savedPin, stations, orders, error]);
 
     // Load initial data
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (isSilent = false) => {
         if (!userId) {
-            setError('Falta el ID del restaurante en la URL');
-            setIsLoading(false);
+            if (!isSilent) {
+                setError('Falta el ID del restaurante en la URL');
+                setIsLoading(false);
+            }
             return;
         }
 
         try {
-            setIsLoading(true);
+            if (!isSilent) setIsLoading(true);
             const [stationsData, ordersData] = await Promise.all([
                 getStations(userId),
                 getOrders(userId)
@@ -72,17 +81,30 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
             }));
             setStations(mappedStations);
 
-            // Map orders
-            const mappedOrders: Order[] = ordersData.map((o: any) => ({
-                id: o.id,
-                user_id: o.user_id,
-                table_number: o.table_number,
-                status: o.status,
-                total: o.total,
-                items: o.items || [],
-                created_at: o.created_at,
-                prepared_items: o.prepared_items || []
-            }));
+            // Map orders - Respect pending optimistic updates
+            const mappedOrders: Order[] = ordersData.map((o: any) => {
+                if (pendingUpdates.has(o.id)) {
+                    // Find our local version to preserve its prepared_items
+                    const localOrder = ordersRef.current.find(lo => lo.id === o.id);
+                    if (localOrder) {
+                        return {
+                            ...o,
+                            items: o.items || [],
+                            prepared_items: localOrder.prepared_items // Keep local version
+                        };
+                    }
+                }
+                return {
+                    id: o.id,
+                    user_id: o.user_id,
+                    table_number: o.table_number,
+                    status: o.status,
+                    total: o.total,
+                    items: o.items || [],
+                    created_at: o.created_at,
+                    prepared_items: o.prepared_items || []
+                };
+            });
             setOrders(mappedOrders);
 
             setError(null);
@@ -90,7 +112,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
             console.error('Error loading KDS data:', err);
             setError(err.message || 'Error al cargar datos');
         } finally {
-            setIsLoading(false);
+            if (!isSilent) setIsLoading(false);
         }
     }, [userId]);
 
@@ -133,8 +155,10 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                 },
                 (payload) => {
                     console.log('[KDS Realtime] Order change detected:', payload.eventType, payload);
-                    // Reload orders on any change
-                    loadData();
+
+                    // If we have full payload data, we could update state locally
+                    // but for now, we just reload silently to avoid the loading screen flicker
+                    loadData(true);
                 }
             )
             .subscribe((status) => {
@@ -202,60 +226,160 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         return order.prepared_items.some(pi => pi.itemId === itemId && pi.stationId === stationId);
     };
 
-    // Handle item click to toggle prepared status
+    // State for visual feedback when cancelling order
+    const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
+
+    // Auto-refresh timer display - faster tick for smooth disappearance (every 5s)
+    const [tick, setTick] = useState(0);
+    useEffect(() => {
+        const interval = setInterval(() => setTick(t => t + 1), 5000);
+        return () => clearInterval(interval);
+    }, []);
+
+    // Helper: Calculate time since completion
+    const getMinutesSinceCompletion = (completedAt: number) => {
+        return (Date.now() - completedAt) / 60000;
+    };
+
+    // Handle Item Click:
+    // 1. If not prepared -> Mark prepared (Green)
+    // 2. If prepared -> Trigger ORDER VOID sequence (Red visual -> Void in DB)
     const handleItemClick = async (orderId: string, itemId: string) => {
         if (!stationId) return;
 
         const order = orders.find(o => o.id === orderId);
         if (!order) return;
 
+        // Check if this item is already prepared
         const currentPreparedItems: PreparedItem[] = order.prepared_items || [];
-        const existingIndex = currentPreparedItems.findIndex(
+        const existingItem = currentPreparedItems.find(
             pi => pi.itemId === itemId && pi.stationId === stationId
         );
 
-        let newPreparedItems: PreparedItem[];
-        if (existingIndex >= 0) {
-            // Remove (undo)
-            newPreparedItems = currentPreparedItems.filter((_, i) => i !== existingIndex);
+        if (existingItem) {
+            // ITEM IS ALREADY PREPARED -> USER TAPPED AGAIN -> VOID ORDER
+            // As per instructions: "si se le vuelve a dar 'tap' se debe anular esa orden"
+
+            // 1. Trigger visual feedback
+            setCancellingOrderIds(prev => new Set(prev).add(orderId));
+
+            // 2. Wait 3 seconds then void
+            setTimeout(async () => {
+                try {
+                    // Optimistic remove from local view to prevent double taps
+                    setOrders(prev => prev.filter(o => o.id !== orderId));
+
+                    // Update DB status to cancelled
+                    const { error } = await supabase
+                        .from('orders')
+                        .update({ status: 'cancelled' })
+                        .eq('id', orderId);
+
+                    if (error) throw error;
+
+                    // Cleanup visual state
+                    setCancellingOrderIds(prev => {
+                        const next = new Set(prev);
+                        next.delete(orderId);
+                        return next;
+                    });
+
+                } catch (err) {
+                    console.error('Error cancelling order:', err);
+                    // Revert optimistic update by reloading data
+                    loadData();
+                }
+            }, 3000);
         } else {
-            // Add
-            newPreparedItems = [
+            // ITEM NOT PREPARED -> MARK AS PREPARED
+            const newPreparedItems = [
                 ...currentPreparedItems,
                 { itemId, stationId, completedAt: Date.now() }
             ];
-        }
 
-        // Optimistic update
-        setOrders(prev => prev.map(o =>
-            o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o
-        ));
+            // Mark as pending update
+            setPendingUpdates(prev => new Set(prev).add(orderId));
 
-        // Save to database
-        try {
-            await updateOrderPreparedItemsSecure(orderId, newPreparedItems, savedPin || '');
-        } catch (err: any) {
-            console.error('Failed to update KDS - possibly invalid PIN');
-            // Revert optimistic update on error
+            // Optimistic update
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, prepared_items: currentPreparedItems } : o
+                o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o
             ));
 
-            // If it was a PIN error, de-authorize
-            if (err.message?.includes('PIN')) {
-                setIsAuthorized(false);
-                setSavedPin(null);
-                localStorage.removeItem('kds_pin');
+            // Save to database
+            try {
+                await updateOrderPreparedItemsSecure(orderId, newPreparedItems, savedPin || '');
+                // Success! The next loadData will eventually pick it up
+            } catch (err: any) {
+                console.error('Failed to update KDS', err);
+                alert(`Error al actualizar: ${err.message || 'Verifica el PIN'}`);
+                // Revert
+                setOrders(prev => prev.map(o =>
+                    o.id === orderId ? { ...o, prepared_items: currentPreparedItems } : o
+                ));
+            } finally {
+                // Remove from pending after a small delay to allow DB & Realtime to settle
+                setTimeout(() => {
+                    setPendingUpdates(prev => {
+                        const next = new Set(prev);
+                        next.delete(orderId);
+                        return next;
+                    });
+                }, 2000);
             }
         }
     };
 
-    // Auto-refresh timer display
-    const [, setTick] = useState(0);
-    useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 30000);
-        return () => clearInterval(interval);
-    }, []);
+    // Helper: Mark ALL items for this station as prepared
+    const handleMarkStationReady = async (orderId: string) => {
+        if (!stationId) return;
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        const stationItems = order.items.filter(item => item.stationId === stationId);
+        const currentPrepared = order.prepared_items || [];
+
+        // Add all station items that aren't already prepared
+        const newItems: PreparedItem[] = [...currentPrepared];
+        let hasChanges = false;
+
+        stationItems.forEach(item => {
+            if (!newItems.find(pi => pi.itemId === item.id && pi.stationId === stationId)) {
+                newItems.push({ itemId: item.id, stationId, completedAt: Date.now() });
+                hasChanges = true;
+            }
+        });
+
+        if (!hasChanges) return;
+
+        // Mark as pending update
+        setPendingUpdates(prev => new Set(prev).add(orderId));
+
+        // Optimistic update
+        setOrders(prev => prev.map(o =>
+            o.id === orderId ? { ...o, prepared_items: newItems } : o
+        ));
+
+        // Save to database
+        try {
+            await updateOrderPreparedItemsSecure(orderId, newItems, savedPin || '');
+        } catch (err: any) {
+            console.error('Failed to update KDS', err);
+            alert(`Error al actualizar: ${err.message || 'Verifica el PIN'}`);
+            // Revert
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, prepared_items: currentPrepared } : o
+            ));
+        } finally {
+            // Remove from pending after delay
+            setTimeout(() => {
+                setPendingUpdates(prev => {
+                    const next = new Set(prev);
+                    next.delete(orderId);
+                    return next;
+                });
+            }, 2000);
+        }
+    };
 
     // Error state - no station ID
     if (!stationId) {
@@ -529,7 +653,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     </h1>
                     <p style={{ color: '#9ca3af', marginBottom: '16px' }}>{error}</p>
                     <button
-                        onClick={loadData}
+                        onClick={() => loadData()}
                         style={{
                             padding: '12px 24px',
                             backgroundColor: '#3b82f6',
@@ -612,7 +736,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
 
                         {/* Refresh */}
                         <button
-                            onClick={loadData}
+                            onClick={() => loadData()}
                             className="p-2 rounded-lg bg-gray-700 text-gray-400 hover:text-white transition-colors"
                             title="Recargar"
                         >
@@ -650,23 +774,30 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                             const allItemsPrepared = order.stationItems.every(item =>
                                 isItemPrepared(order, item.id)
                             );
+                            const isCancelling = cancellingOrderIds.has(order.id);
 
                             return (
                                 <div
                                     key={order.id}
-                                    className={`bg-gray-800 rounded-xl border-2 overflow-hidden transition-all ${allItemsPrepared ? 'border-green-500 opacity-60' : 'border-gray-700 hover:border-gray-600'}`}
+                                    className={`bg-gray-800 rounded-xl border-2 overflow-hidden transition-all relative
+                                        ${allItemsPrepared ? 'border-green-500 opacity-90' : 'border-gray-700 hover:border-gray-600'}
+                                        ${isCancelling ? 'border-red-500' : ''}
+                                    `}
                                 >
+                                    {/* Cancellation Overlay */}
+                                    {isCancelling && (
+                                        <div className="absolute inset-0 bg-red-900/80 z-20 flex flex-col items-center justify-center backdrop-blur-sm">
+                                            <X className="w-16 h-16 text-white mb-2" />
+                                            <span className="text-white font-bold text-xl">CANCELANDO...</span>
+                                        </div>
+                                    )}
+
                                     {/* Order Header */}
-                                    <div className="flex items-center justify-between px-4 py-3 bg-gray-700/50">
+                                    <div className={`flex items-center justify-between px-4 py-3 ${allItemsPrepared ? 'bg-green-600/20' : 'bg-gray-700/50'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-2xl font-bold text-white">
                                                 Mesa {order.table_number}
                                             </span>
-                                            {allItemsPrepared && (
-                                                <span className="px-2 py-0.5 bg-green-600 text-white text-xs font-bold rounded-full">
-                                                    LISTO
-                                                </span>
-                                            )}
                                         </div>
                                         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-bold ${getTimeColor(minutes)}`}>
                                             <Clock className="w-4 h-4" />
@@ -683,14 +814,18 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                                                 <button
                                                     key={`${item.id}-${idx}`}
                                                     onClick={() => handleItemClick(order.id, item.id)}
-                                                    className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all ${isPrepared ? 'bg-green-600/20 border border-green-600/50' : 'bg-gray-700/50 border border-gray-600 hover:bg-gray-700'}`}
+                                                    className={`w-full flex items-center justify-between p-3 rounded-lg text-left transition-all 
+                                                        ${isPrepared
+                                                            ? 'bg-green-600 border border-green-500'
+                                                            : 'bg-gray-700/50 border border-gray-600 hover:bg-gray-700'}
+                                                    `}
                                                 >
                                                     <div className="flex items-center gap-3">
-                                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isPrepared ? 'bg-green-600 text-white' : 'bg-gray-600 text-white'}`}>
-                                                            {isPrepared ? <Check className="w-4 h-4" /> : item.quantity}
+                                                        <span className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isPrepared ? 'bg-white text-green-600' : 'bg-gray-600 text-white'}`}>
+                                                            {isPrepared ? <Check className="w-5 h-5 stroke-[3]" /> : item.quantity}
                                                         </span>
                                                         <div>
-                                                            <span className={`font-bold ${isPrepared ? 'text-green-400 line-through' : 'text-white'}`}>
+                                                            <span className={`font-bold ${isPrepared ? 'text-white' : 'text-white'}`}>
                                                                 {item.name}
                                                             </span>
                                                             {item.selectedOptions && item.selectedOptions.length > 0 && (
@@ -709,16 +844,31 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                                                             )}
                                                         </div>
                                                     </div>
-
-                                                    {!isPrepared && (
-                                                        <span className="text-xs text-gray-400">Tap para marcar</span>
-                                                    )}
                                                 </button>
                                             );
                                         })}
                                     </div>
 
-                                    {/* Order Footer */}
+                                    {/* Order Footer - "All Ready" Button */}
+                                    <div className="p-3 pt-0">
+                                        {!allItemsPrepared && (
+                                            <button
+                                                onClick={() => handleMarkStationReady(order.id)}
+                                                className="w-full py-3 bg-gray-700 hover:bg-green-600 text-gray-300 hover:text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Check className="w-5 h-5" />
+                                                TODO LISTO
+                                            </button>
+                                        )}
+                                        {allItemsPrepared && (
+                                            <div className="w-full py-2 text-center text-green-400 text-sm font-bold flex items-center justify-center gap-2 bg-green-900/20 rounded-lg">
+                                                <Check className="w-4 h-4" />
+                                                Esperando recolección...
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Timestamp */}
                                     <div className="px-4 py-2 bg-gray-700/30 text-xs text-gray-500 flex justify-between">
                                         <span>Orden #{order.id.slice(0, 6)}</span>
                                         <span>{new Date(order.created_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>

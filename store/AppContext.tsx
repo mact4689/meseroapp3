@@ -297,6 +297,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: data.name !== undefined ? data.name : state.business.name,
         cuisine: data.cuisine !== undefined ? data.cuisine : state.business.cuisine,
         logo_url: data.logo !== undefined ? data.logo : state.business.logo,
+        kds_pin: data.kds_pin !== undefined ? data.kds_pin : state.business.kds_pin,
       };
 
       await upsertProfile(state.user.id, payload);

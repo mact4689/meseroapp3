@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Plus, Trash2, ChefHat, Palette, QrCode, Copy, Check, Monitor } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChefHat, Palette, QrCode, Copy, Check, Monitor, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import QRCode from 'qrcode';
 
@@ -23,7 +23,7 @@ const STATION_COLORS = [
 ];
 
 export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
-    const { state, addStation, removeStation } = useAppStore();
+    const { state, addStation, removeStation, updateBusiness } = useAppStore();
     const { stations, isOnboarding } = state;
 
     const [newStationName, setNewStationName] = useState('');
@@ -31,6 +31,13 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [qrCodes, setQrCodes] = useState<Record<string, string>>({});
+    const [kdsPin, setKdsPin] = useState(state.business.kds_pin || '0000');
+
+    useEffect(() => {
+        if (state.business.kds_pin) {
+            setKdsPin(state.business.kds_pin);
+        }
+    }, [state.business.kds_pin]);
 
     const getKDSUrl = (stationId: string) => {
         const baseUrl = window.location.origin;
@@ -347,6 +354,32 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                             ))}
                         </div>
                     )}
+                </div>
+
+                {/* PIN Configuration */}
+                <div className="bg-white border border-gray-100 rounded-2xl p-5 mb-8 shadow-sm animate-in slide-in-from-bottom-4" style={{ animationDelay: '0.2s' }}>
+                    <h3 className="font-bold text-brand-900 text-sm mb-4 flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        PIN de Cocina (KDS)
+                    </h3>
+                    <Input
+                        name="kdsPin"
+                        type="text"
+                        maxLength={4}
+                        placeholder="Ej. 1234"
+                        value={kdsPin}
+                        onChange={(e) => {
+                            const val = e.target.value.replace(/\D/g, '').slice(0, 4);
+                            setKdsPin(val);
+                        }}
+                        onBlur={() => {
+                            if (kdsPin.length === 4) {
+                                updateBusiness({ kds_pin: kdsPin });
+                            }
+                        }}
+                        className="bg-gray-100 border-transparent focus:bg-white focus:border-brand-900 py-4 text-2xl tracking-[0.5em] text-center font-mono"
+                        helperText="Este código se pedirá en las tablets de cocina para marcar platos listos."
+                    />
                 </div>
 
                 {/* Footer */}
