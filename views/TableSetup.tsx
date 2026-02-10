@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag, Receipt } from 'lucide-react';
 import QRCode from 'qrcode';
 import { jsPDF } from 'jspdf';
 import { useAppStore } from '../store/AppContext';
@@ -18,10 +18,11 @@ interface TableData {
 }
 
 export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
-  const { state, updateTables } = useAppStore();
+  const { state, updateTables, closeTable } = useAppStore();
   const [tableCount, setTableCount] = useState<string>(state.tables.count || '');
   const [generatedTables, setGeneratedTables] = useState<TableData[]>(state.tables.generated || []);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [confirmCloseTable, setConfirmCloseTable] = useState<string | null>(null);
 
   // Force production URL for QR codes to avoid localhost/preview issues
   const getBaseUrl = () => {
@@ -329,6 +330,13 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                           >
                             Abrir <ExternalLink className="w-3 h-3 ml-1" />
                           </a>
+
+                          <button
+                            onClick={() => setConfirmCloseTable(table.id.toString())}
+                            className="mt-2 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-full flex items-center transition-colors border border-red-100"
+                          >
+                            Cerrar Mesa <Receipt className="w-3 h-3 ml-1" />
+                          </button>
                         </div>
                       )
                     })}
@@ -379,6 +387,42 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
             >
               Guardar
             </Button>
+          </div>
+        )}
+
+        {/* MODAL: CUSTOM CONFIRM CLOSE TABLE */}
+        {confirmCloseTable && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-brand-900/60 backdrop-blur-md" onClick={() => setConfirmCloseTable(null)}></div>
+            <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 p-6 text-center">
+              <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                <Receipt className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-bold text-brand-900 mb-2">¿Cerrar Mesa {confirmCloseTable}?</h3>
+              <p className="text-gray-500 mb-6 text-sm">
+                Se archivarán todos los pedidos y la cuenta se reiniciará. Esta acción no se puede deshacer.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  variant="secondary"
+                  onClick={() => setConfirmCloseTable(null)}
+                  className="w-full justify-center border-gray-200"
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (confirmCloseTable) {
+                      await closeTable(confirmCloseTable);
+                      setConfirmCloseTable(null);
+                    }
+                  }}
+                  className="w-full justify-center bg-red-600 hover:bg-red-700 border-transparent shadow-lg shadow-red-200"
+                >
+                  Cerrar Mesa
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </div>
