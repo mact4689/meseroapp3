@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
@@ -41,6 +41,8 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
   // Edit State
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isSubmittingItem, setIsSubmittingItem] = useState(false);
+
+  const formRef = useRef<HTMLDivElement>(null);
 
   // Helper seguro para generar UUID v4 compatible con Supabase
   const generateId = () => {
@@ -217,7 +219,12 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       setOptionGroups([]);
     }
 
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Scroll to form with a slight delay to ensure state update renders
+    setTimeout(() => {
+      if (formRef.current) {
+        formRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 100);
   };
 
   const handleCancelEdit = () => {
@@ -441,7 +448,9 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
 
 
         {/* Form Section */}
-        <div className={`
+        <div
+          ref={formRef}
+          className={`
           p-5 rounded-2xl border transition-all duration-300 mb-6 shadow-sm
           ${editingId ? 'bg-accent-50 border-accent-200' : 'bg-gray-50 border-gray-100'}
         `}>
