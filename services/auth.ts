@@ -1,8 +1,8 @@
 import { supabase } from './client';
 
 export const signUp = async (
-  email: string, 
-  password: string, 
+  email: string,
+  password: string,
   metadata?: { full_name: string }
 ) => {
   return await supabase.auth.signUp({
@@ -22,5 +22,12 @@ export const signIn = async (email: string, password: string) => {
 };
 
 export const signOut = async () => {
-  return await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut();
+  return { error };
+};
+
+export const resetPassword = async (email: string) => {
+  return await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${window.location.origin}/reset-password`,
+  });
 };
