@@ -346,10 +346,13 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         setActiveCategory(category); // Optimistic update
         const element = document.getElementById(category);
         if (element) {
-            // Native smooth scroll with scroll-margin-top support
-            element.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+            const headerOffset = 180; // Larger offset covers sticky header + visual gap
+            const elementPosition = element.getBoundingClientRect().top;
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth"
             });
         }
     };
@@ -597,6 +600,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     return (
         <div
             className="flex flex-col min-h-screen bg-gray-50 pb-80 overflow-x-hidden transition-transform duration-200 ease-out"
+            style={{ scrollBehavior: 'smooth' }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
