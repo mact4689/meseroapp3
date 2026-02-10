@@ -14,6 +14,9 @@ interface CustomerMenuProps {
 // Extends MenuItem but includes cart specific logic
 interface CartItem extends OrderItem { }
 
+const SCROLL_OFFSET = 120; // Header height + padding reference
+
+
 export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const { state } = useAppStore();
     const [cart, setCart] = useState<CartItem[]>([]);
@@ -170,16 +173,23 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // SCROLL SPY: Update active category on scroll
     useEffect(() => {
         const handleScroll = () => {
+            // If we are very close to bottom, highlight last tab
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
+                if (categories.length > 0) {
+                    setActiveCategory(categories[categories.length - 1]);
+                    return;
+                }
+            }
+
             // Find the category that is currently in view
-            const headerOffset = 100; // Offset for sticky header + cushion
+            const SCROLL_OFFSET = 120;
             let current = categories[0];
 
             for (const cat of categories) {
                 const element = document.getElementById(cat);
                 if (element) {
                     const rect = element.getBoundingClientRect();
-                    // Check if the section top is near the top of the viewport
-                    if (rect.top <= headerOffset + 50) {
+                    if (rect.top <= SCROLL_OFFSET + 20) {
                         current = cat;
                     }
                 }
@@ -333,15 +343,13 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     const scrollToCategory = (category: string) => {
-        // setActiveCategory(category); // Let ScrollSpy handle the state update to avoid conflicts
+        setActiveCategory(category); // Optimistic update
         const element = document.getElementById(category);
         if (element) {
-            const headerOffset = 85; // Adjusted for the sticky nav bar height (~60px) + padding
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: "smooth"
+            // Native smooth scroll with scroll-margin-top support
+            element.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
             });
         }
     };
@@ -692,7 +700,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             {/* Menu Content */}
             <main className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
                 {categories.map((category) => (
-                    <div key={category} className="scroll-mt-24" id={category}>
+                    <div key={category} className="scroll-mt-32" id={category}>
                         <h2 className="font-serif text-xl font-bold text-brand-900 mb-4 flex items-center">
                             <span className="w-1.5 h-6 bg-accent-500 rounded-full mr-3"></span>
                             {category}
