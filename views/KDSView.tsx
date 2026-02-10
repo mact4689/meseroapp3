@@ -22,7 +22,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [savedPin, setSavedPin] = useState<string | null>(localStorage.getItem('kds_pin'));
 
     // Keep screen awake for kitchen tablets
-    const { isActive: wakeLockActive, isSupported: wakeLockSupported } = useWakeLock(true);
+    const { isActive: wakeLockActive, isSupported: wakeLockSupported, request, release } = useWakeLock(true);
 
     const [stations, setStations] = useState<KitchenStation[]>([]);
     const [orders, setOrders] = useState<Order[]>([]);
@@ -715,14 +715,15 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                     </div>
 
                     <div className="flex items-center gap-2">
-                        {/* Wake Lock Indicator */}
+                        {/* Wake Lock Indicator - Now Clickable */}
                         {wakeLockSupported && (
-                            <div
-                                className={`p-2 rounded-lg transition-colors ${wakeLockActive ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-700 text-gray-500'}`}
-                                title={wakeLockActive ? 'Pantalla siempre activa' : 'Pantalla puede apagarse'}
+                            <button
+                                onClick={() => wakeLockActive ? release() : request()}
+                                className={`p-2 rounded-lg transition-colors ${wakeLockActive ? 'bg-yellow-500/20 text-yellow-400 font-bold animate-pulse' : 'bg-gray-700 text-gray-500 hover:text-gray-300'}`}
+                                title={wakeLockActive ? 'Pantalla siempre activa (Click para desactivar)' : 'Pantalla puede apagarse (Click para mantener activa)'}
                             >
-                                <Sun className="w-5 h-5" />
-                            </div>
+                                <Sun className={`w-5 h-5 ${wakeLockActive ? 'fill-yellow-400' : ''}`} />
+                            </button>
                         )}
 
                         {/* Sound Toggle */}
