@@ -293,7 +293,7 @@ export const getOrders = async (userId: string) => {
   }
 };
 
-export const updateOrderStatusDb = async (orderId: string, status: 'completed' | 'cancelled') => {
+export const updateOrderStatusDb = async (orderId: string, status: 'completed' | 'cancelled' | 'delivered') => {
   const attemptUpdateStatus = async () => {
     const { error } = await supabase
       .from('orders')

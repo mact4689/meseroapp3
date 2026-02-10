@@ -38,7 +38,8 @@ interface AppContextType {
   promoteItem: (id: string) => Promise<void>;
   updateTables: (count: string, generated: any[]) => void;
   updateTicketConfig: (data: Partial<TicketConfig>) => void;
-  completeOrder: (id: string) => Promise<void>;
+  completeOrder: (id: string, status?: 'completed' | 'delivered') => Promise<void>;
+  closeTable: (tableNumber: string) => Promise<void>;
   addStation: (name: string, color: string) => Promise<void>;
   removeStation: (id: string) => Promise<void>;
   toggleItemPrepared: (orderId: string, itemId: string, stationId: string) => Promise<void>;
@@ -452,12 +453,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   };
 
-  const completeOrder = async (orderId: string) => {
+  const completeOrder = async (orderId: string, status: 'completed' | 'delivered' = 'completed') => {
     setState(prev => ({
       ...prev,
-      orders: prev.orders.map(o => o.id === orderId ? { ...o, status: 'completed' } : o)
+      orders: prev.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
-    await updateOrderStatusDb(orderId, 'completed');
+    await updateOrderStatusDb(orderId, status);
+  };
+
+  const closeTable = async (tableNumber: string) => {
+    // 1. Find all orders for this table (pending or delivered)
+    const tableOrders = state.orders.filter(
+      o => o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered')
+    );
+
+    // 2. Optimistically update all to completed
+    setState(prev => ({
+      ...prev,
+      orders: prev.orders.map(o =>
+        (o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered'))
+          ? { ...o, status: 'completed' }
+          : o
+      )
+    }));
+
+    // 3. Update in DB
+    const updatePromises = tableOrders.map(o => updateOrderStatusDb(o.id, 'completed'));
+    await Promise.all(updatePromises);
   };
 
   const addStation = async (name: string, color: string) => {
@@ -544,6 +566,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       updateTables,
       updateTicketConfig,
       completeOrder,
+      closeTable,
       addStation,
       removeStation,
       toggleItemPrepared,

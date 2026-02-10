@@ -105,7 +105,7 @@ export interface Order {
   id: string;
   user_id: string; // Restaurant ID
   table_number: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: 'pending' | 'completed' | 'cancelled' | 'delivered';
   total: number;
   items: OrderItem[];
   created_at: string;

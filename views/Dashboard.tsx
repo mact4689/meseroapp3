@@ -51,7 +51,7 @@ interface DashboardProps {
 type TimeRange = 'today' | '7days' | '30days' | 'all';
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-    const { state, logout, completeOrder, promoteItem } = useAppStore();
+    const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
     const { business, menu, tables, user, orders } = state;
     const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile } = usePermissions();
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -269,7 +269,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     const handleCompleteOrder = async (id: string, e: React.MouseEvent) => {
         e.stopPropagation();
-        await completeOrder(id);
+        const order = orders.find(o => o.id === id);
+        if (!order) return;
+
+        if (isBillRequest(order)) {
+            // "Cerrar mesa" logic: Complete ALL orders for this table
+            if (window.confirm(`¿Estás seguro de cerrar la mesa ${order.table_number}? Esto archivará todas las órdenes.`)) {
+                await closeTable(order.table_number);
+            }
+        } else {
+            // "Enterado" logic: Mark as delivered (hides from dashboard, keeps in bill)
+            await completeOrder(id, 'delivered');
+        }
     };
 
     const handlePrintOrder = async (orderId: string, e: React.MouseEvent) => {
@@ -281,9 +292,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         try {
             // Si es una solicitud de cuenta, combinar todas las órdenes de la mesa
             if (isBillRequest(order)) {
-                // Obtener todas las órdenes de esta mesa (excepto la solicitud de cuenta)
-                const tableOrders = pendingOrders.filter(
-                    o => o.table_number === order.table_number && !isBillRequest(o)
+                // Obtener todas las órdenes de esta mesa (pendientes O entregadas)
+                const tableOrders = orders.filter(
+                    o => o.table_number === order.table_number &&
+                        (o.status === 'pending' || o.status === 'delivered') &&
+                        !isBillRequest(o)
                 );
 
                 // Combinar todos los items
@@ -1036,9 +1049,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 const isBill = isBillRequest(order);
                                 const isHelp = isHelpRequest(order);
 
-                                // Si es solicitud de cuenta, obtener todas las órdenes de esa mesa
+                                // Si es solicitud de cuenta, obtener todas las órdenes activas de esa mesa (pending + delivered)
                                 const tableOrders = isBill
-                                    ? pendingOrders.filter(o => o.table_number === order.table_number && !isBillRequest(o))
+                                    ? orders.filter(o =>
+                                        o.table_number === order.table_number &&
+                                        (o.status === 'pending' || o.status === 'delivered') &&
+                                        !isBillRequest(o)
+                                    )
                                     : [];
 
                                 // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
@@ -1170,7 +1187,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700' : isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent shadow-sm`}
                                                         icon={<Check className="w-4 h-4" />}
                                                     >
-                                                        {isHelp ? 'Atendido' : isBill ? 'Entregada' : 'Listo'}
+                                                        {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Enterado'}
                                                     </Button>
 
                                                     <button
