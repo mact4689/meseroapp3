@@ -25,6 +25,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [orderSent, setOrderSent] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [lastTakeoutNumber, setLastTakeoutNumber] = useState<number>(0);
+    const isAutoScrolling = React.useRef(false); // Ref to prevent ScrollSpy conflict
 
     // BILL REQUEST STATE
     const [isRequestingBill, setIsRequestingBill] = useState(false);
@@ -173,6 +174,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // SCROLL SPY: Update active category on scroll
     useEffect(() => {
         const handleScroll = () => {
+            if (isAutoScrolling.current) return; // Skip if we are auto-scrolling via click
+
             // If we are very close to bottom, highlight last tab
             if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
                 if (categories.length > 0) {
@@ -343,10 +346,12 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     const scrollToCategory = (category: string) => {
-        setActiveCategory(category); // Optimistic update
+        isAutoScrolling.current = true;
+        setActiveCategory(category);
+
         const element = document.getElementById(category);
         if (element) {
-            const headerOffset = 180; // Larger offset covers sticky header + visual gap
+            const headerOffset = 100; // Adjusted offset (Header ~60px + 40px cushion)
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -354,6 +359,13 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 top: offsetPosition,
                 behavior: "smooth"
             });
+
+            // Re-enable ScrollSpy after animation (approx 800ms)
+            setTimeout(() => {
+                isAutoScrolling.current = false;
+            }, 800);
+        } else {
+            isAutoScrolling.current = false;
         }
     };
 
@@ -600,7 +612,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     return (
         <div
             className="flex flex-col min-h-screen bg-gray-50 pb-80 overflow-x-hidden transition-transform duration-200 ease-out"
-            style={{ scrollBehavior: 'smooth' }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
