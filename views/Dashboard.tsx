@@ -1122,7 +1122,32 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                                     ? <span className="text-yellow-700 font-medium italic">"{order.items.find(i => i.id === 'help-req')?.notes || 'Asistencia solicitada'}"</span>
                                                                     : isBill
                                                                         ? <span className="text-green-600 font-medium">Solicitud de ticket</span>
-                                                                        : <>{order.items.length} items • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>}
+                                                                        : (
+                                                                            <div className="flex items-center gap-2">
+                                                                                <span className="text-gray-900">{order.items.length} items</span>
+                                                                                <span className="text-gray-300">•</span>
+                                                                                <span className="font-bold text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                                                                                {/* Status Summary in Collapsed View */}
+                                                                                {order.items.length > 0 && (
+                                                                                    <>
+                                                                                        <span className="text-gray-300">•</span>
+                                                                                        <div className="flex items-center gap-1">
+                                                                                            {order.prepared_items && order.prepared_items.length > 0 ? (
+                                                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.prepared_items.length === order.items.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                                                    {order.prepared_items.length === order.items.length ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
+                                                                                                    {order.prepared_items.length}/{order.items.length} listos
+                                                                                                </span>
+                                                                                            ) : (
+                                                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
+                                                                                                    <Clock className="w-2.5 h-2.5" />
+                                                                                                    En preparación
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    </>
+                                                                                )}
+                                                                            </div>
+                                                                        )}
                                                         </p>
                                                     </div>
                                                 </div>
@@ -1178,10 +1203,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                     </div>
                                                 )}
                                                 <ul className="divide-y divide-gray-100">
-                                                    {(isHelp ? [] : isBill ? allTableItems : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item, idx) => {
+                                                    {(isHelp ? [] : isBill ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map(i => ({ ...i, parentOrder: o }))) : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item: any, idx) => {
                                                         // Check if this specific item instance is prepared
-                                                        // We need to count how many of this itemId are prepared vs total quantity
-                                                        const isPrepared = order.prepared_items?.some(p => p.itemId === item.id);
+                                                        // If it's a bill request, we check the parent order
+                                                        const targetOrder = isBill ? item.parentOrder : order;
+                                                        const isPrepared = targetOrder?.prepared_items?.some((p: any) => p.itemId === item.id);
 
                                                         return (
                                                             <li key={idx} className="py-3 flex justify-between items-start">
