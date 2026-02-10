@@ -27,6 +27,9 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [lastTakeoutNumber, setLastTakeoutNumber] = useState<number>(0);
     const isAutoScrolling = React.useRef(false); // Ref to prevent ScrollSpy conflict
 
+    // Helper to generate safe IDs for HTML elements
+    const toId = (str: string) => str.replace(/\s+/g, '-').toLowerCase();
+
     // BILL REQUEST STATE
     const [isRequestingBill, setIsRequestingBill] = useState(false);
     const [billRequested, setBillRequested] = useState(false);
@@ -189,7 +192,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             let current = categories[0];
 
             for (const cat of categories) {
-                const element = document.getElementById(cat);
+                // Use safe ID lookup
+                const element = document.getElementById(toId(cat));
                 if (element) {
                     const rect = element.getBoundingClientRect();
                     if (rect.top <= SCROLL_OFFSET + 20) {
@@ -211,7 +215,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     // AUTO-SCROLL ACTIVE TAB: Center the active tab in the horizontal list
     useEffect(() => {
         if (activeCategory) {
-            const btn = document.getElementById(`cat-btn-${activeCategory}`);
+            const btn = document.getElementById(`cat-btn-${toId(activeCategory)}`);
             if (btn) {
                 btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
             }
@@ -697,7 +701,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                     {categories.map((cat) => (
                         <button
                             key={cat}
-                            id={`cat-btn-${cat}`}
+                            id={`cat-btn-${toId(cat)}`}
                             onClick={() => scrollToCategory(cat)}
                             className={`
                         whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all
@@ -715,7 +719,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             {/* Menu Content */}
             <main className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
                 {categories.map((category) => (
-                    <div key={category} className="scroll-mt-32" id={category}>
+                    <div key={category} className="scroll-mt-32" id={toId(category)}>
                         <h2 className="font-serif text-xl font-bold text-brand-900 mb-4 flex items-center">
                             <span className="w-1.5 h-6 bg-accent-500 rounded-full mr-3"></span>
                             {category}
