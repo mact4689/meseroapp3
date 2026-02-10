@@ -46,6 +46,12 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [showPromotionModal, setShowPromotionModal] = useState(false);
     const [hasShownPromotion, setHasShownPromotion] = useState(false);
 
+    // PULL TO REFRESH STATE
+    const [startPullY, setStartPullY] = useState(0);
+    const [pullDistance, setPullDistance] = useState(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+    const PULL_THRESHOLD = 80;
+
     // URL Params
     const query = new URLSearchParams(window.location.search);
     const tableId = query.get('table');
@@ -444,6 +450,43 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         }
     };
 
+    // PULL TO REFRESH HANDLERS
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (window.scrollY === 0) {
+            setStartPullY(e.touches[0].clientY);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (startPullY > 0 && window.scrollY === 0) {
+            const currentY = e.touches[0].clientY;
+            // Calculate distance but limit it and add resistance
+            const diff = Math.max(0, currentY - startPullY);
+            // Apply resistance formula (sqrt) so it's harder to pull further
+            const resistedDiff = Math.pow(diff, 0.8);
+            setPullDistance(resistedDiff);
+        }
+    };
+
+    const handleTouchEnd = async () => {
+        if (pullDistance > PULL_THRESHOLD && !isRefreshing) {
+            setIsRefreshing(true);
+            try {
+                // Play haptic feedback if available (not widely supported on web but good if wrapped in native implementation)
+                if (navigator.vibrate) navigator.vibrate(50);
+                await loadData();
+            } finally {
+                setIsRefreshing(false);
+                setPullDistance(0);
+                setStartPullY(0);
+            }
+        } else {
+            // Animate back
+            setPullDistance(0);
+            setStartPullY(0);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -506,7 +549,35 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50 pb-80 overflow-x-hidden">
+        <div
+            className="flex flex-col min-h-screen bg-gray-50 pb-80 overflow-x-hidden transition-transform duration-200 ease-out"
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+        >
+            {/* PULL TO REFRESH INDICATOR */}
+            <div
+                className="fixed top-0 left-0 right-0 flex justify-center pointer-events-none z-[60]"
+                style={{
+                    transform: `translateY(${Math.min(pullDistance, 100) - 40}px)`,
+                    opacity: Math.min(pullDistance / PULL_THRESHOLD, 1)
+                }}
+            >
+                <div className={`
+                    bg-white rounded-full p-2 shadow-lg flex items-center justify-center
+                    ${isRefreshing ? 'animate-spin text-brand-900 shadow-brand-900/10' : 'text-gray-500'}
+                `}>
+                    {isRefreshing ? (
+                        <Loader2 className="w-5 h-5" />
+                    ) : (
+                        <RefreshCw
+                            className="w-5 h-5"
+                            style={{ transform: `rotate(${pullDistance * 2}deg)` }}
+                        />
+                    )}
+                </div>
+            </div>
+
             {/* ADMIN PREVIEW HEADER */}
             {isAdminPreview && (
                 <div className="bg-accent-500 text-brand-900 px-6 py-2.5 flex items-center justify-between sticky top-0 z-[100] shadow-md">
