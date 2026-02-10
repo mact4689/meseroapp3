@@ -167,6 +167,44 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         if (categories.length > 0 && !activeCategory) setActiveCategory(categories[0]);
     }, [categories, activeCategory]);
 
+    // SCROLL SPY: Update active category on scroll
+    useEffect(() => {
+        const handleScroll = () => {
+            // Find the category that is currently in view
+            const headerOffset = 100; // Offset for sticky header + cushion
+            let current = categories[0];
+
+            for (const cat of categories) {
+                const element = document.getElementById(cat);
+                if (element) {
+                    const rect = element.getBoundingClientRect();
+                    // Check if the section top is near the top of the viewport
+                    if (rect.top <= headerOffset + 50) {
+                        current = cat;
+                    }
+                }
+            }
+
+            if (current && current !== activeCategory) {
+                setActiveCategory(current);
+            }
+        };
+
+        // Throttle slightly or use passive listener
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        return () => window.removeEventListener('scroll', handleScroll);
+    }, [categories, activeCategory]);
+
+    // AUTO-SCROLL ACTIVE TAB: Center the active tab in the horizontal list
+    useEffect(() => {
+        if (activeCategory) {
+            const btn = document.getElementById(`cat-btn-${activeCategory}`);
+            if (btn) {
+                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+            }
+        }
+    }, [activeCategory]);
+
     // Cart Logic
     const handleAddToCart = (item: MenuItem) => {
         // Check if available
@@ -295,10 +333,10 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
     const scrollToCategory = (category: string) => {
-        setActiveCategory(category);
+        // setActiveCategory(category); // Let ScrollSpy handle the state update to avoid conflicts
         const element = document.getElementById(category);
         if (element) {
-            const headerOffset = 160;
+            const headerOffset = 85; // Adjusted for the sticky nav bar height (~60px) + padding
             const elementPosition = element.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
             window.scrollTo({
@@ -632,10 +670,11 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Category Navigation (Sticky) */}
-                <div className={`sticky ${isAdminPreview ? 'top-[44px]' : 'top-0'} bg-white border-t border-gray-100 overflow-x-auto no-scrollbar py-2 px-4 flex gap-2 z-40 shadow-sm transition-all`}>
+                <div className={`sticky ${isAdminPreview ? 'top-[44px]' : 'top-0'} bg-white/95 backdrop-blur-sm border-t border-gray-100 overflow-x-auto no-scrollbar py-3 px-4 flex gap-2 z-40 shadow-sm transition-all`}>
                     {categories.map((cat) => (
                         <button
                             key={cat}
+                            id={`cat-btn-${cat}`}
                             onClick={() => scrollToCategory(cat)}
                             className={`
                         whitespace-nowrap px-4 py-2 rounded-full text-sm font-bold transition-all
@@ -653,7 +692,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             {/* Menu Content */}
             <main className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
                 {categories.map((category) => (
-                    <div key={category} className="scroll-mt-40" id={category}>
+                    <div key={category} className="scroll-mt-24" id={category}>
                         <h2 className="font-serif text-xl font-bold text-brand-900 mb-4 flex items-center">
                             <span className="w-1.5 h-6 bg-accent-500 rounded-full mr-3"></span>
                             {category}
