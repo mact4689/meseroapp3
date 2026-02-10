@@ -65,10 +65,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const [printingAll, setPrintingAll] = useState(false);
     const [promotingItemId, setPromotingItemId] = useState<string | null>(null);
     const [opportunitiesThreshold, setOpportunitiesThreshold] = useState(3);
+    const [confirmCloseTable, setConfirmCloseTable] = useState<string | null>(null); // For custom modal instead of window.confirm
 
-    // Filter orders by status
-    const pendingOrders = orders.filter(o => o.status === 'pending');
-    const completedOrders = orders.filter(o => o.status === 'completed');
+    // Filter orders by status (Memoized for performance)
+    const { pendingOrders, completedOrders } = useMemo(() => {
+        return {
+            pendingOrders: orders.filter(o => o.status === 'pending'),
+            completedOrders: orders.filter(o => o.status === 'completed')
+        };
+    }, [orders]);
 
     // Helper: Detectar si una orden es solicitud de cuenta cerrada
     const isBillRequest = (order: typeof orders[0]) => {
@@ -273,13 +278,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         if (!order) return;
 
         if (isBillRequest(order)) {
-            // "Cerrar mesa" logic: Complete ALL orders for this table
-            if (window.confirm(`¿Estás seguro de cerrar la mesa ${order.table_number}? Esto archivará todas las órdenes.`)) {
-                await closeTable(order.table_number);
-            }
+            // Open custom confirmation modal
+            setConfirmCloseTable(order.table_number);
         } else {
             // "Enterado" logic: Mark as delivered (hides from dashboard, keeps in bill)
             await completeOrder(id, 'delivered');
+        }
+    };
+
+    const handleConfirmCloseTable = async () => {
+        if (confirmCloseTable) {
+            await closeTable(confirmCloseTable);
+            setConfirmCloseTable(null);
         }
     };
 
@@ -1403,6 +1413,36 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     </div>
                 )}
 
+                {/* MODAL: CUSTOM CONFIRM CLOSE TABLE */}
+                {confirmCloseTable && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-brand-900/60 backdrop-blur-md" onClick={() => setConfirmCloseTable(null)}></div>
+                        <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 p-6 text-center">
+                            <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
+                                <Receipt className="w-8 h-8" />
+                            </div>
+                            <h3 className="text-xl font-bold text-brand-900 mb-2">¿Cerrar Mesa {confirmCloseTable}?</h3>
+                            <p className="text-gray-500 mb-6 text-sm">
+                                Se archivarán todos los pedidos y la cuenta se reiniciará. Esta acción no se puede deshacer.
+                            </p>
+                            <div className="grid grid-cols-2 gap-3">
+                                <Button
+                                    variant="secondary"
+                                    onClick={() => setConfirmCloseTable(null)}
+                                    className="w-full justify-center border-gray-200"
+                                >
+                                    Cancelar
+                                </Button>
+                                <Button
+                                    onClick={handleConfirmCloseTable}
+                                    className="w-full justify-center bg-red-600 hover:bg-red-700 border-transparent shadow-lg shadow-red-200"
+                                >
+                                    Cerrar Mesa
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </main >
         </div >
     );
