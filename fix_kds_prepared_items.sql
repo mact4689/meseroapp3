@@ -17,26 +17,26 @@ CREATE OR REPLACE FUNCTION public.secure_update_prepared_items(
     provided_pin TEXT
 ) RETURNS VOID AS $$
 DECLARE
-    restaurant_id UUID;
-    correct_pin TEXT;
+    v_restaurant_id UUID;
+    v_correct_pin TEXT;
 BEGIN
     -- 1. Obtener el ID del restaurante dueño de la orden
-    SELECT user_id INTO restaurant_id FROM public.orders WHERE id = target_order_id;
+    SELECT user_id INTO v_restaurant_id FROM public.orders WHERE id = target_order_id;
     
-    IF restaurant_id IS NULL THEN
+    IF v_restaurant_id IS NULL THEN
         RAISE EXCEPTION 'Orden no encontrada: %', target_order_id;
     END IF;
     
     -- 2. Obtener el PIN correcto de ese restaurante (default: 0000)
-    SELECT COALESCE(kds_pin, '0000') INTO correct_pin FROM public.profiles WHERE id = restaurant_id;
+    SELECT COALESCE(kds_pin, '0000') INTO v_correct_pin FROM public.profiles WHERE id = v_restaurant_id;
     
     -- Si no hay perfil, usar PIN por defecto
-    IF correct_pin IS NULL THEN
-        correct_pin := '0000';
+    IF v_correct_pin IS NULL THEN
+        v_correct_pin := '0000';
     END IF;
     
     -- 3. Verificar si el PIN coincide
-    IF provided_pin = correct_pin THEN
+    IF provided_pin = v_correct_pin THEN
         -- Si coincide, actualizamos
         UPDATE public.orders 
         SET prepared_items = new_prepared_items
@@ -44,7 +44,7 @@ BEGIN
     ELSE
         -- Si NO coincide, lanzamos error descriptivo
         RAISE EXCEPTION 'PIN incorrecto. Proporcionado: %, Esperado: % (primeros 2 chars)', 
-            LEFT(provided_pin, 2), LEFT(correct_pin, 2);
+            LEFT(provided_pin, 2), LEFT(v_correct_pin, 2);
     END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
