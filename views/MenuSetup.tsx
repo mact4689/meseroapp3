@@ -117,8 +117,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             finalImageUrl = null;
           }
         }
-        // Limpieza de blob urls huerfanas si no se subió
-        finalImageUrl = null;
       }
 
       // ---------------------------------------------------------

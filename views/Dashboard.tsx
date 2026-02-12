@@ -282,7 +282,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             setConfirmCloseTable(order.table_number);
         } else {
             // "Enterado" logic: Mark as delivered (hides from dashboard, keeps in bill)
-            await completeOrder(id, 'delivered');
+            try {
+                await completeOrder(id, 'delivered');
+            } catch (error) {
+                console.error("Error updating order status:", error);
+                alert("No se pudo actualizar el estado de la orden. Por favor intenta de nuevo.");
+            }
         }
     };
 

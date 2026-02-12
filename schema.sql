@@ -51,7 +51,7 @@ create table public.orders (
   id uuid default gen_random_uuid() primary key,
   user_id uuid references public.profiles(id) on delete cascade not null,
   table_number text not null,
-  status text check (status in ('pending', 'completed', 'cancelled')) default 'pending',
+  status text check (status in ('pending', 'completed', 'cancelled', 'delivered')) default 'pending',
   total numeric not null,
   items jsonb not null,
   created_at timestamptz default now()

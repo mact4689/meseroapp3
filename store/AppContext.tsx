@@ -454,11 +454,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const completeOrder = async (orderId: string, status: 'completed' | 'delivered' = 'completed') => {
+    // 1. Snapshot previous state for rollback
+    const originalOrders = [...state.orders];
+
+    // 2. Optimistic update
     setState(prev => ({
       ...prev,
       orders: prev.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
-    await updateOrderStatusDb(orderId, status);
+
+    // 3. Database update
+    const error = await updateOrderStatusDb(orderId, status);
+
+    if (error) {
+      // 4. Rollback on error
+      console.error("Failed to update order status, rolling back:", error);
+      setState(prev => ({ ...prev, orders: originalOrders }));
+      throw error;
+    }
   };
 
   const closeTable = async (tableNumber: string) => {
