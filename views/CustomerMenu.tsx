@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
 import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles } from 'lucide-react';
@@ -25,7 +25,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [orderSent, setOrderSent] = useState(false);
     const [isSending, setIsSending] = useState(false);
     const [lastTakeoutNumber, setLastTakeoutNumber] = useState<number>(0);
-    const isAutoScrolling = React.useRef(false); // Ref to prevent ScrollSpy conflict
+    const isAutoScrolling = useRef(false); // Ref to prevent ScrollSpy conflict
+    const categoryRefs = useRef<Map<string, HTMLDivElement>>(new Map()); // Direct DOM refs for each category section
 
     // Helper to generate safe IDs for HTML elements
     const toId = (str: string) => str.replace(/\s+/g, '-').toLowerCase();
@@ -192,8 +193,8 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             let current = categories[0];
 
             for (const cat of categories) {
-                // Use safe ID lookup
-                const element = document.getElementById(toId(cat));
+                // Use ref map first, fallback to getElementById
+                const element = categoryRefs.current.get(cat) || document.getElementById(toId(cat));
                 if (element) {
                     const rect = element.getBoundingClientRect();
                     if (rect.top <= SCROLL_OFFSET + 20) {
@@ -349,29 +350,39 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }, 0);
     const cartCount = cart.reduce((acc, item) => acc + item.quantity, 0);
 
-    const scrollToCategory = (category: string) => {
+    const scrollToCategory = useCallback((category: string) => {
         isAutoScrolling.current = true;
         setActiveCategory(category);
 
-        const element = document.getElementById(toId(category));
+        // Try ref map first, then fallback to getElementById
+        const element = categoryRefs.current.get(category) || document.getElementById(toId(category));
+
         if (element) {
-            const headerOffset = 100; // Adjusted offset (Header ~60px + 40px cushion)
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+            // Use requestAnimationFrame to ensure layout is settled before calculating position
+            requestAnimationFrame(() => {
+                const stickyNavHeight = 56; // Height of the sticky category nav bar
+                const extraPadding = 16;
+                const totalOffset = stickyNavHeight + extraPadding + (isAdminPreview ? 44 : 0);
 
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: "smooth"
+                const elementRect = element.getBoundingClientRect();
+                const absoluteTop = elementRect.top + window.scrollY;
+                const scrollTarget = absoluteTop - totalOffset;
+
+                window.scrollTo({
+                    top: Math.max(0, scrollTarget),
+                    behavior: 'smooth'
+                });
+
+                // Re-enable ScrollSpy after smooth scroll animation completes
+                setTimeout(() => {
+                    isAutoScrolling.current = false;
+                }, 800);
             });
-
-            // Re-enable ScrollSpy after animation (approx 800ms)
-            setTimeout(() => {
-                isAutoScrolling.current = false;
-            }, 800);
         } else {
+            console.warn('[ScrollToCategory] Element not found for category:', category, 'toId:', toId(category));
             isAutoScrolling.current = false;
         }
-    };
+    }, [isAdminPreview]);
 
     const handleSendOrder = async () => {
         if (isAdminPreview) {
@@ -719,7 +730,12 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             {/* Menu Content */}
             <main className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
                 {categories.map((category) => (
-                    <div key={category} className="scroll-mt-32" id={toId(category)}>
+                    <div key={category} className="scroll-mt-32" id={toId(category)}
+                        ref={(el) => {
+                            if (el) categoryRefs.current.set(category, el);
+                            else categoryRefs.current.delete(category);
+                        }}
+                    >
                         <h2 className="font-serif text-xl font-bold text-brand-900 mb-4 flex items-center">
                             <span className="w-1.5 h-6 bg-accent-500 rounded-full mr-3"></span>
                             {category}
