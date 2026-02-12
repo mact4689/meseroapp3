@@ -2,7 +2,7 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '../store/AppContext';
 import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles } from 'lucide-react';
+import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, ChevronLeft, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles, Info, Leaf } from 'lucide-react';
 import { Button } from '../components/Button';
 import { ItemGallery } from '../components/ItemGallery';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
@@ -53,6 +53,10 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const [currentSelections, setCurrentSelections] = useState<Record<string, string[]>>({}); // groupId -> optionIds[]
     const [showPromotionModal, setShowPromotionModal] = useState(false);
     const [hasShownPromotion, setHasShownPromotion] = useState(false);
+
+    // DISH DETAIL MODAL STATE
+    const [selectedDetailItem, setSelectedDetailItem] = useState<MenuItem | null>(null);
+    const [detailImageIndex, setDetailImageIndex] = useState(0);
 
     // PULL TO REFRESH STATE
     const [startPullY, setStartPullY] = useState(0);
@@ -763,13 +767,16 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
                                 return (
                                     <div key={item.id} className={`bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-3 transition-all ${!isAvailable ? 'opacity-70 grayscale' : 'active:scale-[0.99]'}`}>
-                                        <div className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative">
+                                        {/* Image thumbnail - opens detail modal */}
+                                        <div
+                                            className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative cursor-pointer"
+                                            onClick={() => { if (isAvailable) { setSelectedDetailItem(item); setDetailImageIndex(0); } }}
+                                        >
                                             <div className="w-full h-full relative z-10">
-                                                {item.image || (item.additional_images && item.additional_images.length > 0) ? (
-                                                    <ItemGallery
-                                                        images={[item.image, ...(item.additional_images || [])]}
-                                                        name={item.name}
-                                                    />
+                                                {item.image ? (
+                                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                                ) : (item.additional_images && item.additional_images.length > 0) ? (
+                                                    <img src={item.additional_images[0]} alt={item.name} className="w-full h-full object-cover" />
                                                 ) : (
                                                     <div className="w-full h-full flex items-center justify-center text-gray-300">
                                                         <Utensils className="w-8 h-8" />
@@ -786,14 +793,30 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                                     <span className="text-[10px] text-white font-bold uppercase border border-white px-1 py-0.5 rounded">Agotado</span>
                                                 </div>
                                             )}
+                                            {/* Detail hint icon */}
+                                            {isAvailable && (item.description || item.ingredients || (item.additional_images && item.additional_images.length > 0)) && (
+                                                <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white rounded-full p-0.5 z-20">
+                                                    <Info className="w-3 h-3" />
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                                            <div>
+                                            {/* Tappable info area - opens detail modal */}
+                                            <div
+                                                className="cursor-pointer"
+                                                onClick={() => { if (isAvailable) { setSelectedDetailItem(item); setDetailImageIndex(0); } }}
+                                            >
                                                 <div className="flex justify-between items-start gap-2">
                                                     <h3 className={`font-bold line-clamp-2 leading-tight text-sm sm:text-base ${!isAvailable ? 'text-gray-500 line-through' : 'text-brand-900'}`}>{item.name}</h3>
                                                     <span className="font-bold text-accent-600 shrink-0">${item.price}</span>
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                                                {item.ingredients && (
+                                                    <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1 flex items-center gap-1">
+                                                        <Leaf className="w-3 h-3 text-green-400 shrink-0" />
+                                                        {item.ingredients}
+                                                    </p>
+                                                )}
                                             </div>
 
                                             <div className="flex justify-end mt-2">
@@ -1273,6 +1296,206 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                     </div>
                 </div>
             )}
+
+            {/* DISH DETAIL MODAL */}
+            {selectedDetailItem && (() => {
+                const detailItem = selectedDetailItem;
+                const allImages = [
+                    detailItem.image,
+                    ...(detailItem.additional_images || [])
+                ].filter((img): img is string => typeof img === 'string' && img.length > 0);
+                const hasImages = allImages.length > 0;
+                const detailQty = getItemQty(detailItem.id);
+                const isDetailAvailable = detailItem.available !== false;
+
+                return (
+                    <div
+                        className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
+                        style={{ animation: 'fadeIn 0.2s ease-out' }}
+                    >
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+                            onClick={() => setSelectedDetailItem(null)}
+                        />
+
+                        {/* Modal Content */}
+                        <div
+                            className="relative bg-white w-full max-w-lg max-h-[92vh] sm:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col shadow-2xl"
+                            style={{ animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
+                        >
+                            {/* Close button */}
+                            <button
+                                onClick={() => setSelectedDetailItem(null)}
+                                className="absolute top-4 right-4 z-30 p-2 bg-black/40 backdrop-blur-md text-white rounded-full hover:bg-black/60 transition-colors active:scale-90"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+
+                            {/* Image Gallery */}
+                            {hasImages ? (
+                                <div className="relative w-full bg-gray-100 overflow-hidden shrink-0" style={{ aspectRatio: '16/10' }}>
+                                    <img
+                                        src={allImages[detailImageIndex] || allImages[0]}
+                                        alt={detailItem.name}
+                                        className="w-full h-full object-cover transition-opacity duration-300"
+                                    />
+
+                                    {/* Gradient overlay at bottom */}
+                                    <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+
+                                    {/* Navigation arrows */}
+                                    {allImages.length > 1 && (
+                                        <>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setDetailImageIndex((prev) => (prev - 1 + allImages.length) % allImages.length); }}
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors active:scale-90"
+                                            >
+                                                <ChevronLeft className="w-5 h-5 text-gray-800" />
+                                            </button>
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setDetailImageIndex((prev) => (prev + 1) % allImages.length); }}
+                                                className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-white/80 backdrop-blur-sm rounded-full shadow-lg hover:bg-white transition-colors active:scale-90"
+                                            >
+                                                <ChevronRight className="w-5 h-5 text-gray-800" />
+                                            </button>
+                                        </>
+                                    )}
+
+                                    {/* Image dots */}
+                                    {allImages.length > 1 && (
+                                        <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+                                            {allImages.map((_, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => setDetailImageIndex(idx)}
+                                                    className={`h-2 rounded-full transition-all duration-300 shadow-sm ${idx === detailImageIndex
+                                                        ? 'bg-white w-6'
+                                                        : 'bg-white/50 w-2 hover:bg-white/70'
+                                                        }`}
+                                                />
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {/* Image counter badge */}
+                                    {allImages.length > 1 && (
+                                        <div className="absolute top-4 left-4 bg-black/50 backdrop-blur-sm text-white text-xs font-bold px-2.5 py-1 rounded-full">
+                                            {detailImageIndex + 1} / {allImages.length}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="w-full h-36 bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center shrink-0">
+                                    <Utensils className="w-12 h-12 text-gray-200" />
+                                </div>
+                            )}
+
+                            {/* Scrollable content area */}
+                            <div className="flex-1 overflow-y-auto">
+                                {/* Title, Price & Category */}
+                                <div className="p-5 pb-3">
+                                    <div className="flex justify-between items-start gap-3">
+                                        <div>
+                                            <h2 className="font-serif text-2xl font-bold text-brand-900 leading-tight">{detailItem.name}</h2>
+                                            <span className="inline-block mt-1.5 text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-2.5 py-1 rounded-full">
+                                                {detailItem.category}
+                                            </span>
+                                        </div>
+                                        <span className="text-2xl font-bold text-accent-600 shrink-0">${detailItem.price}</span>
+                                    </div>
+                                </div>
+
+                                {/* Divider */}
+                                <div className="mx-5 border-t border-gray-100" />
+
+                                {/* Description */}
+                                <div className="px-5 py-4">
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-1.5">Descripción</h4>
+                                    <p className="text-sm text-gray-600 leading-relaxed">
+                                        {detailItem.description || 'Sin descripción disponible.'}
+                                    </p>
+                                </div>
+
+                                {/* Ingredients */}
+                                <div className="mx-5 mb-4 p-4 bg-green-50/70 rounded-2xl border border-green-100">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <div className="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                            <Leaf className="w-3.5 h-3.5 text-green-600" />
+                                        </div>
+                                        <h4 className="text-sm font-bold text-green-800">Ingredientes</h4>
+                                    </div>
+                                    <p className="text-sm text-green-700/80 leading-relaxed pl-8">
+                                        {detailItem.ingredients || 'No se han especificado ingredientes para este platillo.'}
+                                    </p>
+                                </div>
+
+                                {/* Options hint */}
+                                {detailItem.options?.hasOptions && detailItem.options.groups.length > 0 && (
+                                    <div className="mx-5 mb-4 p-3 bg-brand-50 rounded-xl border border-brand-100 flex items-center gap-2">
+                                        <Sparkles className="w-4 h-4 text-brand-600 shrink-0" />
+                                        <p className="text-xs text-brand-700 font-medium">
+                                            Este platillo tiene {detailItem.options.groups.length} opción(es) personalizable(s)
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Sticky footer with add to cart */}
+                            {isDetailAvailable && (
+                                <div className="p-5 border-t border-gray-100 bg-white">
+                                    {detailQty === 0 ? (
+                                        <Button
+                                            fullWidth
+                                            onClick={() => {
+                                                handleAddToCart(detailItem);
+                                                setSelectedDetailItem(null);
+                                            }}
+                                            className="h-14 text-lg font-bold"
+                                            icon={<Plus className="w-5 h-5" />}
+                                        >
+                                            Agregar por ${detailItem.price}
+                                        </Button>
+                                    ) : (
+                                        <div className="flex items-center gap-4">
+                                            <div className="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+                                                <button
+                                                    onClick={() => removeFromCart(detailItem.id)}
+                                                    className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-900 shadow-sm active:scale-90 transition-transform"
+                                                >
+                                                    <Minus className="w-5 h-5" />
+                                                </button>
+                                                <span className="w-12 text-center font-bold text-lg text-brand-900">{detailQty}</span>
+                                                <button
+                                                    onClick={() => handleAddToCart(detailItem)}
+                                                    className="w-10 h-10 bg-brand-900 rounded-full flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
+                                                >
+                                                    <Plus className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                            <Button
+                                                fullWidth
+                                                onClick={() => setSelectedDetailItem(null)}
+                                                variant="secondary"
+                                                className="h-12 font-bold"
+                                            >
+                                                Listo
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {!isDetailAvailable && (
+                                <div className="p-5 border-t border-gray-100 bg-red-50">
+                                    <p className="text-center text-sm font-bold text-red-500">Este platillo no está disponible por el momento</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            })()}
+
             {/* FOOTER ACTIONS - Only show when cart has items */}
             {!isAdminPreview && !isLoading && cartCount > 0 && !isCartOpen && !selectedItemForOptions && (
                 <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-[100]">
