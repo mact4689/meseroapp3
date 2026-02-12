@@ -1441,56 +1441,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                 )}
                             </div>
 
-                            {/* Sticky footer with add to cart */}
-                            {isDetailAvailable && (
-                                <div className="p-5 border-t border-gray-100 bg-white">
-                                    {detailQty === 0 ? (
-                                        <Button
-                                            fullWidth
-                                            onClick={() => {
-                                                handleAddToCart(detailItem);
-                                                setSelectedDetailItem(null);
-                                            }}
-                                            className="h-14 text-lg font-bold"
-                                            icon={<Plus className="w-5 h-5" />}
-                                        >
-                                            Agregar por ${detailItem.price}
-                                        </Button>
-                                    ) : (
-                                        <div className="flex items-center gap-4">
-                                            <div className="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
-                                                <button
-                                                    onClick={() => removeFromCart(detailItem.id)}
-                                                    className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-brand-900 shadow-sm active:scale-90 transition-transform"
-                                                >
-                                                    <Minus className="w-5 h-5" />
-                                                </button>
-                                                <span className="w-12 text-center font-bold text-lg text-brand-900">{detailQty}</span>
-                                                <button
-                                                    onClick={() => handleAddToCart(detailItem)}
-                                                    className="w-10 h-10 bg-brand-900 rounded-full flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
-                                                >
-                                                    <Plus className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                            <Button
-                                                fullWidth
-                                                onClick={() => setSelectedDetailItem(null)}
-                                                variant="secondary"
-                                                className="h-12 font-bold"
-                                            >
-                                                Listo
-                                            </Button>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-
-                            {!isDetailAvailable && (
-                                <div className="p-5 border-t border-gray-100 bg-red-50">
-                                    <p className="text-center text-sm font-bold text-red-500">Este platillo no está disponible por el momento</p>
-                                </div>
-                            )}
                         </div>
                     </div>
                 );
