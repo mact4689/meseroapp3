@@ -353,7 +353,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         isAutoScrolling.current = true;
         setActiveCategory(category);
 
-        const element = document.getElementById(category);
+        const element = document.getElementById(toId(category));
         if (element) {
             const headerOffset = 100; // Adjusted offset (Header ~60px + 40px cushion)
             const elementPosition = element.getBoundingClientRect().top;
