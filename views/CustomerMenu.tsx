@@ -224,11 +224,23 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     }, [categories]);
 
     // AUTO-SCROLL ACTIVE TAB: Center the active tab in the horizontal list
+    // IMPORTANT: Do NOT use btn.scrollIntoView here — it cancels any ongoing vertical scroll!
+    // Instead, manually scroll only the horizontal nav container.
     useEffect(() => {
         if (activeCategory) {
             const btn = document.getElementById(`cat-btn-${toId(activeCategory)}`);
             if (btn) {
-                btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                const navContainer = btn.parentElement;
+                if (navContainer) {
+                    const navRect = navContainer.getBoundingClientRect();
+                    const btnRect = btn.getBoundingClientRect();
+                    // Calculate scroll position to center the button in the nav
+                    const scrollLeft = navContainer.scrollLeft
+                        + (btnRect.left - navRect.left)
+                        - (navRect.width / 2)
+                        + (btnRect.width / 2);
+                    navContainer.scrollTo({ left: scrollLeft, behavior: 'smooth' });
+                }
             }
         }
     }, [activeCategory]);
@@ -362,23 +374,28 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
     const scrollToCategory = useCallback((category: string) => {
         isAutoScrolling.current = true;
-        setActiveCategory(category);
 
         // Try ref map first, then fallback to getElementById
         const element = categoryRefs.current.get(category) || document.getElementById(toId(category));
 
         if (element) {
-            // Use scrollIntoView - works regardless of which container has the scroll
-            // (window, parent div with h-screen, etc.)
+            // Scroll the section into view FIRST
             // The CSS class scroll-mt-32 on the element handles the offset for the sticky header
             element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            // Update active category AFTER starting the scroll, so the tab auto-scroll
+            // useEffect doesn't fire with scrollIntoView that would cancel our scroll
+            requestAnimationFrame(() => {
+                setActiveCategory(category);
+            });
 
             // Re-enable ScrollSpy after smooth scroll animation completes
             setTimeout(() => {
                 isAutoScrolling.current = false;
-            }, 800);
+            }, 900);
         } else {
             console.warn('[ScrollToCategory] Element not found for category:', category, 'toId:', toId(category));
+            setActiveCategory(category);
             isAutoScrolling.current = false;
         }
     }, [isAdminPreview]);
