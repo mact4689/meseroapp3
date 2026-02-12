@@ -175,43 +175,53 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         if (categories.length > 0 && !activeCategory) setActiveCategory(categories[0]);
     }, [categories, activeCategory]);
 
-    // SCROLL SPY: Update active category on scroll
+    // SCROLL SPY: Update active category using IntersectionObserver
+    // This works regardless of whether scroll happens on window or a parent container
     useEffect(() => {
-        const handleScroll = () => {
-            if (isAutoScrolling.current) return; // Skip if we are auto-scrolling via click
+        if (categories.length === 0) return;
 
-            // If we are very close to bottom, highlight last tab
-            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 50) {
-                if (categories.length > 0) {
-                    setActiveCategory(categories[categories.length - 1]);
-                    return;
+        const observerCallback: IntersectionObserverCallback = (entries) => {
+            if (isAutoScrolling.current) return;
+
+            // Find all currently intersecting categories
+            const visibleEntries = entries.filter(e => e.isIntersecting);
+
+            if (visibleEntries.length > 0) {
+                // Pick the one closest to the top of the viewport
+                let best: IntersectionObserverEntry | null = null;
+                for (const entry of visibleEntries) {
+                    if (!best || entry.boundingClientRect.top < best.boundingClientRect.top) {
+                        best = entry;
+                    }
                 }
-            }
-
-            // Find the category that is currently in view
-            const SCROLL_OFFSET = 120;
-            let current = categories[0];
-
-            for (const cat of categories) {
-                // Use ref map first, fallback to getElementById
-                const element = categoryRefs.current.get(cat) || document.getElementById(toId(cat));
-                if (element) {
-                    const rect = element.getBoundingClientRect();
-                    if (rect.top <= SCROLL_OFFSET + 20) {
-                        current = cat;
+                if (best) {
+                    // Find the category name from the element
+                    const el = best.target as HTMLElement;
+                    // Look up which category this element belongs to
+                    for (const [cat, ref] of categoryRefs.current.entries()) {
+                        if (ref === el) {
+                            setActiveCategory(cat);
+                            break;
+                        }
                     }
                 }
             }
-
-            if (current && current !== activeCategory) {
-                setActiveCategory(current);
-            }
         };
 
-        // Throttle slightly or use passive listener
-        window.addEventListener('scroll', handleScroll, { passive: true });
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [categories, activeCategory]);
+        const observer = new IntersectionObserver(observerCallback, {
+            // rootMargin: negative top margin accounts for sticky header, 
+            // bottom margin ensures we detect sections before they fully enter
+            rootMargin: '-120px 0px -60% 0px',
+            threshold: 0,
+        });
+
+        // Observe all category section elements
+        for (const [, el] of categoryRefs.current.entries()) {
+            observer.observe(el);
+        }
+
+        return () => observer.disconnect();
+    }, [categories]);
 
     // AUTO-SCROLL ACTIVE TAB: Center the active tab in the horizontal list
     useEffect(() => {
@@ -358,26 +368,15 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         const element = categoryRefs.current.get(category) || document.getElementById(toId(category));
 
         if (element) {
-            // Use requestAnimationFrame to ensure layout is settled before calculating position
-            requestAnimationFrame(() => {
-                const stickyNavHeight = 56; // Height of the sticky category nav bar
-                const extraPadding = 16;
-                const totalOffset = stickyNavHeight + extraPadding + (isAdminPreview ? 44 : 0);
+            // Use scrollIntoView - works regardless of which container has the scroll
+            // (window, parent div with h-screen, etc.)
+            // The CSS class scroll-mt-32 on the element handles the offset for the sticky header
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                const elementRect = element.getBoundingClientRect();
-                const absoluteTop = elementRect.top + window.scrollY;
-                const scrollTarget = absoluteTop - totalOffset;
-
-                window.scrollTo({
-                    top: Math.max(0, scrollTarget),
-                    behavior: 'smooth'
-                });
-
-                // Re-enable ScrollSpy after smooth scroll animation completes
-                setTimeout(() => {
-                    isAutoScrolling.current = false;
-                }, 800);
-            });
+            // Re-enable ScrollSpy after smooth scroll animation completes
+            setTimeout(() => {
+                isAutoScrolling.current = false;
+            }, 800);
         } else {
             console.warn('[ScrollToCategory] Element not found for category:', category, 'toId:', toId(category));
             isAutoScrolling.current = false;
