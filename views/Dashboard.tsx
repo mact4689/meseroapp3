@@ -425,7 +425,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            <main className="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
+            <main className="flex-1 p-3 pb-32 sm:p-6 sm:pb-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -884,7 +884,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                 {/* ANALYTICS SECTION */}
                 {canViewReports && (
-                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 overflow-hidden">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
@@ -915,8 +915,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 <p className="text-sm text-gray-500 mt-1">Completa órdenes para ver las estadísticas.</p>
                             </div>
                         ) : (
-                            <div className="grid md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100">
-                                <div className="pr-0 md:pr-4">
+                            <div className="grid md:grid-cols-2 gap-8 divide-y md:divide-y-0 md:divide-x divide-gray-100 overflow-hidden">
+                                <div className="pr-0 md:pr-4 overflow-hidden min-w-0">
                                     <h4 className="text-xs font-bold uppercase tracking-wider text-green-600 mb-5 flex items-center">
                                         <Trophy className="w-4 h-4 mr-2" /> Los más populares
                                     </h4>
@@ -929,10 +929,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         {item.image ? (<img src={item.image} alt={item.name} className="w-full h-full object-cover" />) : (<div className="w-full h-full flex items-center justify-center text-gray-300"><UtensilsCrossed className="w-5 h-5" /></div>)}
                                                         {idx === 0 && <div className="absolute top-0 right-0 bg-yellow-400 text-[8px] px-1 font-bold text-yellow-900 rounded-bl">#1</div>}
                                                     </div>
-                                                    <div className="flex-1 min-w-0">
-                                                        <div className="flex justify-between items-baseline mb-1">
-                                                            <span className="font-bold text-brand-900 truncate pr-2">{item.name}</span>
-                                                            <span className="font-bold text-green-600 text-sm whitespace-nowrap">${item.revenue.toFixed(2)}</span>
+                                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                                        <div className="flex justify-between items-baseline mb-1 gap-1">
+                                                            <span className="font-bold text-brand-900 truncate">{item.name}</span>
+                                                            <span className="font-bold text-green-600 text-xs sm:text-sm whitespace-nowrap shrink-0">${item.revenue.toFixed(0)}</span>
                                                         </div>
                                                         <div className="flex items-center gap-2">
                                                             <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
