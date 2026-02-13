@@ -425,7 +425,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full space-y-6">
+            <main className="flex-1 p-3 sm:p-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
@@ -884,8 +884,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
                 {/* ANALYTICS SECTION */}
                 {canViewReports && (
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
+                    <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
                             <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-orange-50 flex items-center justify-center text-orange-500">
                                     <BarChart3 className="w-5 h-5" />
@@ -900,11 +900,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 </button>
                             </div>
 
-                            <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto">
-                                <button onClick={() => setStatsTimeRange('today')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'today' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Hoy</button>
-                                <button onClick={() => setStatsTimeRange('7days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '7days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>7 Días</button>
-                                <button onClick={() => setStatsTimeRange('30days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === '30days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>30 Días</button>
-                                <button onClick={() => setStatsTimeRange('all')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${statsTimeRange === 'all' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Todo</button>
+                            <div className="flex bg-gray-100 p-1 rounded-lg self-start sm:self-auto overflow-x-auto sm:overflow-visible max-w-full no-scrollbar">
+                                <button onClick={() => setStatsTimeRange('today')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${statsTimeRange === 'today' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Hoy</button>
+                                <button onClick={() => setStatsTimeRange('7days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${statsTimeRange === '7days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>7 Días</button>
+                                <button onClick={() => setStatsTimeRange('30days')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${statsTimeRange === '30days' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>30 Días</button>
+                                <button onClick={() => setStatsTimeRange('all')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap ${statsTimeRange === 'all' ? 'bg-white text-brand-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}>Todo</button>
                             </div>
                         </div>
 
@@ -1017,8 +1017,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 )}
 
                 {/* ACTIVE ORDERS SECTION */}
-                <div id="active-orders" className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4 sm:gap-0">
+                <div id="active-orders" className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4 sm:gap-0">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 shrink-0">
                                 <Bell className="w-5 h-5" />

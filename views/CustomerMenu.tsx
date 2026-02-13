@@ -1321,7 +1321,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
                         {/* Modal Content */}
                         <div
-                            className="relative bg-white w-full max-w-lg max-h-[92vh] sm:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col shadow-2xl"
+                            className="relative bg-white w-full max-w-lg h-[96vh] sm:h-auto sm:max-h-[90vh] sm:rounded-3xl rounded-t-3xl overflow-hidden flex flex-col shadow-2xl"
                             style={{ animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)' }}
                         >
                             {/* Close button */}

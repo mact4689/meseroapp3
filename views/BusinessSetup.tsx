@@ -106,7 +106,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 px-6 pt-8 pb-6">
+    <div className="flex flex-col min-h-screen bg-gray-50 px-6 pt-8 pb-32 sm:pb-6">
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
 
         {/* Onboarding Header */}
