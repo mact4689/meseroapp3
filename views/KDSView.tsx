@@ -797,7 +797,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                                     <div className={`flex items-center justify-between px-4 py-3 ${allItemsPrepared ? 'bg-green-600/20' : 'bg-gray-700/50'}`}>
                                         <div className="flex items-center gap-2">
                                             <span className="text-2xl font-bold text-white">
-                                                Mesa {order.table_number}
+                                                {order.table_number.startsWith('LLEVAR') ? `Orden para llevar #${order.table_number.split('-')[1] || '?'}` : `Mesa ${order.table_number}`}
                                             </span>
                                         </div>
                                         <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-bold ${getTimeColor(minutes)}`}>

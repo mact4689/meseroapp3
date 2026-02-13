@@ -576,7 +576,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                             <div className="flex items-center gap-2 mb-1">
                                                                 <p className="font-bold text-brand-900 text-base">
                                                                     {order.table_number.startsWith('LLEVAR')
-                                                                        ? `Para Llevar #${order.table_number.split('-')[1] || '?'}`
+                                                                        ? `Orden para llevar #${order.table_number.split('-')[1] || '?'}`
                                                                         : `Mesa ${order.table_number}`}
                                                                 </p>
                                                                 <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
@@ -1127,7 +1127,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-sm sm:text-base mb-0.5">
                                                             {order.table_number.startsWith('LLEVAR') ? (
                                                                 <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5">
-                                                                    🛍️ <span className="hidden xs:inline">Para Llevar</span> #{order.table_number.split('-')[1] || '?'}
+                                                                    🛍️ <span className="xs:inline">Orden para llevar</span> #{order.table_number.split('-')[1] || '?'}
                                                                 </span>
                                                             ) : isHelp ? (
                                                                 <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5">
