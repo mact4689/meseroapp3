@@ -281,7 +281,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             // Open custom confirmation modal
             setConfirmCloseTable(order.table_number);
         } else {
-            // "Enterado" logic: Mark as delivered (hides from dashboard, keeps in bill)
+            // "Entregado" logic: Mark as delivered (hides from dashboard, keeps in bill)
             try {
                 await completeOrder(id, 'delivered');
             } catch (error) {
@@ -1197,13 +1197,29 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                         <span className="text-xs font-semibold hidden sm:hidden">Imprimir</span>
                                                     </button>
 
-                                                    <Button
-                                                        onClick={(e) => handleCompleteOrder(order.id, e)}
-                                                        className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700' : isBill ? 'bg-green-700 hover:bg-green-800' : 'bg-green-600 hover:bg-green-700'} border-transparent shadow-sm`}
-                                                        icon={<Check className="w-4 h-4" />}
-                                                    >
-                                                        {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Enterado'}
-                                                    </Button>
+                                                    {(() => {
+                                                        // For normal orders, check if all real items are prepared by KDS
+                                                        const realItems = order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'));
+                                                        const allItemsReady = !isHelp && !isBill && realItems.length > 0
+                                                            ? (order.prepared_items?.length || 0) >= realItems.length
+                                                            : true; // Help/Bill requests are always enabled
+
+                                                        return (
+                                                            <Button
+                                                                onClick={(e) => allItemsReady ? handleCompleteOrder(order.id, e) : e.stopPropagation()}
+                                                                className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700'
+                                                                    : isBill ? 'bg-green-700 hover:bg-green-800'
+                                                                        : allItemsReady ? 'bg-green-600 hover:bg-green-700'
+                                                                            : 'bg-gray-400 cursor-not-allowed opacity-60'
+                                                                    } border-transparent shadow-sm`}
+                                                                icon={<Check className="w-4 h-4" />}
+                                                                title={!allItemsReady ? 'Esperando que cocina termine todos los items' : ''}
+                                                                disabled={!allItemsReady}
+                                                            >
+                                                                {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Entregado'}
+                                                            </Button>
+                                                        );
+                                                    })()}
 
                                                     <button
                                                         onClick={() => toggleOrder(order.id)}
