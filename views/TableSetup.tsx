@@ -173,7 +173,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
           <button
             onClick={handleBack}
             className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-            title={isOnboarding ? "Volver" : "Volver al Dashboard"}
+            title={isOnboarding ? "Volver" : "Guardar Cambios"}
           >
             <ArrowLeft className="w-6 h-6" />
           </button>
@@ -385,7 +385,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
               className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
               icon={<Check className="w-5 h-5" />}
             >
-              Guardar
+              Guardar Cambios
             </Button>
           </div>
         )}

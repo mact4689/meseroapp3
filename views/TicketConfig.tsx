@@ -53,7 +53,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
     ];
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
+        <div className="flex flex-col min-h-screen bg-gray-50 pb-32 sm:pb-0">
             {/* Navbar */}
             <header className={`bg-white px-6 py-4 shadow-sm sticky top-0 z-50 ${isOnboarding ? 'pt-8' : ''}`}>
                 {isOnboarding ? (
@@ -103,7 +103,7 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                         <button
                             onClick={handleSaveAndBack}
                             className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-                            title="Guardar y Regresar"
+                            title="Guardar Cambios"
                         >
                             <ArrowLeft className="w-6 h-6" />
                         </button>
@@ -337,6 +337,19 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                     </div>
                 )}
 
+                {/* Save Button - Non-onboarding */}
+                {!isOnboarding && (
+                    <div className="md:col-span-2 mt-8 pt-6 border-t border-gray-100 max-w-sm mx-auto w-full">
+                        <Button
+                            fullWidth
+                            onClick={handleSaveAndBack}
+                            className="h-12 text-base font-bold shadow-lg shadow-brand-900/10"
+                            icon={<CheckCircle className="w-5 h-5" />}
+                        >
+                            Guardar Cambios
+                        </Button>
+                    </div>
+                )}
             </main>
         </div>
     );

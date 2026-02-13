@@ -390,7 +390,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                         className="h-12"
                         icon={<Check className="w-5 h-5" />}
                     >
-                        {isOnboarding ? 'Continuar' : 'Listo'}
+                        {isOnboarding ? 'Continuar' : 'Guardar Cambios'}
                     </Button>
                     {isOnboarding && (
                         <button
