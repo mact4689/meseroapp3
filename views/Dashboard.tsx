@@ -281,12 +281,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             // Open custom confirmation modal
             setConfirmCloseTable(order.table_number);
         } else {
-            // "Entregado" logic: Mark as delivered (hides from dashboard, keeps in bill)
-            try {
-                await completeOrder(id, 'delivered');
-            } catch (error) {
-                console.error("Error updating order status:", error);
-                alert("No se pudo actualizar el estado de la orden. Por favor intenta de nuevo.");
+            // Check if it's a takeout order
+            if (order.table_number.startsWith('LLEVAR')) {
+                // Takeout orders: Mark as COMPLETED immediately (sales count)
+                try {
+                    await completeOrder(id, 'completed');
+                } catch (error) {
+                    console.error("Error completing takeout order:", error);
+                    alert("No se pudo completar la orden. Por favor intenta de nuevo.");
+                }
+            } else {
+                // Dine-in orders: Mark as delivered (hides from dashboard, keeps in bill)
+                try {
+                    await completeOrder(id, 'delivered');
+                } catch (error) {
+                    console.error("Error updating order status:", error);
+                    alert("No se pudo actualizar el estado de la orden. Por favor intenta de nuevo.");
+                }
             }
         }
     };
