@@ -9,11 +9,8 @@ interface SplashProps {
   onNavigate: (view: AppView) => void;
 }
 
-import { useNavigate } from 'react-router-dom';
-
 export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   const { state } = useAppStore();
-  const navigate = useNavigate();
   const [minTimeElapsed, setMinTimeElapsed] = useState(false);
   const [showManualButton, setShowManualButton] = useState(false);
 
@@ -51,7 +48,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       clearTimeout(timer);
       clearTimeout(fallbackTimer);
     };
-  }, [navigate]);
+  }, []);
 
   // Efecto que monitorea tanto el tiempo como la carga de datos
   useEffect(() => {

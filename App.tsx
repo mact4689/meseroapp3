@@ -186,7 +186,6 @@ const App: React.FC = () => {
   return (
     <div className="w-full h-screen bg-white">
       <OfflineStatus />
-      <LegacyRedirectHandler />
 
       <Routes>
         {/* Public routes */}
