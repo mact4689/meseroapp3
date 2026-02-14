@@ -1,0 +1,44 @@
+﻿gcloud.cmd : Go to the 
+following link in your 
+browser, and complete the 
+sign-in prompts:
+En línea: 1 Carácter: 59
++ ... cp\config"; & "C:\User
+s\kassa\.stitch-mcp\google-c
+loud-sdk\bin\gcloud ...
++                 ~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Go to  
+   the follo...ign-in pro   
+ mpts::String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+
+    https://accounts.google.
+com/o/oauth2/auth?response_t
+ype=code&client_id=764086051
+850-6qr4p6gpi6hn506pt8ejuq83
+di341hur.apps.googleusercont
+ent.com&redirect_uri=https%3
+A%2F%2Fsdk.cloud.google.com%
+2Fapplicationdefaultauthcode
+.html&scope=openid+https%3A%
+2F%2Fwww.googleapis.com%2Fau
+th%2Fuserinfo.email+https%3A
+%2F%2Fwww.googleapis.com%2Fa
+uth%2Fcloud-platform+https%3
+A%2F%2Fwww.googleapis.com%2F
+auth%2Fsqlservice.login&stat
+e=I68XCSyhPbKNcgDuD3KEXQbeAO
+yYsP&prompt=consent&token_us
+age=remote&access_type=offli
+ne&code_challenge=-dlrUPDokc
+mFaeFRiZLS5-GYxjBwnXQ0JX2f-G
+gMGLI&code_challenge_method=
+S256
+
+

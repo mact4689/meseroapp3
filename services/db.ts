@@ -1,6 +1,7 @@
 
 import { supabase } from './client';
 import { MenuItem, Order } from '../types';
+import { compressImage } from '../utils/imageOptimizer';
 
 // Helper para reintentar operaciones en caso de fallo de red
 async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
@@ -21,13 +22,22 @@ async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 10
 
 export const uploadImage = async (file: File, path: string): Promise<string | null> => {
   const attemptUpload = async () => {
-    const fileExt = file.name.split('.').pop();
+    // Optimization Step
+    let fileToUpload = file;
+    try {
+      console.log('🖼️ Optimizing image:', file.name);
+      fileToUpload = await compressImage(file);
+    } catch (optError) {
+      console.warn('⚠️ Image optimization skipped due to error:', optError);
+    }
+
+    const fileExt = fileToUpload.name.split('.').pop();
     const fileName = `${path}/${Math.random()}.${fileExt}`;
     const filePath = `${fileName}`;
 
     const { error: uploadError } = await supabase.storage
       .from('images')
-      .upload(filePath, file, {
+      .upload(filePath, fileToUpload, {
         upsert: true,
         cacheControl: '3600'
       });
