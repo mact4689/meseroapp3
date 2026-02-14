@@ -27,13 +27,14 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
 
     if (table && uid) {
       // FORCE BROWSER NAVIGATION to ensure params are preserved
-      // Use React Router for smoother transition
-      navigate(`/menu?table=${table}&uid=${uid}`, { replace: true });
+      // FORCE BROWSER NAVIGATION to ensure params are preserved
+      // This bypasses React Router and any potential race conditions
+      window.location.replace(`/menu?table=${table}&uid=${uid}`);
       return;
     }
 
     if (view === 'KDS' && station && uid) {
-      navigate(`/kds?station=${station}&uid=${uid}`, { replace: true });
+      window.location.replace(`/kds?station=${station}&uid=${uid}`);
       return;
     }
 
