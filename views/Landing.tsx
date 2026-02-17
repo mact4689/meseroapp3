@@ -404,11 +404,13 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                           <div className="flex-1">
                             <div className="flex justify-between items-center mb-1">
                               <span className="text-xs font-bold text-gray-700">{item.name}</span>
-                              <span className="text-xs font-bold text-gray-900">{item.price}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400 font-bold">{item.qty}</span>
+                                <span className="text-xs font-bold text-gray-900">{item.price}</span>
+                              </div>
                             </div>
-                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden flex items-center">
+                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
                               <div className={`${item.p} h-full ${item.color} rounded-full`} />
-                              <span className="ml-auto text-[10px] text-gray-400 font-bold px-1">{item.qty}</span>
                             </div>
                           </div>
                         </div>
