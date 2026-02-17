@@ -543,7 +543,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
                 </div>
               </div>
               {stations.length === 0 && (
-                <p className="text-[11px] text-gray-400 pl-1">💡 Configura estaciones en Dashboard → KDS</p>
+                <p className="text-[11px] text-gray-400 pl-1">Configura estaciones en: Configuracion: Pantallas de cocina</p>
               )}
             </div>
 

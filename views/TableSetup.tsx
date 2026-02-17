@@ -216,6 +216,20 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
           )}
         </div>
 
+        {/* Info Box: ¿Cómo funciona? */}
+        <div className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-xl text-sm text-blue-700">
+          <p className="font-bold mb-2 flex items-center gap-2">💡 ¿Cómo funciona?</p>
+          <ol className="list-decimal list-inside space-y-2 text-blue-600 text-xs">
+            <li>Define la cantidad de mesas de tu negocio.</li>
+            <li>Genera y descarga el PDF con los códigos QR de cada mesa.</li>
+            <li>Imprime el PDF y coloca los códigos QR en las mesas correspondientes.</li>
+            <li>Utiliza el botón <strong>"QR para llevar"</strong> para tus clientes que no se sienten en tus mesas.</li>
+          </ol>
+          <div className="mt-3 pt-3 border-t border-blue-200/50 text-[11px] text-blue-500 italic">
+            Nota: Los pedidos para llevar se enumeran automáticamente del 1 al 99 para un mejor control de tus entregas.
+          </div>
+        </div>
+
         <div className="space-y-6 flex-1">
           <form onSubmit={handleGenerate} className="flex items-end gap-3">
             <div className="flex-1">
@@ -283,18 +297,6 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
                   {isGenerating ? 'Generando...' : `${generatedTables.length} mesas`}
                 </span>
               </div>
-
-              {!isGenerating && generatedTables.length > 0 && (
-                <div className="mb-4 bg-blue-50 p-3 rounded-lg text-sm text-blue-800">
-                  <p className="font-bold mb-2 flex items-center gap-2">💡 ¿Cómo funciona?</p>
-                  <ol className="space-y-1 text-xs opacity-90 list-decimal list-inside">
-                    <li>Descarga e imprime los códigos QR</li>
-                    <li>Colócalos en cada mesa de tu restaurante</li>
-                    <li>Los clientes escanean y hacen su pedido</li>
-                    <li>¡Las órdenes aparecen automáticamente!</li>
-                  </ol>
-                </div>
-              )}
 
               {isGenerating && generatedTables.length === 0 ? (
                 <div className="flex items-center justify-center py-8 text-gray-400">
