@@ -276,10 +276,9 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               {/* Badge */}
 
 
-              {/* Headline */}
-              <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.2]">
+              <h1 className="font-serif text-4xl md:text-5xl lg:text-7xl font-bold leading-snug tracking-tight">
                 Transforma tu restaurante en una{' '}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic px-4 pb-2 leading-relaxed">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic pr-2">
                   experiencia fluida y moderna
                 </span>
               </h1>
