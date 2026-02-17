@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, User, Shield, Mail, Loader2, Save, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Shield, Mail, Loader2, Save } from 'lucide-react';
 import { AppView, UserRole } from '../types';
 import { supabase } from '../services/client';
 import { useAppStore } from '../store/AppContext';
@@ -18,7 +18,7 @@ interface StaffManagementProps {
 }
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) => {
-    const { state, logout } = useAppStore();
+    const { state } = useAppStore();
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [isInviting, setIsInviting] = useState(false);
@@ -121,25 +121,13 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                         </button>
                         <h1 className="text-xl font-bold text-gray-900">Gestión de Equipo</h1>
                     </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setIsInviting(true)}
-                            className="bg-brand-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-brand-800 transition-colors shadow-sm"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Invitar
-                        </button>
-                        <button
-                            onClick={() => {
-                                logout();
-                                onNavigate(AppView.LANDING);
-                            }}
-                            className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-                            title="Cerrar Sesión"
-                        >
-                            <LogOut className="w-5 h-5" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setIsInviting(true)}
+                        className="bg-brand-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-brand-800 transition-colors shadow-sm"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Invitar
+                    </button>
                 </div>
             </div>
 

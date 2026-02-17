@@ -5,7 +5,7 @@ import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { GalleryUpload } from '../components/GalleryUpload';
 import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy, Star, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy, Star } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -14,7 +14,7 @@ interface MenuSetupProps {
 }
 
 export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
-  const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability, promoteItem, logout } = useAppStore();
+  const { state, addMenuItem, updateMenuItem, removeMenuItem, toggleItemAvailability, promoteItem } = useAppStore();
   const { isOnboarding, stations } = state;
 
   // Use global state for items
@@ -389,18 +389,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
             >
               <ArrowLeft className="w-6 h-6" />
             </button>
-            {!isOnboarding && (
-              <button
-                onClick={() => {
-                  logout();
-                  onNavigate(AppView.LANDING);
-                }}
-                className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-                title="Cerrar Sesión"
-              >
-                <LogOut className="w-6 h-6" />
-              </button>
-            )}
 
           </div>
 

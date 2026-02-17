@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Plus, Trash2, ChefHat, Palette, QrCode, Copy, Check, Monitor, CheckCircle, LogOut } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, ChefHat, Palette, QrCode, Copy, Check, Monitor, CheckCircle } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import QRCode from 'qrcode';
 
@@ -23,7 +23,7 @@ const STATION_COLORS = [
 ];
 
 export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
-    const { state, addStation, removeStation, updateBusiness, logout } = useAppStore();
+    const { state, addStation, removeStation, updateBusiness } = useAppStore();
     const { stations, isOnboarding } = state;
 
     const [newStationName, setNewStationName] = useState('');
@@ -168,24 +168,12 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
                     </div>
                 ) : (
                     <div className="mb-6">
-                        <div className="flex justify-between items-center">
-                            <button
-                                onClick={() => onNavigate(AppView.DASHBOARD)}
-                                className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-                            >
-                                <ArrowLeft className="w-6 h-6" />
-                            </button>
-                            <button
-                                onClick={() => {
-                                    logout();
-                                    onNavigate(AppView.LANDING);
-                                }}
-                                className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
-                                title="Cerrar Sesión"
-                            >
-                                <LogOut className="w-6 h-6" />
-                            </button>
-                        </div>
+                        <button
+                            onClick={() => onNavigate(AppView.DASHBOARD)}
+                            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
+                        >
+                            <ArrowLeft className="w-6 h-6" />
+                        </button>
 
                         <div className="mt-4 space-y-2">
                             <div className="flex items-center gap-3">
