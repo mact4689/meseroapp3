@@ -154,7 +154,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
     <div className="flex flex-col min-h-screen bg-[#0a0a0f] text-white overflow-x-hidden selection:bg-accent-500 selection:text-brand-900">
 
       {/* ═══════════════════════ NAVBAR ═══════════════════════ */}
-      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5 py-3' : 'bg-transparent py-5'}`}>
+      <nav className={`fixed top-0 w-full z-50 transition-all duration-500 ${scrolled ? 'bg-[#0a0a0f] shadow-2xl shadow-black/50 border-b border-white/5 py-3' : 'bg-transparent py-5'}`}>
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
             <div className="w-10 h-10 bg-gradient-to-br from-accent-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg shadow-accent-500/25">
