@@ -295,7 +295,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   className="w-full sm:w-auto text-lg px-8 py-4 !bg-gradient-to-r !from-accent-500 !to-amber-500 hover:!from-accent-400 hover:!to-amber-400 !text-brand-900 font-bold shadow-[0_0_40px_-8px_rgba(212,175,55,0.5)] hover:shadow-[0_0_60px_-8px_rgba(212,175,55,0.7)] hover:scale-[1.03] transition-all duration-300"
                   icon={<ArrowRight className="w-5 h-5" />}
                 >
-                  Crear Cuenta Gratis
+                  Prueba Gratis por 30 Días
                 </Button>
 
               </div>
