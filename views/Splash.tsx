@@ -68,7 +68,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
 
     if (!state.user) {
       // Cambio: Redirigir al WEBSITE (Landing Page de Marketing) en lugar de la selección de auth
-      onNavigate(AppView.WEBSITE);
+      onNavigate(AppView.LANDING);
       return;
     }
 

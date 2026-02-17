@@ -1,7 +1,7 @@
 
 export enum AppView {
   SPLASH = 'SPLASH',
-  WEBSITE = 'WEBSITE',
+
   LANDING = 'LANDING',
   LOGIN = 'LOGIN',
   REGISTER = 'REGISTER',

@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Landing } from './views/Landing';
-import { Website } from './views/Website';
 import { OfflineStatus } from './components/OfflineStatus';
 import { Login } from './views/Login';
 import { Register } from './views/Register';
@@ -31,7 +30,7 @@ export const useAppNavigation = () => {
   const handleNavigate = (view: AppView) => {
     const routeMap: Record<AppView, string> = {
       [AppView.SPLASH]: '/',
-      [AppView.WEBSITE]: '/website',
+
       [AppView.LANDING]: '/landing',
       [AppView.LOGIN]: '/login',
       [AppView.REGISTER]: '/register',
@@ -62,10 +61,7 @@ const SplashRoute = () => {
   return <Splash onNavigate={onNavigate} />;
 };
 
-const WebsiteRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Website onNavigate={onNavigate} />;
-};
+
 
 const LandingRoute = () => {
   const onNavigate = useAppNavigation();
@@ -190,7 +186,7 @@ const App: React.FC = () => {
       <Routes>
         {/* Public routes */}
         <Route path="/" element={<SplashRoute />} />
-        <Route path="/website" element={<WebsiteRoute />} />
+        <Route path="/website" element={<LandingRoute />} />
         <Route path="/landing" element={<LandingRoute />} />
         <Route path="/login" element={<LoginRoute />} />
         <Route path="/register" element={<RegisterRoute />} />
