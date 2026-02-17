@@ -276,9 +276,9 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
               {/* Headline */}
               <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
-                El sistema operativo para tu{' '}
+                Transforma tu restaurante en una{' '}
                 <span className="relative inline-block">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic">restaurante</span>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic">experiencia fluida y moderna</span>
                   <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none">
                     <path d="M1 5.5C47 2 153 2 199 5.5" stroke="url(#gold-gradient)" strokeWidth="2" strokeLinecap="round" />
                     <defs><linearGradient id="gold-gradient" x1="0" y1="0" x2="200" y2="0"><stop stopColor="#d4af37" /><stop offset="1" stopColor="#f59e0b" /></linearGradient></defs>
@@ -288,7 +288,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
               {/* Subheadline */}
               <p className="text-lg md:text-xl text-gray-400 max-w-xl leading-relaxed">
-                Menú digital QR, cocina sincronizada y control total de tus pedidos en una plataforma elegante y poderosa. Configúralo en minutos.
+                MeseroApp es tu aliado para modernizar tu restaurante con menús QR inteligentes y pantallas de cocina sincronizadas, eliminando el caos operativo para que tus órdenes fluyan sin errores y tus ventas crezcan exponencialmente.
               </p>
 
               {/* CTA Buttons */}
