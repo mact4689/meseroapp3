@@ -297,15 +297,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 >
                   Crear Cuenta Gratis
                 </Button>
-                <button
-                  onClick={() => scrollToSection('how-it-works')}
-                  className="group w-full sm:w-auto inline-flex items-center justify-center gap-3 text-lg px-8 py-4 rounded-xl font-semibold text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 backdrop-blur-sm transition-all duration-300"
-                >
-                  <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-white/20 transition-colors">
-                    <Play className="w-3.5 h-3.5 ml-0.5" />
-                  </div>
-                  Ver cómo funciona
-                </button>
+
               </div>
 
               {/* Trust Badges */}
