@@ -52,11 +52,19 @@ type TimeRange = 'today' | '7days' | '30days' | 'all';
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
-    const { business, menu, tables, user, orders } = state;
+    const { business, menu, tables, user, orders, isOnboarding } = state;
     const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile } = usePermissions();
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showFullPerformanceModal, setShowFullPerformanceModal] = useState(false);
+
+    // Redirect to Welcome/Onboarding if needed
+    useEffect(() => {
+        if (isOnboarding && role === 'owner') {
+            onNavigate(AppView.WELCOME);
+        }
+    }, [isOnboarding, role, onNavigate]);
+
     // Eliminated unused showSqlModal state
     const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
     const [copyFeedback, setCopyFeedback] = useState(false);

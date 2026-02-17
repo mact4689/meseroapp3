@@ -72,34 +72,10 @@ export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
         // Siempre mostramos el mensaje de verificación, independientemente de si hubo sesión o no.
         setError("Registro exitoso. Por favor revisa tu correo para confirmar tu cuenta y luego inicia sesión.");
 
+
         // Redirigimos al login después de 5 segundos
         setTimeout(() => onNavigate(AppView.LOGIN), 5000);
         return;
-
-        // CRÍTICO: Crear perfil inicial en la base de datos inmediatamente
-        // Esto previene el error 23503 (FK Violation) al crear items después
-        const profileError = await upsertProfile(data.user!.id, {
-          name: formData.fullName || 'Nuevo Usuario',
-          cuisine: 'Variada', // Valor por defecto
-          logo_url: null
-        });
-
-        if (profileError) {
-          console.error("Error creating profile:", profileError);
-          // No bloqueamos, pero advertimos en consola.
-          // Si hay sesión, el intento de "addMenuItem" en AppContext intentará repararlo.
-        }
-
-        // Inicializar estado nuevo para este usuario
-        register({
-          id: data.user!.id,
-          email: data.user!.email!,
-          name: formData.fullName,
-          role: 'owner'
-        });
-
-        // Ir a la bienvenida para iniciar el flujo de configuración
-        onNavigate(AppView.WELCOME);
       }
     } catch (err) {
       console.error(err);
