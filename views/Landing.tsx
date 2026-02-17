@@ -277,7 +277,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
 
               {/* Headline */}
-              <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
+              <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.2]">
                 Transforma tu restaurante en una{' '}
                 <span className="relative inline-block">
                   <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic">experiencia fluida y moderna</span>
