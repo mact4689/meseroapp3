@@ -429,30 +429,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
         </div>
       </section>
 
-      {/* ═══════════════════════ SOCIAL PROOF / STATS ═══════════════════════ */}
-      <section className="relative py-20 px-6 border-y border-white/5">
-        <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0d0d15] to-[#0a0a0f]" />
-        <div ref={stats.ref} className="max-w-7xl mx-auto relative z-10">
-          <div className={`grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 transition-all duration-1000 ${stats.isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
-            {[
-              { value: 500, suffix: '+', label: 'Restaurantes activos', icon: <UtensilsCrossed className="w-5 h-5" /> },
-              { value: 50000, suffix: '+', label: 'Pedidos procesados', icon: <Smartphone className="w-5 h-5" /> },
-              { value: 99, suffix: '%', label: 'Uptime garantizado', icon: <Shield className="w-5 h-5" /> },
-              { value: 15, suffix: 'min', label: 'Configuración promedio', icon: <Clock className="w-5 h-5" /> },
-            ].map((stat, i) => (
-              <div key={i} className="text-center group">
-                <div className="w-12 h-12 mx-auto mb-4 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center text-accent-500 group-hover:bg-accent-500/10 group-hover:border-accent-500/20 transition-all duration-300">
-                  {stat.icon}
-                </div>
-                <div className="text-3xl md:text-4xl font-bold text-white mb-1">
-                  <AnimatedCounter end={stat.value} suffix={stat.suffix} />
-                </div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+
 
       {/* ═══════════════════════ FEATURES GRID ═══════════════════════ */}
       <section id="features" className="py-24 md:py-32 px-6 relative">
