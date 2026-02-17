@@ -40,24 +40,16 @@ export const Welcome: React.FC<WelcomeProps> = ({ onNavigate }) => {
               Gracias por confiar en nosotros para <span className="text-brand-900 font-bold italic">automatizar la toma de órdenes por medio de QR</span>.
             </p>
 
-            <div className="p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4 text-left">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center shrink-0 shadow-sm">
-                <ArrowRight className="w-4 h-4 text-accent-500" />
-              </div>
-              <p className="text-gray-500 text-sm leading-snug">
-                Para comenzar a configurar tu sistema, ve al apartado <strong className="text-brand-900">Configuración</strong> y da click sobre <strong className="text-brand-900">Negocio</strong>.
-              </p>
-            </div>
           </div>
 
-          {/* Accept Button */}
-          <div className="slide-up" style={{ animationDelay: '0.3s' }}>
+          {/* Start Button */}
+          <div className="slide-up pt-4" style={{ animationDelay: '0.3s' }}>
             <Button
               fullWidth
               onClick={() => onNavigate(AppView.BUSINESS_SETUP)}
-              className="text-lg py-5 rounded-2xl shadow-xl shadow-brand-900/10 hover:shadow-brand-900/20 transition-all active:scale-95"
+              className="text-xl font-bold py-6 rounded-2xl shadow-2xl shadow-brand-900/20 hover:shadow-brand-900/30 transition-all hover:-translate-y-1 active:scale-95 bg-brand-900 text-white border-none"
             >
-              Aceptar
+              Comenzar
             </Button>
           </div>
         </div>
