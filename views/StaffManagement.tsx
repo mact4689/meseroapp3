@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Plus, Trash2, User, Shield, Mail, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, User, Shield, Mail, Loader2, Save, LogOut } from 'lucide-react';
 import { AppView, UserRole } from '../types';
 import { supabase } from '../services/client';
 import { useAppStore } from '../store/AppContext';
@@ -18,7 +18,7 @@ interface StaffManagementProps {
 }
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) => {
-    const { state } = useAppStore();
+    const { state, logout } = useAppStore();
     const [staff, setStaff] = useState<StaffMember[]>([]);
     const [loading, setLoading] = useState(true);
     const [isInviting, setIsInviting] = useState(false);
@@ -121,13 +121,25 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                         </button>
                         <h1 className="text-xl font-bold text-gray-900">Gestión de Equipo</h1>
                     </div>
-                    <button
-                        onClick={() => setIsInviting(true)}
-                        className="bg-brand-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-brand-800 transition-colors shadow-sm"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Invitar
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsInviting(true)}
+                            className="bg-brand-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-brand-800 transition-colors shadow-sm"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Invitar
+                        </button>
+                        <button
+                            onClick={() => {
+                                logout();
+                                onNavigate(AppView.LANDING);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -197,67 +209,69 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
             </main>
 
             {/* Invite Modal */}
-            {isInviting && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsInviting(false)} />
-                    <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 animate-in zoom-in duration-200">
-                        <div className="p-6">
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">Invitar Nuevo Miembro</h3>
-                            <form onSubmit={handleInvite} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                                        <input
-                                            type="email"
-                                            required
-                                            value={inviteEmail}
-                                            onChange={e => setInviteEmail(e.target.value)}
-                                            className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
-                                            placeholder="ejemplo@correo.com"
-                                        />
+            {
+                isInviting && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsInviting(false)} />
+                        <div className="bg-white w-full max-w-sm rounded-2xl shadow-xl relative z-10 animate-in zoom-in duration-200">
+                            <div className="p-6">
+                                <h3 className="text-lg font-bold text-gray-900 mb-4">Invitar Nuevo Miembro</h3>
+                                <form onSubmit={handleInvite} className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Correo Electrónico</label>
+                                        <div className="relative">
+                                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                            <input
+                                                type="email"
+                                                required
+                                                value={inviteEmail}
+                                                onChange={e => setInviteEmail(e.target.value)}
+                                                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition-all"
+                                                placeholder="ejemplo@correo.com"
+                                            />
+                                        </div>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
-                                    <div className="grid grid-cols-1 gap-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => setInviteRole('waiter')}
-                                            className={`p-3 rounded-lg border text-sm font-bold transition-all ${inviteRole === 'waiter'
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">Rol</label>
+                                        <div className="grid grid-cols-1 gap-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setInviteRole('waiter')}
+                                                className={`p-3 rounded-lg border text-sm font-bold transition-all ${inviteRole === 'waiter'
                                                     ? 'bg-blue-50 border-blue-200 text-blue-700 ring-1 ring-blue-500'
                                                     : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
-                                                }`}
-                                        >
-                                            Mesero
-                                        </button>
-                                        <p className="text-xs text-gray-500 mt-2">
-                                            * Para cocina usa las pantallas KDS (no requieren cuenta).
-                                        </p>
+                                                    }`}
+                                            >
+                                                Mesero
+                                            </button>
+                                            <p className="text-xs text-gray-500 mt-2">
+                                                * Para cocina usa las pantallas KDS (no requieren cuenta).
+                                            </p>
+                                        </div>
                                     </div>
-                                </div>
 
-                                <div className="flex gap-3 pt-2">
-                                    <button
-                                        type="button"
-                                        onClick={() => setIsInviting(false)}
-                                        className="flex-1 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        disabled={inviteLoading}
-                                        className="flex-1 py-2.5 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                                    >
-                                        {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
-                                    </button>
-                                </div>
-                            </form>
+                                    <div className="flex gap-3 pt-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsInviting(false)}
+                                            className="flex-1 py-2.5 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            type="submit"
+                                            disabled={inviteLoading}
+                                            className="flex-1 py-2.5 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                                        >
+                                            {inviteLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Enviar'}
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };

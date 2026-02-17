@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Settings2, CheckCircle, Rocket } from 'lucide-react';
+import { ArrowLeft, Type, FileText, Calendar, Hash, MessageSquare, Settings2, CheckCircle, Rocket, LogOut } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 
 interface TicketConfigViewProps {
@@ -10,7 +10,7 @@ interface TicketConfigViewProps {
 }
 
 export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }) => {
-    const { state, updateTicketConfig, endOnboarding } = useAppStore();
+    const { state, updateTicketConfig, endOnboarding, logout } = useAppStore();
     const { isOnboarding, ticketConfig } = state;
 
     const [localConfig, setLocalConfig] = useState(ticketConfig);
@@ -99,18 +99,30 @@ export const TicketConfigView: React.FC<TicketConfigViewProps> = ({ onNavigate }
                         <p className="text-gray-500 text-center text-sm mt-1">Personaliza cómo se ven tus tickets impresos.</p>
                     </div>
                 ) : (
-                    <div className="flex items-center space-x-3 max-w-4xl mx-auto w-full">
-                        <button
-                            onClick={handleSaveAndBack}
-                            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-                            title="Guardar Cambios"
-                        >
-                            <ArrowLeft className="w-6 h-6" />
-                        </button>
-                        <div>
-                            <h1 className="text-lg font-bold text-brand-900 leading-none">Configuración de Tickets</h1>
-                            <p className="text-xs text-gray-500">Personaliza el formato de impresión</p>
+                    <div className="flex items-center justify-between max-w-4xl mx-auto w-full">
+                        <div className="flex items-center space-x-3">
+                            <button
+                                onClick={handleSaveAndBack}
+                                className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
+                                title="Guardar Cambios"
+                            >
+                                <ArrowLeft className="w-6 h-6" />
+                            </button>
+                            <div>
+                                <h1 className="text-lg font-bold text-brand-900 leading-none">Configuración de Tickets</h1>
+                                <p className="text-xs text-gray-500">Personaliza el formato de impresión</p>
+                            </div>
                         </div>
+                        <button
+                            onClick={() => {
+                                logout();
+                                onNavigate(AppView.LANDING);
+                            }}
+                            className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                            title="Cerrar Sesión"
+                        >
+                            <LogOut className="w-6 h-6" />
+                        </button>
                     </div>
                 )}
             </header>

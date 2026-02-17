@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag, Receipt } from 'lucide-react';
+import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag, Receipt, LogOut } from 'lucide-react';
 import QRCode from 'qrcode';
 import { jsPDF } from 'jspdf';
 import { useAppStore } from '../store/AppContext';
@@ -18,7 +18,7 @@ interface TableData {
 }
 
 export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
-  const { state, updateTables, closeTable } = useAppStore();
+  const { state, updateTables, closeTable, logout } = useAppStore();
   const [tableCount, setTableCount] = useState<string>(state.tables.count || '');
   const [generatedTables, setGeneratedTables] = useState<TableData[]>(state.tables.generated || []);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -170,13 +170,27 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
     <div className="flex flex-col min-h-screen bg-white px-6 pt-8 pb-32 sm:pb-6">
       <div className="w-full max-w-sm mx-auto flex-1 flex flex-col">
         <div className="mb-6">
-          <button
-            onClick={handleBack}
-            className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
-            title={isOnboarding ? "Volver" : "Guardar Cambios"}
-          >
-            <ArrowLeft className="w-6 h-6" />
-          </button>
+          <div className="flex justify-between items-center">
+            <button
+              onClick={handleBack}
+              className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-50 transition-colors"
+              title={isOnboarding ? "Volver" : "Guardar Cambios"}
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            {!isOnboarding && (
+              <button
+                onClick={() => {
+                  logout();
+                  onNavigate(AppView.LANDING);
+                }}
+                className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                title="Cerrar Sesión"
+              >
+                <LogOut className="w-6 h-6" />
+              </button>
+            )}
+          </div>
 
           {isOnboarding ? (
             <div className="mt-4 flex flex-col items-center">

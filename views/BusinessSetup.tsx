@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Store, UtensilsCrossed, ChevronRight, Check, Plus, Camera } from 'lucide-react';
+import { ArrowLeft, Upload, CheckCircle, Store, MapPin, Phone, Globe, DollarSign, Wallet, CreditCard, LogOut, Camera, Plus, UtensilsCrossed, ChevronRight, Check } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -11,7 +12,7 @@ interface BusinessSetupProps {
 }
 
 export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
-  const { state, updateBusiness } = useAppStore();
+  const { state, updateBusiness, logout } = useAppStore();
   const [loading, setLoading] = useState(false);
   const { isOnboarding } = state;
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +64,7 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
     let finalLogoUrl = formData.logoUrl;
 
     if (formData.logoFile && state.user) {
-      const publicUrl = await uploadImage(formData.logoFile, `logos/${state.user.id}`);
+      const publicUrl = await uploadImage(formData.logoFile, `logos / ${state.user.id} `);
       if (publicUrl) {
         finalLogoUrl = publicUrl;
       }
@@ -151,12 +152,24 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
           </div>
         ) : (
           <div className="mb-8">
-            <button
-              onClick={handleBack}
-              className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              <ArrowLeft className="w-6 h-6" />
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={handleBack}
+                className="p-2 -ml-2 text-gray-400 hover:text-brand-900 rounded-full hover:bg-gray-200 transition-colors"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
+              <button
+                onClick={() => {
+                  logout();
+                  onNavigate(AppView.LANDING);
+                }}
+                className="p-2 text-gray-400 hover:text-red-500 rounded-full hover:bg-red-50 transition-colors"
+                title="Cerrar Sesión"
+              >
+                <LogOut className="w-6 h-6" />
+              </button>
+            </div>
             <div className="mt-6 space-y-2">
               <h2 className="text-3xl text-brand-900">Datos del Negocio</h2>
             </div>
