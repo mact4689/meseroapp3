@@ -279,12 +279,8 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               {/* Headline */}
               <h1 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold leading-[1.2]">
                 Transforma tu restaurante en una{' '}
-                <span className="relative inline-block">
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic px-2 pb-1">experiencia fluida y moderna</span>
-                  <svg className="absolute -bottom-1 left-0 w-full" viewBox="0 0 200 8" fill="none">
-                    <path d="M1 5.5C47 2 153 2 199 5.5" stroke="url(#gold-gradient)" strokeWidth="2" strokeLinecap="round" />
-                    <defs><linearGradient id="gold-gradient" x1="0" y1="0" x2="200" y2="0"><stop stopColor="#d4af37" /><stop offset="1" stopColor="#f59e0b" /></linearGradient></defs>
-                  </svg>
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-accent-500 via-amber-400 to-orange-400 italic px-4 pb-2 leading-relaxed">
+                  experiencia fluida y moderna
                 </span>
               </h1>
 
