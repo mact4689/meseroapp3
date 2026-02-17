@@ -272,13 +272,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
             {/* Left - Text Content */}
             <div className={`space-y-8 transition-all duration-1000 ${hero.isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
               {/* Badge */}
-              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                </span>
-                <span className="text-xs font-semibold tracking-wider uppercase text-emerald-400">100% Gratis para Iniciar</span>
-              </div>
+
 
               {/* Headline */}
               <h1 className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight leading-[1.05]">
@@ -403,8 +397,8 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                           </div>
                         </div>
                         <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${order.color === 'yellow' ? 'bg-yellow-500/15 text-yellow-400' :
-                            order.color === 'green' ? 'bg-emerald-500/15 text-emerald-400' :
-                              'bg-blue-500/15 text-blue-400'
+                          order.color === 'green' ? 'bg-emerald-500/15 text-emerald-400' :
+                            'bg-blue-500/15 text-blue-400'
                           }`}>{order.status}</span>
                       </div>
                     ))}
