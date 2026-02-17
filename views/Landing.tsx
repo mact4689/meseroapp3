@@ -300,21 +300,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
               </div>
 
-              {/* Trust Badges */}
-              <div className="flex flex-wrap gap-6 pt-4 text-sm text-gray-500">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent-500" />
-                  <span>Sin tarjeta de crédito</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent-500" />
-                  <span>Listo en 5 min</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-accent-500" />
-                  <span>Soporte incluido</span>
-                </div>
-              </div>
+
             </div>
 
             {/* Right - Dashboard Preview */}
