@@ -603,12 +603,12 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                 </div>
 
                 <h1 className="text-2xl font-black text-brand-900 mb-4 px-4 leading-tight">
-                    ¡Ups! Tenemos un problema :(
+                    Error :(
                 </h1>
 
                 <div className="space-y-4 max-w-sm mx-auto mb-10">
-                    <p className="text-gray-700 font-medium">
-                        <span className="text-brand-900 font-bold">{business.name || 'El restaurante'}</span> está teniendo dificultades técnicas en este momento con su menú digital.
+                    <p className="text-gray-700 font-medium leading-relaxed">
+                        <span className="text-brand-900 font-bold">{business.name || 'Este establecimiento'}</span> está teniendo dificultades técnicas en este momento con su menú digital.
                     </p>
 
                     <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left">
