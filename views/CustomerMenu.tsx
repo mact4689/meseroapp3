@@ -594,52 +594,66 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         );
     }
 
-    // ERROR SCREEN WITH DIAGNOSTICS
+    // ERROR SCREEN WITH CUSTOMER-FRIENDLY UI
     if (!business.name && menu.length === 0) {
         return (
-            <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center">
-                <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mb-4">
-                    <AlertCircle className="w-8 h-8 text-red-500" />
+            <div className="min-h-screen bg-white flex flex-col items-center justify-center p-8 text-center">
+                <div className="w-20 h-20 bg-orange-50 rounded-3xl flex items-center justify-center mb-8 animate-bounce">
+                    <AlertCircle className="w-10 h-10 text-orange-500" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-900 mb-2">Menú no disponible</h1>
-                <p className="text-gray-500 mb-6 max-w-xs mx-auto">
-                    No pudimos cargar la información de este restaurante.
-                </p>
 
-                <div className="flex gap-3">
-                    <Button onClick={loadData} variant="outline" className="h-10 text-sm">
-                        <RefreshCw className="w-4 h-4 mr-2" /> Reintentar
+                <h1 className="text-2xl font-black text-brand-900 mb-4 px-4 leading-tight">
+                    ¡Ups! Tenemos un problema :(
+                </h1>
+
+                <div className="space-y-4 max-w-sm mx-auto mb-10">
+                    <p className="text-gray-700 font-medium">
+                        <span className="text-brand-900 font-bold">{business.name || 'El restaurante'}</span> está teniendo dificultades técnicas en este momento con su menú digital.
+                    </p>
+
+                    <div className="bg-gray-50 p-6 rounded-2xl border border-gray-100 text-left">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Para solucionar el error:</p>
+                        <ul className="space-y-3 text-sm text-gray-600">
+                            <li className="flex gap-3">
+                                <span className="flex-shrink-0 w-5 h-5 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold">1</span>
+                                <span>Prueba <strong>cerrando varias pestañas abiertas</strong> de tu navegador.</span>
+                            </li>
+                            <li className="flex gap-3">
+                                <span className="flex-shrink-0 w-5 h-5 bg-white border border-gray-200 rounded-full flex items-center justify-center text-[10px] font-bold">2</span>
+                                <span>Vuelve a <strong>escanear el código QR</strong> de tu mesa.</span>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <p className="text-sm text-gray-500 italic pt-2">
+                        Si aún no funciona, por favor contacta a un miembro del restaurante para asistirte personalmente.
+                    </p>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full max-w-xs">
+                    <Button onClick={() => window.location.reload()} variant="primary" className="h-12 shadow-lg shadow-brand-900/10">
+                        <RefreshCw className="w-4 h-4 mr-2" /> Reintentar Carga
                     </Button>
+
                     {isAdminPreview && (
-                        <Button onClick={() => onNavigate(AppView.DASHBOARD)} className="h-10 text-sm">
-                            Volver al Panel
+                        <Button onClick={() => onNavigate(AppView.DASHBOARD)} variant="outline" className="h-12">
+                            Volver al Panel Administrativo
                         </Button>
                     )}
                 </div>
 
-                {/* DIAGNOSTIC INFORMATION */}
-                <div className="mt-12 w-full max-w-sm bg-white p-4 rounded-xl border border-gray-200 text-left shadow-sm">
-                    <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 border-b border-gray-100 pb-2">
-                        Diagnóstico Técnico
-                    </h3>
-                    <div className="space-y-2 text-xs font-mono text-gray-600">
-                        <p><span className="font-bold text-gray-400">UID:</span> <span className="break-all">{uid || 'No definido'}</span></p>
-                        <p><span className="font-bold text-gray-400">Table:</span> {tableId || 'N/A'}</p>
-                        <p><span className="font-bold text-gray-400">Menu Items:</span> {menu.length}</p>
-                        <p><span className="font-bold text-gray-400">Business:</span> {business.name ? 'Loaded' : 'Null'}</p>
-                        <p><span className="font-bold text-gray-400">Error:</span> <span className="text-red-500">{fetchError || 'None'}</span></p>
+                {/* HIDDEN DIAGNOSTIC PANEL (Accessible for technicians) */}
+                <details className="mt-16 w-full max-w-xs opacity-20 hover:opacity-100 transition-opacity">
+                    <summary className="text-[10px] cursor-pointer text-gray-400 uppercase tracking-widest list-none">Información Técnica (Sólo Staff)</summary>
+                    <div className="mt-4 p-4 rounded-xl border border-gray-100 text-left bg-gray-50 font-mono text-[10px] text-gray-500 overflow-hidden">
+                        <p><span className="font-bold">UID:</span> <span className="break-all">{uid || 'No definido'}</span></p>
+                        <p><span className="font-bold">Table:</span> {tableId || 'N/A'}</p>
+                        <p><span className="font-bold">Error:</span> <span className="text-red-500">{fetchError || 'None'}</span></p>
+                        {uid && !business.name && (
+                            <p className="mt-2 text-red-600 font-bold">⚠️ Posible problema de RLS - Consultar Dashboard Admin</p>
+                        )}
                     </div>
-
-                    {uid && !business.name && (
-                        <div className="mt-4 pt-3 border-t border-gray-100">
-                            <p className="text-xs text-red-600 font-bold mb-1">⚠️ Posible problema de Permisos (RLS)</p>
-                            <p className="text-[10px] text-gray-500 leading-relaxed">
-                                Si eres el dueño: Es probable que la base de datos esté bloqueando el acceso público.
-                                Ve a tu panel de administrador, abre <strong>Configuración {'>'} Diagnóstico</strong> y ejecuta el comando SQL mostrado.
-                            </p>
-                        </div>
-                    )}
-                </div>
+                </details>
             </div>
         )
     }
