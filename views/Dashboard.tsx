@@ -54,6 +54,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
     const { business, menu, tables, user, orders, isOnboarding } = state;
     const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile, canViewOrders, canConfigureTickets, canManageStations, canAccessSettings } = usePermissions();
+
+    // ─── LOADING GUARD: Wait for AppContext to finish processing ───
+    if (state.isLoading || state.pendingRole) {
+        return (
+            <div className="flex flex-col h-full items-center justify-center bg-gray-50">
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-brand-900 rounded-full animate-spin mb-4"></div>
+                <p className="text-sm text-gray-500 font-medium">
+                    {state.pendingRole ? 'Esperando autenticación...' : 'Cargando...'}
+                </p>
+            </div>
+        );
+    }
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showFullPerformanceModal, setShowFullPerformanceModal] = useState(false);

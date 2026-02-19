@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { MenuItem, User, Order, KitchenStation, TicketConfig, UserRole, RolePermissions } from '../types';
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb, promoteMenuItem } from '../services/db';
@@ -68,7 +67,6 @@ const defaultTicketConfig: TicketConfig = {
   paperWidth: '80mm'
 };
 
-// Estado base
 const baseState: AppState = {
   user: null,
   pendingRole: null,
@@ -105,7 +103,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('⚠️ Could not fetch custom role:', error?.message);
         return null;
       }
-      console.log('🔐 Custom role permissions loaded:', data.permissions);
+      console.log('🔐 Custom role data loaded:', { permissions: data.permissions, pin_code: data.pin_code, name: data.name });
       return {
         permissions: data.permissions as RolePermissions,
         pin_code: data.pin_code,
@@ -120,7 +118,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Helper to load ONLY business data without touching the user role
   const loadBusinessData = async (restaurantId: string) => {
     try {
-      // 1. Load Business Profile (again, to ensure state consistency)
       const profile = await getProfile(restaurantId);
       if (profile) {
         setState(prev => ({
@@ -130,14 +127,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             name: profile.name,
             cuisine: profile.cuisine,
             logo: profile.logo_url,
-            // AppState.business does not have 'currency', but the original QR block set it.
-            // Keeping it here for consistency with the instruction, but it might be a type mismatch.
-            currency: 'MXN'
           }
         }));
       }
 
-      // 2. Load Menu & Stations
       const [menuItems, stations] = await Promise.all([
         getMenuItems(restaurantId),
         getStations(restaurantId)
@@ -160,11 +153,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           isPromoted: !!m.is_promoted
         })) : [],
         stations: stations || [],
-        isLoading: false // Ensure loading state is cleared
+        isLoading: false
       }));
     } catch (error) {
       console.error('Error loading business data:', error);
-      setState(prev => ({ ...prev, isLoading: false })); // Clear loading state on error
+      setState(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -173,7 +166,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
       email: 'staff@virtual.com',
       name: 'Personal (QR)',
-      role: 'waiter', // Default base role
+      role: 'waiter',
       customPermissions: permissions,
       restaurantId: uid
     };
@@ -183,14 +176,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setState(prev => ({
       ...prev,
       user: virtualUser,
-      // Manually set business info since loadUserData might fail without auth
       business: {
         ...prev.business,
         name: profile.name,
         cuisine: profile.cuisine,
         logo: profile.logo_url,
-        currency: 'MXN'
-      }
+      },
+      isLoading: false
     }));
 
     loadBusinessData(uid);
@@ -214,7 +206,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setState(prev => ({
         ...prev,
         user: virtualUser,
-        pendingRole: null // Hide Lock Screen
+        pendingRole: null
       }));
 
       loadBusinessData(uid);
@@ -224,100 +216,103 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return false;
   };
 
-  // Verificar sesión al inicio
+  // ─── MAIN SESSION CHECK ───
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      // ─── CHECK FOR QR ROLE ACCESS FIRST (takes priority over cached sessions) ───
+      const params = new URLSearchParams(window.location.search);
+      const roleId = params.get('role_id');
+      const uid = params.get('uid');
+
+      if (roleId && uid) {
+        console.log('🕵️ Detectado acceso por QR (role):', { roleId, uid, hasSession: !!session });
+        try {
+          const roleData = await fetchCustomRolePermissions();
+
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', uid)
+            .single();
+
+          if (roleData && profile) {
+            const pin = roleData.pin_code ? String(roleData.pin_code) : '';
+            console.log('🔒 Checking PIN requirement:', {
+              raw: roleData.pin_code,
+              converted: pin,
+              length: pin.length,
+              hasPin: pin.length === 4
+            });
+
+            if (pin.length === 4) {
+              console.log('🔒 Custom Role requires PIN — showing lock screen');
+              setState(prev => ({
+                ...prev,
+                pendingRole: {
+                  roleId,
+                  uid,
+                  permissions: roleData.permissions,
+                  pinCode: pin,
+                  roleName: roleData.role_name
+                },
+                business: {
+                  ...prev.business,
+                  name: profile.name,
+                  logo: profile.logo_url
+                },
+                isLoading: false
+              }));
+              return;
+            }
+
+            console.log('🔓 No PIN required — creating virtual staff user');
+            createVirtualUser(uid, roleData.permissions, profile);
+            return;
+          } else {
+            console.warn('⚠️ Could not load role data or profile for QR access');
+          }
+        } catch (e) {
+          console.error('Error en acceso QR:', e);
+        }
+        // If QR processing failed, fall through to normal session handling
+      }
+
+      // ─── NORMAL SESSION HANDLING (no QR role params or QR failed) ───
       if (session?.user) {
         const roleData = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
-          role: 'owner' as UserRole, // Default role, will be updated from profile
+          role: 'owner' as UserRole,
           customPermissions: roleData?.permissions,
         };
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
       } else {
-        // ─── ANONYMOUS ACCESS (QR CODE) ───
-        const params = new URLSearchParams(window.location.search);
-        const roleId = params.get('role_id');
-        const uid = params.get('uid');
-
-        if (roleId && uid) {
-          console.log('🕵️ Detectado acceso por QR:', { roleId, uid });
-          try {
-            // 1. Fetch permissions
-            const roleData = await fetchCustomRolePermissions();
-
-            // 2. Fetch restaurant profile
-            const { data: profile } = await supabase
-              .from('profiles')
-              .select('*')
-              .eq('id', uid)
-              .single();
-
-            if (roleData && profile) {
-              // CHECK FOR PIN REQUIREMENT
-              const pin = roleData.pin_code ? String(roleData.pin_code) : '';
-              console.log('🔒 Checking PIN requirement:', {
-                raw: roleData.pin_code,
-                converted: pin,
-                length: pin.length,
-                isMatch: pin.length === 4
-              });
-
-              if (pin.length === 4) {
-                // PIN REQUIRED -> SHOW LOCK SCREEN
-                console.log('🔒 Custom Role requires PIN');
-                setState(prev => ({
-                  ...prev,
-                  pendingRole: {
-                    roleId,
-                    uid,
-                    permissions: roleData.permissions,
-                    pinCode: pin,
-                    roleName: roleData.role_name
-                  },
-                  // Set minimal business info for LockScreen
-                  business: {
-                    ...prev.business,
-                    name: profile.name,
-                    logo: profile.logo_url
-                  },
-                  isLoading: false
-                }));
-                return;
-              }
-
-              // NO PIN -> LOGIN IMMEDIATELY
-              console.log('🔓 No PIN required (or invalid PIN format), logging in...');
-              createVirtualUser(uid, roleData.permissions, profile);
-              return;
-            }
-          } catch (e) {
-            console.error('Error en acceso QR:', e);
-          }
-        }
-
         setState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        // Don't interfere with QR role access
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('role_id') && params.get('uid')) {
+          console.log('🚫 Ignoring auth state change during QR role access');
+          return;
+        }
+
         const roleData = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
-          role: 'owner' as UserRole, // Default role, will be updated from profile
+          role: 'owner' as UserRole,
           customPermissions: roleData?.permissions,
         };
-        // Update user state immediately
         setState(prev => ({ ...prev, user }));
 
-        // Only reload data if it's a different user
         if (dataLoadedRef.current !== user.id) {
           loadUserData(user.id);
         }
@@ -335,9 +330,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let channel: any;
 
     if (state.user) {
-      console.log('🔌 Setting up realtime subscription for user:', state.user.id);
+      const userId = state.user.restaurantId || state.user.id;
+      console.log('🔌 Setting up realtime subscription for:', userId);
 
-      getOrders(state.user.id).then(orders => {
+      getOrders(userId).then(orders => {
         console.log('📋 Initial orders loaded:', orders.length);
         setState(prev => ({ ...prev, orders }));
       });
@@ -350,7 +346,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             event: 'INSERT',
             schema: 'public',
             table: 'orders',
-            filter: `user_id=eq.${state.user.id}`
+            filter: `user_id=eq.${userId}`
           },
           (payload) => {
             const newOrder = payload.new as Order;
@@ -359,8 +355,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...prev,
               orders: [newOrder, ...prev.orders]
             }));
-
-            // Play notification sound
             playNotificationSound();
           }
         )
@@ -370,7 +364,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             event: 'UPDATE',
             schema: 'public',
             table: 'orders',
-            filter: `user_id=eq.${state.user.id}`
+            filter: `user_id=eq.${userId}`
           },
           (payload) => {
             const updatedOrder = payload.new as Order;
@@ -383,11 +377,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         )
         .subscribe((status: string) => {
           console.log('📡 Realtime subscription status:', status);
-          if (status === 'SUBSCRIBED') {
-            console.log('✅ Realtime is ACTIVE - listening for new orders');
-          } else if (status === 'CHANNEL_ERROR') {
-            console.error('❌ Realtime connection error - orders may not update automatically');
-          }
         });
     }
 
@@ -426,23 +415,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       dataLoadedRef.current = userId;
 
-      // Determine onboarding state properly
       const hasBusinessName = !!profileData.name && profileData.name !== 'Nuevo Restaurante';
       const hasMenu = menuData && menuData.length > 0;
       const hasTables = profileData.tables_count > 0;
-
-      // If we have data, we assume onboarding is done, unless explicitly in an empty state
-      // But to fix the "Redirect loop", let's trust the data.
       const shouldBeOnboarding = !hasBusinessName || (!hasMenu && !hasTables);
 
-      // Get role from profile (defaults to 'owner' if not set)
       const userRole: UserRole = (profileData.role as UserRole) || 'owner';
 
       setState(prev => ({
         ...prev,
-        // Update user with role from profile, preserving customPermissions
         user: prev.user ? { ...prev.user, role: userRole, customPermissions: prev.user.customPermissions } : prev.user,
-        // Only force onboarding if we are significantly lacking data, otherwise let the user navigate
         isOnboarding: shouldBeOnboarding,
         business: {
           name: profileData.name || '',
@@ -522,19 +504,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       throw new Error("No hay sesión activa. Por favor recarga la página.");
     }
 
-    // Optimistic update
     const previousMenu = [...state.menu];
     setState(prev => ({
       ...prev,
       menu: [...prev.menu, item]
     }));
 
-    // Ensure profile exists before inserting menu item (Fix for BUG-001)
     try {
-      // We first try to perform the insert directly
       let error = await insertMenuItem(state.user.id, item);
 
-      // If it fails with ForeignKey violation, it means Profile is missing
       if (error && (error.code === '23503' || error.message?.includes('violates foreign key constraint'))) {
         console.log("Fixing missing profile before adding menu item...");
         const profilePayload = {
@@ -544,14 +522,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           tables_count: parseInt(state.tables.count) || 0
         };
 
-        // Force create profile
         const profileError = await upsertProfile(state.user.id, profilePayload);
         if (profileError) {
           console.error("Failed to recover profile:", profileError);
-          throw profileError; // Validate failure
+          throw profileError;
         }
 
-        // Retry insert
         error = await insertMenuItem(state.user.id, item);
       }
 
@@ -561,7 +537,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     } catch (err: any) {
       console.error("Error adding item (All attempts failed):", err);
-      // Revert optimistic update
       setState(prev => ({ ...prev, menu: previousMenu }));
       throw new Error(err.message || "Error al guardar el platillo en la base de datos.");
     }
@@ -608,7 +583,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const promoteItem = async (id: string) => {
     if (!state.user) return;
 
-    // Optimistically update state
     setState(prev => ({
       ...prev,
       menu: prev.menu.map(item => ({
@@ -621,7 +595,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await promoteMenuItem(state.user.id, id);
     } catch (err: any) {
       console.error("Error promoting item:", err);
-      // We could revert here if critical, but typically a reload or next update will fix it.
       throw new Error("No se pudo actualizar la promoción");
     }
   };
@@ -666,20 +639,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const completeOrder = async (orderId: string, status: 'completed' | 'delivered' = 'completed') => {
-    // 1. Snapshot previous state for rollback
     const originalOrders = [...state.orders];
 
-    // 2. Optimistic update
     setState(prev => ({
       ...prev,
       orders: prev.orders.map(o => o.id === orderId ? { ...o, status } : o)
     }));
 
-    // 3. Database update
     const error = await updateOrderStatusDb(orderId, status);
 
     if (error) {
-      // 4. Rollback on error
       console.error("Failed to update order status, rolling back:", error);
       setState(prev => ({ ...prev, orders: originalOrders }));
       throw error;
@@ -687,12 +656,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const closeTable = async (tableNumber: string) => {
-    // 1. Find all orders for this table (pending or delivered)
     const tableOrders = state.orders.filter(
       o => o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered')
     );
 
-    // 2. Optimistically update all to completed
     setState(prev => ({
       ...prev,
       orders: prev.orders.map(o =>
@@ -702,7 +669,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       )
     }));
 
-    // 3. Update in DB
     const updatePromises = tableOrders.map(o => updateOrderStatusDb(o.id, 'completed'));
     await Promise.all(updatePromises);
   };
@@ -724,7 +690,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const removeStation = async (id: string) => {
-    // Optimistic update
     const originalStations = [...state.stations];
     setState(prev => ({
       ...prev,
@@ -733,7 +698,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const error = await deleteStationDb(id);
     if (error) {
-      // Revert
       setState(prev => ({ ...prev, stations: originalStations }));
       throw new Error("No se pudo eliminar la estación");
     }
@@ -748,10 +712,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     let newPreparedItems;
     if (itemIndex >= 0) {
-      // UNDO: Remove if exists
       newPreparedItems = preparedItems.filter((_, idx) => idx !== itemIndex);
     } else {
-      // ADD: Mark as prepared
       newPreparedItems = [...preparedItems, {
         itemId,
         stationId,
@@ -759,7 +721,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }];
     }
 
-    // Optimistic update
     setState(prev => ({
       ...prev,
       orders: prev.orders.map(o => o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o)
