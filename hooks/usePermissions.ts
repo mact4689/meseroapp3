@@ -11,7 +11,7 @@ import { UserRole, RolePermissions } from '../types';
  */
 export const usePermissions = () => {
     const { state } = useAppStore();
-    const role: UserRole = state.user?.role || 'owner';
+    const role: UserRole | undefined = state.user?.role;
     const cp: RolePermissions | null | undefined = state.user?.customPermissions;
 
     // Debugging Role Visibility
