@@ -259,7 +259,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
             if (roleData && profile) {
               // CHECK FOR PIN REQUIREMENT
-              if (roleData.pin_code && roleData.pin_code.length === 4) {
+              const pin = roleData.pin_code ? String(roleData.pin_code) : '';
+              console.log('🔒 Checking PIN requirement:', {
+                raw: roleData.pin_code,
+                converted: pin,
+                length: pin.length,
+                isMatch: pin.length === 4
+              });
+
+              if (pin.length === 4) {
                 // PIN REQUIRED -> SHOW LOCK SCREEN
                 console.log('🔒 Custom Role requires PIN');
                 setState(prev => ({
@@ -268,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                     roleId,
                     uid,
                     permissions: roleData.permissions,
-                    pinCode: roleData.pin_code!,
+                    pinCode: pin,
                     roleName: roleData.role_name
                   },
                   // Set minimal business info for LockScreen
@@ -283,6 +291,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               }
 
               // NO PIN -> LOGIN IMMEDIATELY
+              console.log('🔓 No PIN required (or invalid PIN format), logging in...');
               createVirtualUser(uid, roleData.permissions, profile);
               return;
             }
