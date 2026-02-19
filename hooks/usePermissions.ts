@@ -14,6 +14,9 @@ export const usePermissions = () => {
     const role: UserRole = state.user?.role || 'owner';
     const cp: RolePermissions | null | undefined = state.user?.customPermissions;
 
+    // Debugging Role Visibility
+    // console.log('🔐 Debug Permissions:', { role, customPermissions: cp });
+
     // If owner and no custom permissions override, grant everything
     const isOwner = role === 'owner' && !cp;
 

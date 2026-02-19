@@ -117,10 +117,114 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
       } else {
+        // ─── ANONYMOUS ACCESS (QR CODE) ───
+        const params = new URLSearchParams(window.location.search);
+        const roleId = params.get('role_id');
+        const uid = params.get('uid');
+
+        if (roleId && uid) {
+          console.log('🕵️ Detectado acceso por QR:', { roleId, uid });
+          try {
+            // 1. Fetch permissions
+            const customPermissions = await fetchCustomRolePermissions();
+
+            // 2. Fetch restaurant profile
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', uid)
+              .single();
+
+            if (customPermissions && profile) {
+              // Create virtual user
+              const virtualUser: User = {
+                id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
+                email: 'staff@virtual.com',
+                name: 'Personal (QR)',
+                role: 'waiter', // Default base role
+                customPermissions,
+                restaurantId: uid
+              };
+
+              console.log('✅ Sesión virtual creada:', virtualUser);
+
+              setState(prev => ({
+                ...prev,
+                user: virtualUser,
+                // Manually set business info since loadUserData might fail without auth
+                business: {
+                  ...prev.business,
+                  name: profile.name,
+                  cuisine: profile.cuisine,
+                  logo: profile.logo_url,
+                  currency: 'MXN'
+                }
+              }));
+
+              // Helper to load other data (menu, tables) using the restaurant ID
+              // Use specific function to avoid overwriting the virtual user's role
+              loadBusinessData(uid);
+              return;
+            }
+          } catch (e) {
+            console.error('Error en acceso QR:', e);
+          }
+        }
+
         setState(prev => ({ ...prev, isLoading: false }));
       }
     });
 
+    // New helper to load ONLY business data without touching the user role
+    const loadBusinessData = async (restaurantId: string) => {
+      try {
+        // 1. Load Business Profile (again, to ensure state consistency)
+        const profile = await getProfile(restaurantId);
+        if (profile) {
+          setState(prev => ({
+            ...prev,
+            business: {
+              ...prev.business,
+              name: profile.name,
+              cuisine: profile.cuisine,
+              logo: profile.logo_url,
+              // AppState.business does not have 'currency', but the original QR block set it.
+              // Keeping it here for consistency with the instruction, but it might be a type mismatch.
+              currency: 'MXN'
+            }
+          }));
+        }
+
+        // 2. Load Menu & Stations
+        const [menuItems, stations] = await Promise.all([
+          getMenuItems(restaurantId),
+          getStations(restaurantId)
+        ]);
+        setState(prev => ({
+          ...prev,
+          menu: menuItems ? menuItems.map((m: any) => ({
+            id: m.id,
+            name: m.name,
+            price: m.price.toString(),
+            category: m.category,
+            description: m.description,
+            ingredients: m.ingredients,
+            image: m.image_url,
+            available: m.available !== false,
+            printerId: m.printer_id,
+            stationId: m.station_id,
+            options: m.options || null,
+            additional_images: m.additional_images || [],
+            isPromoted: !!m.is_promoted
+          })) : [],
+          stations: stations || [],
+          isLoading: false // Ensure loading state is cleared
+        }));
+      } catch (error) {
+        console.error('Error loading business data:', error);
+        setState(prev => ({ ...prev, isLoading: false })); // Clear loading state on error
+      }
+    };
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         const customPermissions = await fetchCustomRolePermissions();
