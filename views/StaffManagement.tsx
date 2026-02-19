@@ -24,6 +24,7 @@ interface CustomRole {
     restaurant_id: string;
     name: string;
     permissions: RolePermissions;
+    pin_code?: string;
     created_at: string;
     updated_at: string;
 }
@@ -74,6 +75,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
     const [editingRole, setEditingRole] = useState<CustomRole | null>(null);
     const [roleName, setRoleName] = useState('');
     const [permissions, setPermissions] = useState<RolePermissions>({ ...DEFAULT_PERMISSIONS });
+    const [pinCode, setPinCode] = useState('');
     const [saving, setSaving] = useState(false);
 
     // QR Modal state
@@ -114,6 +116,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
         setEditingRole(null);
         setRoleName('');
         setPermissions({ ...DEFAULT_PERMISSIONS });
+        setPinCode('');
         setWizardStep('name');
         setWizardOpen(true);
     };
@@ -122,6 +125,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
         setEditingRole(role);
         setRoleName(role.name);
         setPermissions({ ...role.permissions });
+        setPinCode(role.pin_code || '');
         setWizardStep('name');
         setWizardOpen(true);
     };
@@ -131,6 +135,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
         setEditingRole(null);
         setRoleName('');
         setPermissions({ ...DEFAULT_PERMISSIONS });
+        setPinCode('');
         setWizardStep('name');
     };
 
@@ -142,7 +147,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                 // UPDATE
                 const { error } = await supabase
                     .from('custom_roles')
-                    .update({ name: roleName.trim(), permissions, updated_at: new Date().toISOString() })
+                    .update({ name: roleName.trim(), permissions, pin_code: pinCode.length === 4 ? pinCode : null, updated_at: new Date().toISOString() })
                     .eq('id', editingRole.id);
                 if (error) throw error;
                 setMessage({ type: 'success', text: `Rol "${roleName}" actualizado correctamente.` });
@@ -154,6 +159,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                         restaurant_id: state.user.id,
                         name: roleName.trim(),
                         permissions,
+                        pin_code: pinCode.length === 4 ? pinCode : null,
                     });
                 if (error) throw error;
                 setMessage({ type: 'success', text: `Rol "${roleName}" creado exitosamente.` });
@@ -325,7 +331,14 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                                     {role.name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <h3 className="font-bold text-gray-900 text-base">{role.name}</h3>
+                                                    <h3 className="font-bold text-gray-900 text-base flex items-center gap-1.5">
+                                                        {role.name}
+                                                        {role.pin_code && (
+                                                            <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-amber-50 text-amber-600 border border-amber-100" title="Protegido con PIN">
+                                                                🔒 PIN
+                                                            </span>
+                                                        )}
+                                                    </h3>
                                                     <p className="text-xs text-gray-400 font-medium mt-0.5">
                                                         {countPermissions(role.permissions)} permisos activos
                                                     </p>
@@ -489,6 +502,43 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                             />
                                         </label>
                                     ))}
+
+                                    {/* ─── PIN DE SEGURIDAD ─── */}
+                                    <div className="mt-6 pt-5 border-t border-gray-100">
+                                        <div className="flex items-center gap-3 mb-3">
+                                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
+                                                🔒
+                                            </div>
+                                            <div>
+                                                <p className="font-bold text-gray-900 text-sm">PIN de Seguridad</p>
+                                                <p className="text-xs text-gray-400">Opcional. 4 dígitos para proteger el acceso al rol.</p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <input
+                                                type="text"
+                                                inputMode="numeric"
+                                                pattern="[0-9]*"
+                                                maxLength={4}
+                                                value={pinCode}
+                                                onChange={e => {
+                                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                                    setPinCode(val);
+                                                }}
+                                                className="w-32 px-4 py-3 border border-gray-200 rounded-xl text-center text-xl font-mono font-bold tracking-[0.5em] focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all"
+                                                placeholder="• • • •"
+                                            />
+                                            {pinCode.length > 0 && pinCode.length < 4 && (
+                                                <p className="text-xs text-red-400 font-medium">Debe ser de 4 dígitos</p>
+                                            )}
+                                            {pinCode.length === 4 && (
+                                                <p className="text-xs text-green-500 font-bold flex items-center gap-1">✓ PIN válido</p>
+                                            )}
+                                            {pinCode.length === 0 && (
+                                                <p className="text-xs text-gray-400">Sin PIN (acceso directo)</p>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             )}
                         </div>

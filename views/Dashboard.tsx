@@ -447,12 +447,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 <p className="text-[10px] text-gray-500 font-medium">
                                     {user?.name || 'Usuario'}
                                 </p>
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border flex items-center gap-1 ${role === 'owner' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                    role === 'waiter' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                        'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border flex items-center gap-1 ${user?.customRoleName ? 'bg-teal-50 text-teal-600 border-teal-100' :
+                                        role === 'owner' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                            role === 'waiter' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                'bg-indigo-50 text-indigo-600 border-indigo-100'
                                     }`}>
                                     <ShieldCheck className="w-2.5 h-2.5" />
-                                    {role === 'owner' ? 'Dueño' : role === 'waiter' ? 'Mesero' : 'Cocina'}
+                                    {user?.customRoleName || (role === 'owner' ? 'Dueño' : role === 'waiter' ? 'Mesero' : 'Cocina')}
                                 </span>
                             </div>
                         </div>

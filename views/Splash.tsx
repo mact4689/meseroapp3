@@ -58,11 +58,17 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   }, [minTimeElapsed, state.isLoading, state.user, state.isOnboarding]);
 
   const handleRouting = () => {
-    // Check if this is a QR code URL - if so, don't navigate from here
+    // Check if this is a CUSTOMER QR code URL (table+uid) — don't navigate from here
     // LegacyRedirectHandler in App.tsx will handle the redirect with params
+    // NOTE: role_id+uid QR codes SHOULD proceed to the Dashboard
     const params = new URLSearchParams(window.location.search);
-    if (params.get('table') || params.get('uid')) {
-      // Don't interfere with QR code redirects
+    if (params.get('table') && params.get('uid')) {
+      // Customer menu QR — don't interfere
+      return;
+    }
+    if (params.get('role_id') && params.get('uid')) {
+      // Role QR — go straight to Dashboard (AppContext has already loaded the virtual user)
+      onNavigate(AppView.DASHBOARD);
       return;
     }
 

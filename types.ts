@@ -46,6 +46,7 @@ export interface User {
   role: UserRole;
   restaurantId?: string; // For staff that belongs to a restaurant
   customPermissions?: RolePermissions | null; // Set when accessing via custom role QR
+  customRoleName?: string; // Display name of the custom role (e.g., 'Cajero', 'Barista')
 }
 
 export interface KitchenStation {

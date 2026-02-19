@@ -161,13 +161,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const createVirtualUser = (uid: string, permissions: RolePermissions, profile: any) => {
+  // Creates a virtual user for QR role access
+  const createVirtualUser = (uid: string, permissions: RolePermissions, profile: any, roleName: string) => {
     const virtualUser: User = {
       id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
       email: 'staff@virtual.com',
       name: 'Personal (QR)',
       role: 'waiter',
       customPermissions: permissions,
+      customRoleName: roleName,
       restaurantId: uid
     };
 
@@ -192,7 +194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (!state.pendingRole) return false;
 
     if (pin === state.pendingRole.pinCode) {
-      const { uid, permissions } = state.pendingRole;
+      const { uid, permissions, roleName } = state.pendingRole;
 
       const virtualUser: User = {
         id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
@@ -200,6 +202,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         name: 'Personal (QR)',
         role: 'waiter',
         customPermissions: permissions,
+        customRoleName: roleName,
         restaurantId: uid
       };
 
@@ -214,6 +217,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     return false;
+  };
+
+  // ─── Check if this is a QR role access URL ───
+  const isQrRoleAccess = (): boolean => {
+    const params = new URLSearchParams(window.location.search);
+    return !!(params.get('role_id') && params.get('uid'));
   };
 
   // ─── MAIN SESSION CHECK ───
@@ -266,7 +275,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             }
 
             console.log('🔓 No PIN required — creating virtual staff user');
-            createVirtualUser(uid, roleData.permissions, profile);
+            createVirtualUser(uid, roleData.permissions, profile, roleData.role_name);
             return;
           } else {
             console.warn('⚠️ Could not load role data or profile for QR access');
@@ -274,7 +283,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         } catch (e) {
           console.error('Error en acceso QR:', e);
         }
-        // If QR processing failed, fall through to normal session handling
       }
 
       // ─── NORMAL SESSION HANDLING (no QR role params or QR failed) ───
@@ -295,14 +303,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (session?.user) {
-        // Don't interfere with QR role access
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('role_id') && params.get('uid')) {
-          console.log('🚫 Ignoring auth state change during QR role access');
-          return;
-        }
+      // ─── CRITICAL: Don't let auth changes override QR role access ───
+      if (isQrRoleAccess()) {
+        console.log('🚫 Ignoring auth state change during QR role access');
+        return;
+      }
 
+      if (session?.user) {
         const roleData = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
