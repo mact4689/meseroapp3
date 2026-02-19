@@ -172,6 +172,8 @@ const LegacyRedirectHandler = () => {
 };
 
 
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+
 const App: React.FC = () => {
   // Expose diagnostic function to window for console access
   useEffect(() => {
@@ -181,6 +183,7 @@ const App: React.FC = () => {
 
   return (
     <div className="w-full h-screen bg-white">
+      <PWAInstallPrompt />
       <OfflineStatus />
 
       <Routes>
