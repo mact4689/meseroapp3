@@ -5,8 +5,17 @@ import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItem
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
 
+interface PendingRole {
+  roleId: string;
+  uid: string;
+  permissions: RolePermissions;
+  pinCode: string;
+  roleName: string;
+}
+
 interface AppState {
   user: User | null;
+  pendingRole: PendingRole | null;
   business: {
     name: string;
     cuisine: string;
@@ -30,6 +39,7 @@ interface AppContextType {
   register: (user: User) => void;
   login: (user: User) => void;
   logout: () => void;
+  unlockRole: (pin: string) => boolean;
   updateBusiness: (data: Partial<AppState['business']>) => Promise<void>;
   addMenuItem: (item: MenuItem) => Promise<void>;
   updateMenuItem: (id: string, item: MenuItem) => Promise<void>;
@@ -61,6 +71,7 @@ const defaultTicketConfig: TicketConfig = {
 // Estado base
 const baseState: AppState = {
   user: null,
+  pendingRole: null,
   business: { name: '', cuisine: '', logo: null, kds_pin: '0000' },
   menu: [],
   tables: { count: '', generated: [] },
@@ -78,7 +89,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const dataLoadedRef = useRef<string | null>(null);
 
   // ─── Helper: fetch custom role permissions from URL params ───
-  const fetchCustomRolePermissions = async (): Promise<RolePermissions | null> => {
+  const fetchCustomRolePermissions = async (): Promise<{ permissions: RolePermissions; pin_code?: string; role_name: string } | null> => {
     try {
       const params = new URLSearchParams(window.location.search);
       const roleId = params.get('role_id');
@@ -86,7 +97,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data, error } = await supabase
         .from('custom_roles')
-        .select('permissions')
+        .select('permissions, pin_code, name')
         .eq('id', roleId)
         .single();
 
@@ -95,24 +106,135 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         return null;
       }
       console.log('🔐 Custom role permissions loaded:', data.permissions);
-      return data.permissions as RolePermissions;
+      return {
+        permissions: data.permissions as RolePermissions,
+        pin_code: data.pin_code,
+        role_name: data.name
+      };
     } catch (e) {
       console.error('Error fetching custom role:', e);
       return null;
     }
   };
 
+  // Helper to load ONLY business data without touching the user role
+  const loadBusinessData = async (restaurantId: string) => {
+    try {
+      // 1. Load Business Profile (again, to ensure state consistency)
+      const profile = await getProfile(restaurantId);
+      if (profile) {
+        setState(prev => ({
+          ...prev,
+          business: {
+            ...prev.business,
+            name: profile.name,
+            cuisine: profile.cuisine,
+            logo: profile.logo_url,
+            // AppState.business does not have 'currency', but the original QR block set it.
+            // Keeping it here for consistency with the instruction, but it might be a type mismatch.
+            currency: 'MXN'
+          }
+        }));
+      }
+
+      // 2. Load Menu & Stations
+      const [menuItems, stations] = await Promise.all([
+        getMenuItems(restaurantId),
+        getStations(restaurantId)
+      ]);
+      setState(prev => ({
+        ...prev,
+        menu: menuItems ? menuItems.map((m: any) => ({
+          id: m.id,
+          name: m.name,
+          price: m.price.toString(),
+          category: m.category,
+          description: m.description,
+          ingredients: m.ingredients,
+          image: m.image_url,
+          available: m.available !== false,
+          printerId: m.printer_id,
+          stationId: m.station_id,
+          options: m.options || null,
+          additional_images: m.additional_images || [],
+          isPromoted: !!m.is_promoted
+        })) : [],
+        stations: stations || [],
+        isLoading: false // Ensure loading state is cleared
+      }));
+    } catch (error) {
+      console.error('Error loading business data:', error);
+      setState(prev => ({ ...prev, isLoading: false })); // Clear loading state on error
+    }
+  };
+
+  const createVirtualUser = (uid: string, permissions: RolePermissions, profile: any) => {
+    const virtualUser: User = {
+      id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
+      email: 'staff@virtual.com',
+      name: 'Personal (QR)',
+      role: 'waiter', // Default base role
+      customPermissions: permissions,
+      restaurantId: uid
+    };
+
+    console.log('✅ Sesión virtual creada:', virtualUser);
+
+    setState(prev => ({
+      ...prev,
+      user: virtualUser,
+      // Manually set business info since loadUserData might fail without auth
+      business: {
+        ...prev.business,
+        name: profile.name,
+        cuisine: profile.cuisine,
+        logo: profile.logo_url,
+        currency: 'MXN'
+      }
+    }));
+
+    loadBusinessData(uid);
+  };
+
+  const unlockRole = (pin: string): boolean => {
+    if (!state.pendingRole) return false;
+
+    if (pin === state.pendingRole.pinCode) {
+      const { uid, permissions } = state.pendingRole;
+
+      const virtualUser: User = {
+        id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
+        email: 'staff@virtual.com',
+        name: 'Personal (QR)',
+        role: 'waiter',
+        customPermissions: permissions,
+        restaurantId: uid
+      };
+
+      setState(prev => ({
+        ...prev,
+        user: virtualUser,
+        pendingRole: null // Hide Lock Screen
+      }));
+
+      loadBusinessData(uid);
+      return true;
+    }
+
+    return false;
+  };
+
   // Verificar sesión al inicio
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const customPermissions = await fetchCustomRolePermissions();
+        const roleData = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
           role: 'owner' as UserRole, // Default role, will be updated from profile
-          customPermissions,
+          customPermissions: roleData?.permissions,
         };
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
@@ -126,7 +248,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           console.log('🕵️ Detectado acceso por QR:', { roleId, uid });
           try {
             // 1. Fetch permissions
-            const customPermissions = await fetchCustomRolePermissions();
+            const roleData = await fetchCustomRolePermissions();
 
             // 2. Fetch restaurant profile
             const { data: profile } = await supabase
@@ -135,35 +257,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               .eq('id', uid)
               .single();
 
-            if (customPermissions && profile) {
-              // Create virtual user
-              const virtualUser: User = {
-                id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
-                email: 'staff@virtual.com',
-                name: 'Personal (QR)',
-                role: 'waiter', // Default base role
-                customPermissions,
-                restaurantId: uid
-              };
+            if (roleData && profile) {
+              // CHECK FOR PIN REQUIREMENT
+              if (roleData.pin_code && roleData.pin_code.length === 4) {
+                // PIN REQUIRED -> SHOW LOCK SCREEN
+                console.log('🔒 Custom Role requires PIN');
+                setState(prev => ({
+                  ...prev,
+                  pendingRole: {
+                    roleId,
+                    uid,
+                    permissions: roleData.permissions,
+                    pinCode: roleData.pin_code!,
+                    roleName: roleData.role_name
+                  },
+                  // Set minimal business info for LockScreen
+                  business: {
+                    ...prev.business,
+                    name: profile.name,
+                    logo: profile.logo_url
+                  },
+                  isLoading: false
+                }));
+                return;
+              }
 
-              console.log('✅ Sesión virtual creada:', virtualUser);
-
-              setState(prev => ({
-                ...prev,
-                user: virtualUser,
-                // Manually set business info since loadUserData might fail without auth
-                business: {
-                  ...prev.business,
-                  name: profile.name,
-                  cuisine: profile.cuisine,
-                  logo: profile.logo_url,
-                  currency: 'MXN'
-                }
-              }));
-
-              // Helper to load other data (menu, tables) using the restaurant ID
-              // Use specific function to avoid overwriting the virtual user's role
-              loadBusinessData(uid);
+              // NO PIN -> LOGIN IMMEDIATELY
+              createVirtualUser(uid, roleData.permissions, profile);
               return;
             }
           } catch (e) {
@@ -175,65 +295,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    // New helper to load ONLY business data without touching the user role
-    const loadBusinessData = async (restaurantId: string) => {
-      try {
-        // 1. Load Business Profile (again, to ensure state consistency)
-        const profile = await getProfile(restaurantId);
-        if (profile) {
-          setState(prev => ({
-            ...prev,
-            business: {
-              ...prev.business,
-              name: profile.name,
-              cuisine: profile.cuisine,
-              logo: profile.logo_url,
-              // AppState.business does not have 'currency', but the original QR block set it.
-              // Keeping it here for consistency with the instruction, but it might be a type mismatch.
-              currency: 'MXN'
-            }
-          }));
-        }
-
-        // 2. Load Menu & Stations
-        const [menuItems, stations] = await Promise.all([
-          getMenuItems(restaurantId),
-          getStations(restaurantId)
-        ]);
-        setState(prev => ({
-          ...prev,
-          menu: menuItems ? menuItems.map((m: any) => ({
-            id: m.id,
-            name: m.name,
-            price: m.price.toString(),
-            category: m.category,
-            description: m.description,
-            ingredients: m.ingredients,
-            image: m.image_url,
-            available: m.available !== false,
-            printerId: m.printer_id,
-            stationId: m.station_id,
-            options: m.options || null,
-            additional_images: m.additional_images || [],
-            isPromoted: !!m.is_promoted
-          })) : [],
-          stations: stations || [],
-          isLoading: false // Ensure loading state is cleared
-        }));
-      } catch (error) {
-        console.error('Error loading business data:', error);
-        setState(prev => ({ ...prev, isLoading: false })); // Clear loading state on error
-      }
-    };
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const customPermissions = await fetchCustomRolePermissions();
+        const roleData = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
           role: 'owner' as UserRole, // Default role, will be updated from profile
-          customPermissions,
+          customPermissions: roleData?.permissions,
         };
         // Update user state immediately
         setState(prev => ({ ...prev, user }));
@@ -717,7 +787,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       removeStation,
       toggleItemPrepared,
       startOnboarding,
-      endOnboarding
+      endOnboarding,
+      unlockRole,
     }}>
       {children}
     </AppContext.Provider>
