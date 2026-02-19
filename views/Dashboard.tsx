@@ -53,7 +53,7 @@ type TimeRange = 'today' | '7days' | '30days' | 'all';
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
     const { business, menu, tables, user, orders, isOnboarding } = state;
-    const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile } = usePermissions();
+    const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile, canViewOrders, canConfigureTickets, canManageStations, canAccessSettings } = usePermissions();
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showFullPerformanceModal, setShowFullPerformanceModal] = useState(false);
@@ -528,7 +528,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     )}
 
                     {/* ÓRDENES CARD */}
-                    {canViewReports && (
+                    {canViewOrders && (
                         <div
                             onClick={() => setShowHistoryModal(true)}
                             className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
@@ -1061,298 +1061,300 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 )}
 
                 {/* ACTIVE ORDERS SECTION */}
-                <div id="active-orders" className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4 sm:gap-0">
-                        <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 shrink-0">
-                                <Bell className="w-5 h-5" />
+                {canViewOrders && (
+                    <div id="active-orders" className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4 sm:gap-0">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-red-50 flex items-center justify-center text-red-500 shrink-0">
+                                    <Bell className="w-5 h-5" />
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <h3 className="font-bold text-brand-900 text-lg">Órdenes Activas</h3>
+                                    {pendingOrders.length > 0 && (
+                                        <span className="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full">
+                                            {pendingOrders.length}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
-                                <h3 className="font-bold text-brand-900 text-lg">Órdenes Activas</h3>
+                            <div className="flex items-center gap-2 w-full sm:w-auto">
                                 {pendingOrders.length > 0 && (
-                                    <span className="bg-red-100 text-red-600 text-xs font-bold px-2.5 py-1 rounded-full">
-                                        {pendingOrders.length}
-                                    </span>
+                                    <Button
+                                        onClick={handlePrintAllOrders}
+                                        variant="secondary"
+                                        className="flex-1 sm:flex-none justify-center px-4 py-2.5 sm:px-3 sm:py-2 text-sm sm:text-xs border-blue-200 text-blue-700 hover:bg-blue-50 bg-white"
+                                        icon={<Printer className="w-4 h-4" />}
+                                        isLoading={printingAll}
+                                    >
+                                        Imprimir Todas ({pendingOrders.length})
+                                    </Button>
                                 )}
+                                <span className="hidden sm:inline-block text-xs font-medium text-accent-600 bg-accent-50 px-2 py-1 rounded-full animate-pulse whitespace-nowrap">
+                                    ● En tiempo real
+                                </span>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 w-full sm:w-auto">
-                            {pendingOrders.length > 0 && (
-                                <Button
-                                    onClick={handlePrintAllOrders}
-                                    variant="secondary"
-                                    className="flex-1 sm:flex-none justify-center px-4 py-2.5 sm:px-3 sm:py-2 text-sm sm:text-xs border-blue-200 text-blue-700 hover:bg-blue-50 bg-white"
-                                    icon={<Printer className="w-4 h-4" />}
-                                    isLoading={printingAll}
-                                >
-                                    Imprimir Todas ({pendingOrders.length})
-                                </Button>
-                            )}
-                            <span className="hidden sm:inline-block text-xs font-medium text-accent-600 bg-accent-50 px-2 py-1 rounded-full animate-pulse whitespace-nowrap">
-                                ● En tiempo real
-                            </span>
-                        </div>
-                    </div>
 
-                    {pendingOrders.length === 0 ? (
-                        <div className="text-center py-10">
-                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
-                                <Bell className="w-8 h-8" />
+                        {pendingOrders.length === 0 ? (
+                            <div className="text-center py-10">
+                                <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-3 text-gray-300">
+                                    <Bell className="w-8 h-8" />
+                                </div>
+                                <p className="text-gray-900 font-medium">No hay órdenes pendientes</p>
+                                <p className="text-sm text-gray-500 mt-1">Comparte tus códigos QR para recibir pedidos.</p>
                             </div>
-                            <p className="text-gray-900 font-medium">No hay órdenes pendientes</p>
-                            <p className="text-sm text-gray-500 mt-1">Comparte tus códigos QR para recibir pedidos.</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {pendingOrders.map((order) => {
-                                const isBill = isBillRequest(order);
-                                const isHelp = isHelpRequest(order);
+                        ) : (
+                            <div className="space-y-4">
+                                {pendingOrders.map((order) => {
+                                    const isBill = isBillRequest(order);
+                                    const isHelp = isHelpRequest(order);
 
-                                // Si es solicitud de cuenta, obtener todas las órdenes activas de esa mesa (pending + delivered)
-                                const tableOrders = isBill
-                                    ? orders.filter(o =>
-                                        o.table_number === order.table_number &&
-                                        (o.status === 'pending' || o.status === 'delivered') &&
-                                        !isBillRequest(o)
-                                    )
-                                    : [];
+                                    // Si es solicitud de cuenta, obtener todas las órdenes activas de esa mesa (pending + delivered)
+                                    const tableOrders = isBill
+                                        ? orders.filter(o =>
+                                            o.table_number === order.table_number &&
+                                            (o.status === 'pending' || o.status === 'delivered') &&
+                                            !isBillRequest(o)
+                                        )
+                                        : [];
 
-                                // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
-                                const allTableItems = isBill
-                                    ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')))
-                                    : [];
+                                    // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
+                                    const allTableItems = isBill
+                                        ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')))
+                                        : [];
 
-                                // Calcular el total sumando todas las órdenes de la mesa
-                                const tableTotal = isBill
-                                    ? tableOrders.reduce((sum, o) => sum + (o.total || 0), 0)
-                                    : order.total || 0;
+                                    // Calcular el total sumando todas las órdenes de la mesa
+                                    const tableTotal = isBill
+                                        ? tableOrders.reduce((sum, o) => sum + (o.total || 0), 0)
+                                        : order.total || 0;
 
-                                return (
-                                    <div
-                                        key={order.id}
-                                        onClick={() => toggleOrder(order.id)}
-                                        className={`
+                                    return (
+                                        <div
+                                            key={order.id}
+                                            onClick={() => toggleOrder(order.id)}
+                                            className={`
                                         border rounded-xl overflow-hidden transition-all cursor-pointer
                                         ${isHelp
-                                                ? (expandedOrder === order.id
-                                                    ? 'border-yellow-500 ring-2 ring-yellow-500 bg-yellow-50'
-                                                    : 'border-yellow-300 hover:border-yellow-400 bg-yellow-50')
-                                                : isBill
                                                     ? (expandedOrder === order.id
-                                                        ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
-                                                        : 'border-green-300 hover:border-green-400 bg-green-50')
-                                                    : (expandedOrder === order.id
-                                                        ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
-                                                        : 'border-gray-200 hover:border-gray-300 bg-white')}
+                                                        ? 'border-yellow-500 ring-2 ring-yellow-500 bg-yellow-50'
+                                                        : 'border-yellow-300 hover:border-yellow-400 bg-yellow-50')
+                                                    : isBill
+                                                        ? (expandedOrder === order.id
+                                                            ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
+                                                            : 'border-green-300 hover:border-green-400 bg-green-50')
+                                                        : (expandedOrder === order.id
+                                                            ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
+                                                            : 'border-gray-200 hover:border-gray-300 bg-white')}
                                     `}
-                                    >
-                                        {/* Order Header */}
-                                        {/* Order Header */}
-                                        <div className="p-3 sm:p-4">
-                                            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                                        >
+                                            {/* Order Header */}
+                                            {/* Order Header */}
+                                            <div className="p-3 sm:p-4">
+                                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
 
-                                                {/* Top section on mobile: Badge + Info */}
-                                                <div className="flex items-start gap-3 w-full sm:w-auto">
-                                                    {/* Table/Takeout Badge */}
-                                                    {order.table_number.startsWith('LLEVAR') ? (
-                                                        <div className="bg-orange-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm">
-                                                            <span className="text-[8px] font-medium opacity-80">🛍️</span>
-                                                            <span className="text-base sm:text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
+                                                    {/* Top section on mobile: Badge + Info */}
+                                                    <div className="flex items-start gap-3 w-full sm:w-auto">
+                                                        {/* Table/Takeout Badge */}
+                                                        {order.table_number.startsWith('LLEVAR') ? (
+                                                            <div className="bg-orange-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm">
+                                                                <span className="text-[8px] font-medium opacity-80">🛍️</span>
+                                                                <span className="text-base sm:text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
+                                                            </div>
+                                                        ) : (
+                                                            <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm`}>
+                                                                <span className="text-[9px] sm:text-[10px] font-medium opacity-80">Mesa</span>
+                                                                <span className="text-lg sm:text-xl font-bold">{order.table_number}</span>
+                                                            </div>
+                                                        )}
+
+                                                        {/* Order Info */}
+                                                        <div className="flex-1 min-w-0 pt-0.5">
+                                                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-sm sm:text-base mb-0.5">
+                                                                {order.table_number.startsWith('LLEVAR') ? (
+                                                                    <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5">
+                                                                        🛍️ <span className="xs:inline">Orden para llevar</span> #{order.table_number.split('-')[1] || '?'}
+                                                                    </span>
+                                                                ) : isHelp ? (
+                                                                    <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5">
+                                                                        <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                                        🆘 AYUDA
+                                                                    </span>
+                                                                ) : isBill ? (
+                                                                    <span className="font-bold text-green-700 flex items-center gap-1 sm:gap-1.5">
+                                                                        <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                                                        Cuenta Cerrada
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
+                                                                )}
+                                                                <span className={`text-[11px] sm:text-xs font-bold rounded px-1.5 py-0.5 flex items-center ${getTimeColor(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000))}`}>
+                                                                    <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
+                                                                    {getFormattedTimeElapsed(order.created_at)}
+                                                                </span>
+                                                            </div>
+                                                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                                                {order.table_number.startsWith('LLEVAR')
+                                                                    ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
+                                                                    : isHelp
+                                                                        ? <span className="text-yellow-700 font-medium italic">"{order.items.find(i => i.id === 'help-req')?.notes || 'Asistencia solicitada'}"</span>
+                                                                        : isBill
+                                                                            ? <span className="text-green-600 font-medium">Solicitud de ticket</span>
+                                                                            : (
+                                                                                <div className="flex items-center gap-2">
+                                                                                    <span className="text-gray-900">{order.items.length} items</span>
+                                                                                    <span className="text-gray-300">•</span>
+                                                                                    <span className="font-bold text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                                                                                    {/* Status Summary in Collapsed View */}
+                                                                                    {order.items.length > 0 && (
+                                                                                        <>
+                                                                                            <span className="text-gray-300">•</span>
+                                                                                            <div className="flex items-center gap-1">
+                                                                                                {order.prepared_items && order.prepared_items.length > 0 ? (
+                                                                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.prepared_items.length === order.items.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                                                        {order.prepared_items.length === order.items.length ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
+                                                                                                        {order.prepared_items.length}/{order.items.length} listos
+                                                                                                    </span>
+                                                                                                ) : (
+                                                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
+                                                                                                        <Clock className="w-2.5 h-2.5" />
+                                                                                                        En preparación
+                                                                                                    </span>
+                                                                                                )}
+                                                                                            </div>
+                                                                                        </>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                            </p>
                                                         </div>
-                                                    ) : (
-                                                        <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm`}>
-                                                            <span className="text-[9px] sm:text-[10px] font-medium opacity-80">Mesa</span>
-                                                            <span className="text-lg sm:text-xl font-bold">{order.table_number}</span>
+                                                    </div>
+
+                                                    {/* Action Buttons - Row at bottom on mobile, Right side on desktop */}
+                                                    <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end mt-2 pt-2 border-t border-gray-100 sm:mt-0 sm:pt-0 sm:border-0">
+                                                        <button
+                                                            onClick={(e) => handlePrintOrder(order.id, e)}
+                                                            className={`p-2.5 flex items-center justify-center gap-1.5 ${isHelp ? 'text-yellow-600 bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : isBill ? 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200'} rounded-lg transition-colors border sm:border-0`}
+                                                            title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                                                            disabled={printingOrderId === order.id}
+                                                        >
+                                                            <Printer className={`w-5 h-5 sm:w-4 sm:h-4 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
+                                                            {/* TEXT HIDDEN ON MOBILE TO SAVE SPACE AND FIX CUT-OFF */}
+                                                            <span className="text-xs font-semibold hidden sm:hidden">Imprimir</span>
+                                                        </button>
+
+                                                        {(() => {
+                                                            // For normal orders, check if all real items are prepared by KDS
+                                                            const realItems = order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'));
+                                                            const allItemsReady = !isHelp && !isBill && realItems.length > 0
+                                                                ? (order.prepared_items?.length || 0) >= realItems.length
+                                                                : true; // Help/Bill requests are always enabled
+
+                                                            return (
+                                                                <Button
+                                                                    onClick={(e) => allItemsReady ? handleCompleteOrder(order.id, e) : e.stopPropagation()}
+                                                                    className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700'
+                                                                        : isBill ? 'bg-green-700 hover:bg-green-800'
+                                                                            : allItemsReady ? 'bg-green-600 hover:bg-green-700'
+                                                                                : 'bg-gray-400 cursor-not-allowed opacity-60'
+                                                                        } border-transparent shadow-sm`}
+                                                                    icon={<Check className="w-4 h-4" />}
+                                                                    title={!allItemsReady ? 'Esperando que cocina termine todos los items' : ''}
+                                                                    disabled={!allItemsReady}
+                                                                >
+                                                                    {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Entregado'}
+                                                                </Button>
+                                                            );
+                                                        })()}
+
+                                                        <button
+                                                            onClick={() => toggleOrder(order.id)}
+                                                            className="text-gray-400 p-2 hover:bg-gray-100 rounded-lg shrink-0"
+                                                        >
+                                                            {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Expanded Details */}
+                                            {expandedOrder === order.id && (
+                                                <div className={`px-4 pb-4 pt-0 border-t ${isHelp ? 'border-yellow-200 bg-white' : isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
+                                                    {isHelp && (
+                                                        <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                                                            <Hand className="w-5 h-5 text-yellow-600" />
+                                                            <p className="text-sm text-yellow-700 font-medium">
+                                                                {order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}
+                                                            </p>
                                                         </div>
                                                     )}
-
-                                                    {/* Order Info */}
-                                                    <div className="flex-1 min-w-0 pt-0.5">
-                                                        <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-sm sm:text-base mb-0.5">
-                                                            {order.table_number.startsWith('LLEVAR') ? (
-                                                                <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5">
-                                                                    🛍️ <span className="xs:inline">Orden para llevar</span> #{order.table_number.split('-')[1] || '?'}
-                                                                </span>
-                                                            ) : isHelp ? (
-                                                                <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5">
-                                                                    <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                                    🆘 AYUDA
-                                                                </span>
-                                                            ) : isBill ? (
-                                                                <span className="font-bold text-green-700 flex items-center gap-1 sm:gap-1.5">
-                                                                    <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                                    Cuenta Cerrada
-                                                                </span>
-                                                            ) : (
-                                                                <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
-                                                            )}
-                                                            <span className={`text-[11px] sm:text-xs font-bold rounded px-1.5 py-0.5 flex items-center ${getTimeColor(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000))}`}>
-                                                                <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
-                                                                {getFormattedTimeElapsed(order.created_at)}
-                                                            </span>
+                                                    {isBill && (
+                                                        <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                                                            <Receipt className="w-5 h-5 text-green-600" />
+                                                            <p className="text-sm text-green-700 font-medium">
+                                                                El cliente ha solicitado la cuenta. Puedes imprimir el ticket y entregárselo.
+                                                            </p>
                                                         </div>
-                                                        <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
-                                                            {order.table_number.startsWith('LLEVAR')
-                                                                ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
-                                                                : isHelp
-                                                                    ? <span className="text-yellow-700 font-medium italic">"{order.items.find(i => i.id === 'help-req')?.notes || 'Asistencia solicitada'}"</span>
-                                                                    : isBill
-                                                                        ? <span className="text-green-600 font-medium">Solicitud de ticket</span>
-                                                                        : (
-                                                                            <div className="flex items-center gap-2">
-                                                                                <span className="text-gray-900">{order.items.length} items</span>
-                                                                                <span className="text-gray-300">•</span>
-                                                                                <span className="font-bold text-gray-900">${(order.total || 0).toFixed(2)}</span>
-                                                                                {/* Status Summary in Collapsed View */}
-                                                                                {order.items.length > 0 && (
-                                                                                    <>
-                                                                                        <span className="text-gray-300">•</span>
-                                                                                        <div className="flex items-center gap-1">
-                                                                                            {order.prepared_items && order.prepared_items.length > 0 ? (
-                                                                                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.prepared_items.length === order.items.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                                                                    {order.prepared_items.length === order.items.length ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
-                                                                                                    {order.prepared_items.length}/{order.items.length} listos
-                                                                                                </span>
-                                                                                            ) : (
-                                                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
-                                                                                                    <Clock className="w-2.5 h-2.5" />
-                                                                                                    En preparación
-                                                                                                </span>
-                                                                                            )}
-                                                                                        </div>
-                                                                                    </>
+                                                    )}
+                                                    <ul className="divide-y divide-gray-100">
+                                                        {(isHelp ? [] : isBill ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map(i => ({ ...i, parentOrder: o }))) : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item: any, idx) => {
+                                                            // Check if this specific item instance is prepared
+                                                            // If it's a bill request, we check the parent order
+                                                            const targetOrder = isBill ? item.parentOrder : order;
+                                                            const isPrepared = targetOrder?.prepared_items?.some((p: any) => p.itemId === item.id);
+
+                                                            return (
+                                                                <li key={idx} className="py-3 flex justify-between items-start">
+                                                                    <div className="flex gap-3">
+                                                                        <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
+                                                                            {item.quantity}x
+                                                                        </span>
+                                                                        <div>
+                                                                            <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                                                                            {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
+
+                                                                            {/* Item Status Indicator */}
+                                                                            <div className="mt-1 flex items-center gap-1.5">
+                                                                                {isPrepared ? (
+                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
+                                                                                        <Check className="w-3 h-3" />
+                                                                                        Listo para entregar
+                                                                                    </span>
+                                                                                ) : (
+                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                                                        <Clock className="w-3 h-3" />
+                                                                                        En preparación
+                                                                                    </span>
                                                                                 )}
                                                                             </div>
-                                                                        )}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Action Buttons - Row at bottom on mobile, Right side on desktop */}
-                                                <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end mt-2 pt-2 border-t border-gray-100 sm:mt-0 sm:pt-0 sm:border-0">
-                                                    <button
-                                                        onClick={(e) => handlePrintOrder(order.id, e)}
-                                                        className={`p-2.5 flex items-center justify-center gap-1.5 ${isHelp ? 'text-yellow-600 bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : isBill ? 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200'} rounded-lg transition-colors border sm:border-0`}
-                                                        title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
-                                                        disabled={printingOrderId === order.id}
-                                                    >
-                                                        <Printer className={`w-5 h-5 sm:w-4 sm:h-4 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
-                                                        {/* TEXT HIDDEN ON MOBILE TO SAVE SPACE AND FIX CUT-OFF */}
-                                                        <span className="text-xs font-semibold hidden sm:hidden">Imprimir</span>
-                                                    </button>
-
-                                                    {(() => {
-                                                        // For normal orders, check if all real items are prepared by KDS
-                                                        const realItems = order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'));
-                                                        const allItemsReady = !isHelp && !isBill && realItems.length > 0
-                                                            ? (order.prepared_items?.length || 0) >= realItems.length
-                                                            : true; // Help/Bill requests are always enabled
-
-                                                        return (
-                                                            <Button
-                                                                onClick={(e) => allItemsReady ? handleCompleteOrder(order.id, e) : e.stopPropagation()}
-                                                                className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700'
-                                                                    : isBill ? 'bg-green-700 hover:bg-green-800'
-                                                                        : allItemsReady ? 'bg-green-600 hover:bg-green-700'
-                                                                            : 'bg-gray-400 cursor-not-allowed opacity-60'
-                                                                    } border-transparent shadow-sm`}
-                                                                icon={<Check className="w-4 h-4" />}
-                                                                title={!allItemsReady ? 'Esperando que cocina termine todos los items' : ''}
-                                                                disabled={!allItemsReady}
-                                                            >
-                                                                {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Entregado'}
-                                                            </Button>
-                                                        );
-                                                    })()}
-
-                                                    <button
-                                                        onClick={() => toggleOrder(order.id)}
-                                                        className="text-gray-400 p-2 hover:bg-gray-100 rounded-lg shrink-0"
-                                                    >
-                                                        {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Expanded Details */}
-                                        {expandedOrder === order.id && (
-                                            <div className={`px-4 pb-4 pt-0 border-t ${isHelp ? 'border-yellow-200 bg-white' : isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
-                                                {isHelp && (
-                                                    <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
-                                                        <Hand className="w-5 h-5 text-yellow-600" />
-                                                        <p className="text-sm text-yellow-700 font-medium">
-                                                            {order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                {isBill && (
-                                                    <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
-                                                        <Receipt className="w-5 h-5 text-green-600" />
-                                                        <p className="text-sm text-green-700 font-medium">
-                                                            El cliente ha solicitado la cuenta. Puedes imprimir el ticket y entregárselo.
-                                                        </p>
-                                                    </div>
-                                                )}
-                                                <ul className="divide-y divide-gray-100">
-                                                    {(isHelp ? [] : isBill ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map(i => ({ ...i, parentOrder: o }))) : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item: any, idx) => {
-                                                        // Check if this specific item instance is prepared
-                                                        // If it's a bill request, we check the parent order
-                                                        const targetOrder = isBill ? item.parentOrder : order;
-                                                        const isPrepared = targetOrder?.prepared_items?.some((p: any) => p.itemId === item.id);
-
-                                                        return (
-                                                            <li key={idx} className="py-3 flex justify-between items-start">
-                                                                <div className="flex gap-3">
-                                                                    <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
-                                                                        {item.quantity}x
-                                                                    </span>
-                                                                    <div>
-                                                                        <p className="font-medium text-gray-900 text-sm">{item.name}</p>
-                                                                        {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
-
-                                                                        {/* Item Status Indicator */}
-                                                                        <div className="mt-1 flex items-center gap-1.5">
-                                                                            {isPrepared ? (
-                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
-                                                                                    <Check className="w-3 h-3" />
-                                                                                    Listo para entregar
-                                                                                </span>
-                                                                            ) : (
-                                                                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
-                                                                                    <Clock className="w-3 h-3" />
-                                                                                    En preparación
-                                                                                </span>
-                                                                            )}
                                                                         </div>
                                                                     </div>
-                                                                </div>
-                                                                <span className="text-sm font-medium text-gray-900">
-                                                                    ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
-                                                                </span>
-                                                            </li>
-                                                        )
-                                                    })}
-                                                </ul>
-                                                {isBill && (
-                                                    <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
-                                                        <div className="flex justify-between items-center text-lg font-bold">
-                                                            <span>Total a Cobrar:</span>
-                                                            <span className="text-green-600">${tableTotal.toFixed(2)}</span>
+                                                                    <span className="text-sm font-medium text-gray-900">
+                                                                        ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
+                                                                    </span>
+                                                                </li>
+                                                            )
+                                                        })}
+                                                    </ul>
+                                                    {isBill && (
+                                                        <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
+                                                            <div className="flex justify-between items-center text-lg font-bold">
+                                                                <span>Total a Cobrar:</span>
+                                                                <span className="text-green-600">${tableTotal.toFixed(2)}</span>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Configuration Sections */}
-                {canEditMenu && (
+                {canAccessSettings && (
                     <div className="space-y-4">
                         <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
@@ -1362,118 +1364,130 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                         </div>
 
                         <div className="grid md:grid-cols-2 gap-4">
-                            {/* PREVIEW MENU CARD */}
-                            <div className="bg-brand-900 rounded-2xl p-5 shadow-xl border border-brand-900 flex items-center justify-between group hover:scale-[1.02] transition-all md:col-span-2 relative overflow-hidden">
-                                <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
-                                <div className="flex items-center space-x-4 relative z-10">
-                                    <div className="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center group-hover:bg-accent-500 group-hover:text-brand-900 transition-colors">
-                                        <Eye className="w-6 h-6" />
+                            {/* PREVIEW MENU CARD — visible if menu or business perm */}
+                            {(canEditMenu || canEditBusinessProfile) && (
+                                <div className="bg-brand-900 rounded-2xl p-5 shadow-xl border border-brand-900 flex items-center justify-between group hover:scale-[1.02] transition-all md:col-span-2 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl pointer-events-none" />
+                                    <div className="flex items-center space-x-4 relative z-10">
+                                        <div className="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center group-hover:bg-accent-500 group-hover:text-brand-900 transition-colors">
+                                            <Eye className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-white">Vista Previa Menú Digital</h3>
+                                            <p className="text-xs text-gray-400">Mira cómo lo ven tus clientes actualmente</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-white">Vista Previa Menú Digital</h3>
-                                        <p className="text-xs text-gray-400">Mira cómo lo ven tus clientes actualmente</p>
+                                    <div className="flex items-center gap-2 relative z-10">
+                                        <a
+                                            href={publicMenuUrl}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="p-2.5 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
+                                            title="Ver URL Pública"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            <ExternalLink className="w-5 h-5" />
+                                        </a>
+                                        <Button
+                                            variant="primary"
+                                            onClick={() => onNavigate(AppView.CUSTOMER_MENU)}
+                                            className="!px-6 !py-2.5 bg-white !text-brand-900 hover:bg-gray-50 border border-gray-200 font-bold shadow-sm"
+                                        >
+                                            Abrir Preview
+                                        </Button>
                                     </div>
                                 </div>
-                                <div className="flex items-center gap-2 relative z-10">
-                                    <a
-                                        href={publicMenuUrl}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="p-2.5 text-gray-300 hover:text-white hover:bg-white/10 rounded-xl transition-colors"
-                                        title="Ver URL Pública"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <ExternalLink className="w-5 h-5" />
-                                    </a>
-                                    <Button
-                                        variant="primary"
-                                        onClick={() => onNavigate(AppView.CUSTOMER_MENU)}
-                                        className="!px-6 !py-2.5 bg-white !text-brand-900 hover:bg-gray-50 border border-gray-200 font-bold shadow-sm"
-                                    >
-                                        Abrir Preview
-                                    </Button>
-                                </div>
-                            </div>
+                            )}
 
                             {/* Business Card */}
-                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
-                                        <Store className="w-6 h-6" />
+                            {canEditBusinessProfile && (
+                                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
+                                            <Store className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900">Negocio</h3>
+                                            <p className="text-xs text-gray-500">Perfil y Logo</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900">Negocio</h3>
-                                        <p className="text-xs text-gray-500">Perfil y Logo</p>
-                                    </div>
+                                    <Button variant="secondary" onClick={() => onNavigate(AppView.BUSINESS_SETUP)} className="!px-3 !py-2 shadow-none">
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                                <Button variant="secondary" onClick={() => onNavigate(AppView.BUSINESS_SETUP)} className="!px-3 !py-2 shadow-none">
-                                    <Edit2 className="w-4 h-4 text-gray-600" />
-                                </Button>
-                            </div>
+                            )}
 
                             {/* Menu Card */}
-                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
-                                        <ChefHat className="w-6 h-6" />
+                            {canEditMenu && (
+                                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
+                                            <ChefHat className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900">Menú</h3>
+                                            <p className="text-xs text-gray-500">{menu.length} Platillos</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900">Menú</h3>
-                                        <p className="text-xs text-gray-500">{menu.length} Platillos</p>
-                                    </div>
+                                    <Button variant="secondary" onClick={() => onNavigate(AppView.MENU_SETUP)} className="!px-3 !py-2 shadow-none">
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                                <Button variant="secondary" onClick={() => onNavigate(AppView.MENU_SETUP)} className="!px-3 !py-2 shadow-none">
-                                    <Edit2 className="w-4 h-4 text-gray-600" />
-                                </Button>
-                            </div>
+                            )}
 
                             {/* Tables Card */}
-                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
-                                        <Grid2X2 className="w-6 h-6" />
+                            {canManageTables && (
+                                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
+                                            <Grid2X2 className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900">Mesas y QRs</h3>
+                                            <p className="text-xs text-gray-500">{tables.count || 0} Mesas</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900">Mesas y QRs</h3>
-                                        <p className="text-xs text-gray-500">{tables.count || 0} Mesas</p>
-                                    </div>
+                                    <Button variant="secondary" onClick={() => onNavigate(AppView.TABLE_SETUP)} className="!px-3 !py-2 shadow-none">
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                                <Button variant="secondary" onClick={() => onNavigate(AppView.TABLE_SETUP)} className="!px-3 !py-2 shadow-none">
-                                    <Edit2 className="w-4 h-4 text-gray-600" />
-                                </Button>
-                            </div>
+                            )}
 
                             {/* Ticket Config Card */}
-                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
-                                        <FileText className="w-6 h-6" />
+                            {canConfigureTickets && (
+                                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-brand-50 group-hover:text-brand-900 transition-colors">
+                                            <FileText className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900">Ajuste de impresión de Tickets</h3>
+                                            <p className="text-xs text-gray-500">Diseña los tickets para tus impresoras</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900">Ajuste de impresión de Tickets</h3>
-                                        <p className="text-xs text-gray-500">Diseña los tickets para tus impresoras</p>
-                                    </div>
+                                    <Button variant="secondary" onClick={() => onNavigate(AppView.TICKET_CONFIG)} className="!px-3 !py-2 shadow-none">
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                                <Button variant="secondary" onClick={() => onNavigate(AppView.TICKET_CONFIG)} className="!px-3 !py-2 shadow-none">
-                                    <Edit2 className="w-4 h-4 text-gray-600" />
-                                </Button>
-                            </div>
+                            )}
 
                             {/* KDS Setup Card */}
-                            <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
-                                <div className="flex items-center space-x-4">
-                                    <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
-                                        <ChefHat className="w-6 h-6" />
+                            {canManageStations && (
+                                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center justify-between group hover:border-brand-900/20 transition-all">
+                                    <div className="flex items-center space-x-4">
+                                        <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center text-gray-400 group-hover:bg-purple-50 group-hover:text-purple-600 transition-colors">
+                                            <ChefHat className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-brand-900">Pantallas de Cocina (KDS)</h3>
+                                            <p className="text-xs text-gray-500">Configura estaciones para tu cocina</p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <h3 className="font-bold text-brand-900">Pantallas de Cocina (KDS)</h3>
-                                        <p className="text-xs text-gray-500">Configura estaciones para tu cocina</p>
-                                    </div>
+                                    <Button variant="secondary" onClick={() => onNavigate(AppView.KDS_SETUP)} className="!px-3 !py-2 shadow-none">
+                                        <Edit2 className="w-4 h-4 text-gray-600" />
+                                    </Button>
                                 </div>
-                                <Button variant="secondary" onClick={() => onNavigate(AppView.KDS_SETUP)} className="!px-3 !py-2 shadow-none">
-                                    <Edit2 className="w-4 h-4 text-gray-600" />
-                                </Button>
-                            </div>
+                            )}
                         </div>
                     </div>
                 )}

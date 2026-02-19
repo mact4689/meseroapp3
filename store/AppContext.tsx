@@ -1,6 +1,6 @@
 
 import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
-import { MenuItem, User, Order, KitchenStation, TicketConfig, UserRole } from '../types';
+import { MenuItem, User, Order, KitchenStation, TicketConfig, UserRole, RolePermissions } from '../types';
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb, promoteMenuItem } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
@@ -77,15 +77,42 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [state, setState] = useState<AppState>(baseState);
   const dataLoadedRef = useRef<string | null>(null);
 
+  // ─── Helper: fetch custom role permissions from URL params ───
+  const fetchCustomRolePermissions = async (): Promise<RolePermissions | null> => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const roleId = params.get('role_id');
+      if (!roleId) return null;
+
+      const { data, error } = await supabase
+        .from('custom_roles')
+        .select('permissions')
+        .eq('id', roleId)
+        .single();
+
+      if (error || !data) {
+        console.warn('⚠️ Could not fetch custom role:', error?.message);
+        return null;
+      }
+      console.log('🔐 Custom role permissions loaded:', data.permissions);
+      return data.permissions as RolePermissions;
+    } catch (e) {
+      console.error('Error fetching custom role:', e);
+      return null;
+    }
+  };
+
   // Verificar sesión al inicio
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
+        const customPermissions = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
-          role: 'owner' as UserRole // Default role, will be updated from profile
+          role: 'owner' as UserRole, // Default role, will be updated from profile
+          customPermissions,
         };
         setState(prev => ({ ...prev, user }));
         loadUserData(user.id);
@@ -94,13 +121,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        const customPermissions = await fetchCustomRolePermissions();
         const user: User = {
           id: session.user.id,
           email: session.user.email!,
           name: session.user.user_metadata?.full_name || 'Usuario',
-          role: 'owner' as UserRole // Default role, will be updated from profile
+          role: 'owner' as UserRole, // Default role, will be updated from profile
+          customPermissions,
         };
         // Update user state immediately
         setState(prev => ({ ...prev, user }));
@@ -228,8 +257,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       setState(prev => ({
         ...prev,
-        // Update user with role from profile
-        user: prev.user ? { ...prev.user, role: userRole } : prev.user,
+        // Update user with role from profile, preserving customPermissions
+        user: prev.user ? { ...prev.user, role: userRole, customPermissions: prev.user.customPermissions } : prev.user,
         // Only force onboarding if we are significantly lacking data, otherwise let the user navigate
         isOnboarding: shouldBeOnboarding,
         business: {

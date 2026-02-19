@@ -26,12 +26,26 @@ export enum AppView {
 // cook: KDS only (via direct link, no login required)
 export type UserRole = 'owner' | 'waiter' | 'cook';
 
+// Granular permissions for custom roles (matches custom_roles.permissions JSONB)
+export interface RolePermissions {
+  dashboard: boolean;
+  orders: boolean;
+  menu: boolean;
+  tables: boolean;
+  kds: boolean;
+  tickets: boolean;
+  staff: boolean;
+  reports: boolean;
+  business: boolean;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
   restaurantId?: string; // For staff that belongs to a restaurant
+  customPermissions?: RolePermissions | null; // Set when accessing via custom role QR
 }
 
 export interface KitchenStation {
