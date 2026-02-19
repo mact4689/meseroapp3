@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <rect width="192" height="192" rx="24" fill="#1a1a1a"/>
+  <!-- Serving cloche dome -->
+  <path d="M46 120 C46 72 96 40 146 120" fill="none" stroke="#d4af37" stroke-width="6" stroke-linecap="round"/>
+  <!-- Handle on top -->
+  <circle cx="96" cy="52" r="8" fill="none" stroke="#d4af37" stroke-width="5"/>
+  <!-- Plate line -->
+  <line x1="36" y1="120" x2="156" y2="120" stroke="#d4af37" stroke-width="6" stroke-linecap="round"/>
+  <!-- Base plate -->
+  <rect x="40" y="126" width="112" height="8" rx="4" fill="#d4af37"/>
+  <!-- Text -->
+  <text x="96" y="156" text-anchor="middle" font-family="sans-serif" font-weight="700" font-size="16" fill="#d4af37">MeseroApp</text>
+</svg>

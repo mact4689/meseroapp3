@@ -21,6 +21,31 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [enteringPin, setEnteringPin] = useState('');
     const [savedPin, setSavedPin] = useState<string | null>(localStorage.getItem('kds_pin'));
 
+    // Robust timer state
+    const [currentTime, setCurrentTime] = useState(Date.now());
+    useEffect(() => {
+        const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Helper: Safe Time Formatter using component state
+    const getSafeFormattedTime = (createdAt: string) => {
+        const createdMs = new Date(createdAt).getTime();
+        if (isNaN(createdMs)) return '00:00:00';
+        const diff = Math.max(0, currentTime - createdMs);
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Helper: Safe Total Minutes using component state
+    const getSafeTotalMinutes = (createdAt: string) => {
+        const createdMs = new Date(createdAt).getTime();
+        if (isNaN(createdMs)) return 0;
+        return Math.floor((currentTime - createdMs) / 60000);
+    };
+
     // Keep screen awake for kitchen tablets
     const { isActive: wakeLockActive, isSupported: wakeLockSupported, request, release } = useWakeLock(true);
 
@@ -178,11 +203,11 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         };
     }, [userId, loadData]);
 
-    // Filter orders that have items for this station
+    // Filter orders that have items for this station AND sort by created_at ASC (First Order, First Served)
     const relevantOrders = useMemo(() => {
         if (!stationId) return [];
 
-        return orders
+        const filtered = orders
             .filter(order => order.status === 'pending')
             .map(order => {
                 // Get only items that belong to this station
@@ -195,6 +220,8 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                 };
             })
             .filter(Boolean) as (Order & { stationItems: OrderItem[] })[];
+
+        return filtered.sort((a, b) => (new Date(a.created_at).getTime() || 0) - (new Date(b.created_at).getTime() || 0));
     }, [orders, stationId]);
 
     // Play sound on new orders
@@ -205,12 +232,31 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         setLastOrderCount(relevantOrders.length);
     }, [relevantOrders.length, soundEnabled, isLoading]);
 
-    // Calculate time elapsed for each order
-    const getTimeElapsed = (createdAt: string) => {
+    // Force re-render every second to update timers
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    // Calculate formatted time elapsed
+    const getFormattedTimeElapsed = (createdAt: string) => {
         const created = new Date(createdAt).getTime();
         const now = Date.now();
-        const minutes = Math.floor((now - created) / 60000);
-        return minutes;
+        const diff = Math.max(0, now - created);
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    // Calculate total minutes for color coding
+    const getTotalMinutes = (createdAt: string) => {
+        const created = new Date(createdAt).getTime();
+        const now = Date.now();
+        return Math.floor((now - created) / 60000);
     };
 
     // Get color based on time elapsed
@@ -230,11 +276,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
     const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
 
     // Auto-refresh timer display - faster tick for smooth disappearance (every 5s)
-    const [tick, setTick] = useState(0);
-    useEffect(() => {
-        const interval = setInterval(() => setTick(t => t + 1), 5000);
-        return () => clearInterval(interval);
-    }, []);
+
 
     // Helper: Calculate time since completion
     const getMinutesSinceCompletion = (completedAt: number) => {
@@ -771,7 +813,8 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         {relevantOrders.map(order => {
-                            const minutes = getTimeElapsed(order.created_at);
+                            const formattedTime = getSafeFormattedTime(order.created_at);
+                            const totalMinutes = getSafeTotalMinutes(order.created_at);
                             const allItemsPrepared = order.stationItems.every(item =>
                                 isItemPrepared(order, item.id)
                             );
@@ -800,9 +843,9 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
                                                 {order.table_number.startsWith('LLEVAR') ? `Orden para llevar #${order.table_number.split('-')[1] || '?'}` : `Mesa ${order.table_number}`}
                                             </span>
                                         </div>
-                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-bold ${getTimeColor(minutes)}`}>
+                                        <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm font-bold ${getTimeColor(totalMinutes)}`}>
                                             <Clock className="w-4 h-4" />
-                                            {minutes}m
+                                            <span className="font-mono text-base">{formattedTime}</span>
                                         </div>
                                     </div>
 

@@ -381,6 +381,31 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     // Eliminated unused handleCopySql function
 
+    // --- TIMER LOGIC FOR ACTIVE ORDERS ---
+    const [, setTick] = useState(0);
+    useEffect(() => {
+        const timer = setInterval(() => setTick(t => t + 1), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const getFormattedTimeElapsed = (createdAt: string) => {
+        const created = new Date(createdAt).getTime();
+        const now = Date.now();
+        const diff = Math.max(0, now - created);
+
+        const hours = Math.floor(diff / 3600000);
+        const minutes = Math.floor((diff % 3600000) / 60000);
+        const seconds = Math.floor((diff % 60000) / 1000);
+
+        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    };
+
+    const getTimeColor = (minutes: number) => {
+        if (minutes < 5) return 'text-green-600 bg-green-50';
+        if (minutes < 10) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50 animate-pulse';
+    };
+
     // Safe Base URL Calculation - strictly use origin
     const baseUrl = window.location.origin;
     const publicMenuUrl = `${baseUrl}/?table=1&uid=${user?.id}`;
@@ -1161,9 +1186,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                             ) : (
                                                                 <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
                                                             )}
-                                                            <span className="text-[11px] sm:text-xs text-gray-400 flex items-center">
+                                                            <span className={`text-[11px] sm:text-xs font-bold rounded px-1.5 py-0.5 flex items-center ${getTimeColor(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000))}`}>
                                                                 <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
-                                                                {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                                {getFormattedTimeElapsed(order.created_at)}
                                                             </span>
                                                         </div>
                                                         <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
