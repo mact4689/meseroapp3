@@ -443,7 +443,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 title: 'Menú Digital QR',
                 desc: 'Tus clientes escanean y ordenan al instante desde su celular. Fotos HD, categorías y opciones personalizables.',
                 gradient: 'from-accent-500 to-amber-600',
-                tags: ['Sin App', 'Multi-idioma', 'Tiempo Real']
+                tags: ['Tiempo Real']
               },
               {
                 icon: <LayoutDashboard className="w-7 h-7" />,
@@ -457,7 +457,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 title: 'KDS Inteligente',
                 desc: 'Pantalla de cocina digital. Las comandas llegan organizadas con tiempos, prioridad y estados claros.',
                 gradient: 'from-emerald-500 to-teal-600',
-                tags: ['Alertas Sonoras', 'Multi-estación', 'Auto-prioridad']
+                tags: ['Alertas Sonoras', 'Multi-estación']
               },
               {
                 icon: <Menu className="w-7 h-7" />,
