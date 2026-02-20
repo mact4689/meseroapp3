@@ -504,7 +504,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         </label>
                                     ))}
 
-                                    {/* PIN section moved to security step */}
+                                    <div className="pt-4 text-center pb-2 animate-pulse">
+                                        <p className="text-xs text-gray-400 font-medium bg-gray-50 inline-block px-3 py-1 rounded-full">
+                                            🔒 El PIN de seguridad se configura en el siguiente paso
+                                        </p>
+                                    </div>
                                 </div>
                             )}
 
@@ -601,7 +605,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         onClick={() => setWizardStep('security')}
                                         className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
                                     >
-                                        Siguiente
+                                        Siguiente: Configurar PIN
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </>
