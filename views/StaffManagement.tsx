@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Plus, Trash2, Shield, Loader2, Save, Edit2, QrCode, X, Check, Copy, ChevronRight, LayoutDashboard, UtensilsCrossed, Grid2X2, ChefHat, Receipt, Users, TrendingUp, Store } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, Shield, Loader2, Save, Edit2, QrCode, X, Check, Copy, ChevronRight, LayoutDashboard, UtensilsCrossed, Grid2X2, ChefHat, Receipt, Users, TrendingUp, Store, ExternalLink } from 'lucide-react';
 import { AppView } from '../types';
 import { supabase } from '../services/client';
 import { useAppStore } from '../store/AppContext';
@@ -639,6 +639,12 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setQrModalRole(null)} />
                     <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden">
+                        <button
+                            onClick={() => setQrModalRole(null)}
+                            className="absolute top-4 right-4 p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors z-20"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
                         <div className="p-6 text-center">
                             <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white mx-auto mb-4 shadow-lg shadow-indigo-500/25">
                                 <QrCode className="w-7 h-7" />
@@ -669,12 +675,15 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
 
                             {/* Actions */}
                             <div className="flex gap-3">
-                                <button
-                                    onClick={() => setQrModalRole(null)}
-                                    className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                <a
+                                    href={generateAccessLink(qrModalRole)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors flex items-center justify-center gap-2 no-underline"
                                 >
-                                    Cerrar
-                                </button>
+                                    <ExternalLink className="w-4 h-4" />
+                                    Abrir
+                                </a>
                                 <button
                                     onClick={handleCopyLink}
                                     className={`flex-1 py-3 text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 shadow-sm ${copied
