@@ -39,7 +39,8 @@ import {
     Receipt,
     Hand,
     ShoppingBag,
-    Star
+    Star,
+    Lock
 } from 'lucide-react';
 import { supabase } from '../services/client';
 import { diagnoseRealtimeConnection } from '../services/realtimeDiagnostics';
@@ -448,9 +449,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     {user?.name || 'Usuario'}
                                 </p>
                                 <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold uppercase border flex items-center gap-1 ${user?.customRoleName ? 'bg-teal-50 text-teal-600 border-teal-100' :
-                                        role === 'owner' ? 'bg-amber-50 text-amber-600 border-amber-100' :
-                                            role === 'waiter' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                                'bg-indigo-50 text-indigo-600 border-indigo-100'
+                                    role === 'owner' ? 'bg-amber-50 text-amber-600 border-amber-100' :
+                                        role === 'waiter' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                            'bg-indigo-50 text-indigo-600 border-indigo-100'
                                     }`}>
                                     <ShieldCheck className="w-2.5 h-2.5" />
                                     {user?.customRoleName || (role === 'owner' ? 'Dueño' : role === 'waiter' ? 'Mesero' : 'Cocina')}
@@ -562,16 +563,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     {canManageStaff && (
                         <div
                             onClick={() => onNavigate(AppView.STAFF_MANAGEMENT)}
-                            className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-indigo-900/20 transition-all group relative overflow-hidden"
+                            className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-indigo-900/20 transition-all group flex flex-col justify-between"
                         >
-                            <div className="flex items-center space-x-2 text-indigo-600 mb-2">
-                                <ShieldCheck className="w-4 h-4" />
-                                <span className="text-xs font-bold uppercase tracking-wider">Personal</span>
+                            <div className="flex items-center gap-2 text-indigo-600 mb-4">
+                                <Users className="w-4 h-4" />
+                                <Lock className="w-4 h-4" />
                             </div>
-                            <p className="text-2xl font-bold text-brand-900">Equipo</p>
-                            <div className="flex justify-between items-center mt-1">
-                                <p className="text-xs text-gray-500">Roles y Accesos</p>
-                                <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                            <div className="mt-auto">
+                                <p className="text-lg font-bold text-brand-900 leading-tight">Roles y Acceso</p>
+                                <div className="flex justify-end mt-2">
+                                    <ArrowRight className="w-3 h-3 text-gray-400 group-hover:text-brand-900 group-hover:translate-x-1 transition-all" />
+                                </div>
                             </div>
                         </div>
                     )}
