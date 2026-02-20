@@ -279,9 +279,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
           } else {
             console.warn('⚠️ Could not load role data or profile for QR access');
+            // Stop loading even if failed so we don't hang on Splash
+            setState(prev => ({ ...prev, isLoading: false }));
+            alert("Error: No se pudo cargar la información del rol. Verifica que el enlace sea correcto.");
           }
         } catch (e) {
           console.error('Error en acceso QR:', e);
+          setState(prev => ({ ...prev, isLoading: false }));
         }
       }
 
