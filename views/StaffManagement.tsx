@@ -59,7 +59,7 @@ interface StaffManagementProps {
 }
 
 // ─── WIZARD STEPS ─────────────────────────────────────────
-type WizardStep = 'name' | 'permissions' | 'done';
+type WizardStep = 'name' | 'permissions' | 'security';
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) => {
     const { state, logout } = useAppStore();
@@ -415,8 +415,9 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
 
                         {/* Step Indicators */}
                         <div className="px-5 pt-4 flex gap-2">
-                            <div className={`h-1 flex-1 rounded-full transition-colors ${wizardStep === 'name' || wizardStep === 'permissions' ? 'bg-indigo-500' : 'bg-gray-200'}`} />
-                            <div className={`h-1 flex-1 rounded-full transition-colors ${wizardStep === 'permissions' ? 'bg-indigo-500' : 'bg-gray-200'}`} />
+                            <div className={`h-1 flex-1 rounded-full transition-colors ${wizardStep === 'name' || wizardStep === 'permissions' || wizardStep === 'security' ? 'bg-indigo-500' : 'bg-gray-200'}`} />
+                            <div className={`h-1 flex-1 rounded-full transition-colors ${wizardStep === 'permissions' || wizardStep === 'security' ? 'bg-indigo-500' : 'bg-gray-200'}`} />
+                            <div className={`h-1 flex-1 rounded-full transition-colors ${wizardStep === 'security' ? 'bg-indigo-500' : 'bg-gray-200'}`} />
                         </div>
 
                         {/* Step Content */}
@@ -503,41 +504,65 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         </label>
                                     ))}
 
-                                    {/* ─── PIN DE SEGURIDAD ─── */}
-                                    <div className="mt-6 pt-5 border-t border-gray-100">
-                                        <div className="flex items-center gap-3 mb-3">
-                                            <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center text-amber-500 shrink-0">
-                                                🔒
-                                            </div>
-                                            <div>
-                                                <p className="font-bold text-gray-900 text-sm">PIN de Seguridad</p>
-                                                <p className="text-xs text-gray-400">Opcional. 4 dígitos para proteger el acceso al rol.</p>
-                                            </div>
+                                    {/* PIN section moved to security step */}
+                                </div>
+                            )}
+
+                            {wizardStep === 'security' && (
+                                <div className="p-5 space-y-5">
+                                    <div className="text-center">
+                                        <div className="w-16 h-16 bg-amber-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <div className="text-3xl">🔒</div>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            <input
-                                                type="text"
-                                                inputMode="numeric"
-                                                pattern="[0-9]*"
-                                                maxLength={4}
-                                                value={pinCode}
-                                                onChange={e => {
-                                                    const val = e.target.value.replace(/[^0-9]/g, '');
-                                                    setPinCode(val);
-                                                }}
-                                                className="w-32 px-4 py-3 border border-gray-200 rounded-xl text-center text-xl font-mono font-bold tracking-[0.5em] focus:ring-2 focus:ring-amber-400 focus:border-amber-400 outline-none transition-all"
-                                                placeholder="• • • •"
-                                            />
+                                        <h3 className="text-lg font-bold text-gray-900">Seguridad del Rol</h3>
+                                        <p className="text-sm text-gray-500 mt-1 max-w-xs mx-auto">
+                                            Configura un PIN de 4 dígitos para proteger el acceso a este rol. Es opcional pero recomendado.
+                                        </p>
+                                    </div>
+
+                                    <div className="bg-gray-50 rounded-xl p-6 flex flex-col items-center justify-center border border-gray-100">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                                            PIN de Acceso (4 dígitos)
+                                        </label>
+                                        <input
+                                            type="text"
+                                            inputMode="numeric"
+                                            pattern="[0-9]*"
+                                            maxLength={4}
+                                            value={pinCode}
+                                            onChange={e => {
+                                                const val = e.target.value.replace(/[^0-9]/g, '');
+                                                setPinCode(val);
+                                            }}
+                                            className="w-48 px-4 py-4 border-2 border-gray-200 rounded-xl text-center text-3xl font-mono font-bold tracking-[0.5em] focus:ring-4 focus:ring-amber-100 focus:border-amber-400 outline-none transition-all bg-white shadow-sm"
+                                            placeholder="••••"
+                                            autoFocus
+                                        />
+                                        <div className="h-6 mt-3">
                                             {pinCode.length > 0 && pinCode.length < 4 && (
-                                                <p className="text-xs text-red-400 font-medium">Debe ser de 4 dígitos</p>
+                                                <p className="text-xs text-red-500 font-bold animate-pulse">Ingresa los 4 dígitos</p>
                                             )}
                                             {pinCode.length === 4 && (
-                                                <p className="text-xs text-green-500 font-bold flex items-center gap-1">✓ PIN válido</p>
+                                                <p className="text-xs text-green-600 font-bold flex items-center gap-1 animate-in fade-in slide-in-from-bottom-1">
+                                                    <Check className="w-3 h-3" /> PIN válido
+                                                </p>
                                             )}
                                             {pinCode.length === 0 && (
-                                                <p className="text-xs text-gray-400">Sin PIN (acceso directo)</p>
+                                                <p className="text-xs text-gray-400">Sin PIN (acceso libre)</p>
                                             )}
                                         </div>
+                                    </div>
+
+                                    <div className="bg-blue-50/50 rounded-xl p-4 border border-blue-100">
+                                        <h4 className="text-xs font-bold text-blue-800 uppercase mb-2 flex items-center gap-1.5">
+                                            <Shield className="w-3 h-3" />
+                                            ¿Cómo funciona?
+                                        </h4>
+                                        <ul className="text-xs text-blue-700 space-y-1 list-disc list-inside opacity-80">
+                                            <li>Al escanear el QR, se pedirá este PIN.</li>
+                                            <li>Si no configuras PIN, el acceso será directo.</li>
+                                            <li>Puedes cambiarlo en cualquier momento.</li>
+                                        </ul>
                                     </div>
                                 </div>
                             )}
@@ -545,7 +570,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
 
                         {/* Wizard Footer */}
                         <div className="p-5 border-t border-gray-100 bg-white flex gap-3">
-                            {wizardStep === 'name' ? (
+                            {wizardStep === 'name' && (
                                 <>
                                     <button
                                         onClick={closeWizard}
@@ -562,7 +587,9 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         <ChevronRight className="w-4 h-4" />
                                     </button>
                                 </>
-                            ) : (
+                            )}
+
+                            {wizardStep === 'permissions' && (
                                 <>
                                     <button
                                         onClick={() => setWizardStep('name')}
@@ -571,9 +598,27 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         Atrás
                                     </button>
                                     <button
+                                        onClick={() => setWizardStep('security')}
+                                        className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                    >
+                                        Siguiente
+                                        <ChevronRight className="w-4 h-4" />
+                                    </button>
+                                </>
+                            )}
+
+                            {wizardStep === 'security' && (
+                                <>
+                                    <button
+                                        onClick={() => setWizardStep('permissions')}
+                                        className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                    >
+                                        Atrás
+                                    </button>
+                                    <button
                                         onClick={handleSaveRole}
-                                        disabled={saving}
-                                        className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 shadow-sm"
+                                        disabled={saving || (pinCode.length > 0 && pinCode.length < 4)}
+                                        className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                                     >
                                         {saving ? (
                                             <Loader2 className="w-4 h-4 animate-spin" />
