@@ -40,7 +40,8 @@ import {
     Hand,
     ShoppingBag,
     Star,
-    Lock
+    Lock,
+    Notebook
 } from 'lucide-react';
 import { supabase } from '../services/client';
 import { diagnoseRealtimeConnection } from '../services/realtimeDiagnostics';
@@ -548,7 +549,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:shadow-md hover:border-brand-900/20 transition-all group relative overflow-hidden"
                         >
                             <div className="flex items-center space-x-2 text-purple-600 mb-2">
-                                <Users className="w-4 h-4" />
+                                <Notebook className="w-4 h-4" />
                                 <span className="text-xs font-bold uppercase tracking-wider">Órdenes</span>
                             </div>
                             <p className="text-2xl font-bold text-brand-900">{completedOrders.length}</p>
