@@ -391,7 +391,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
             {wizardOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeWizard} />
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[85vh]">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col h-[85vh]">
 
                         {/* Wizard Header */}
                         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
