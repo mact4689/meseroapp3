@@ -34,7 +34,7 @@ export const LockScreen: React.FC = () => {
 
     return (
         <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-300">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-300">
                 {/* Header */}
                 <div className="bg-brand-50 p-6 flex flex-col items-center border-b border-brand-100">
                     {business.logo ? (
