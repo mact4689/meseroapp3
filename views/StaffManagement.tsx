@@ -47,7 +47,7 @@ const PERMISSION_CONFIG: { key: keyof RolePermissions; label: string; descriptio
     { key: 'orders', label: 'Órdenes', description: 'Ver y gestionar pedidos activos', icon: <UtensilsCrossed className="w-5 h-5" />, color: 'text-orange-600 bg-orange-50' },
     { key: 'menu', label: 'Editar Menú', description: 'Agregar, editar y eliminar platillos', icon: <UtensilsCrossed className="w-5 h-5" />, color: 'text-amber-600 bg-amber-50' },
     { key: 'tables', label: 'Gestión de Mesas', description: 'Configurar mesas y generar códigos QR', icon: <Grid2X2 className="w-5 h-5" />, color: 'text-blue-600 bg-blue-50' },
-    { key: 'kds', label: 'Cocina (KDS)', description: 'Pantalla de cocina para preparar pedidos', icon: <ChefHat className="w-5 h-5" />, color: 'text-emerald-600 bg-emerald-50' },
+    { key: 'kds', label: 'Cocina (KDS)', description: 'Configurar Pantallas de Cocina.', icon: <ChefHat className="w-5 h-5" />, color: 'text-emerald-600 bg-emerald-50' },
     { key: 'tickets', label: 'Configurar Tickets', description: 'Personalizar formato de impresión', icon: <Receipt className="w-5 h-5" />, color: 'text-pink-600 bg-pink-50' },
     { key: 'staff', label: 'Gestión de Personal', description: 'Administrar roles y equipo', icon: <Users className="w-5 h-5" />, color: 'text-indigo-600 bg-indigo-50' },
     { key: 'reports', label: 'Reportes y Ventas', description: 'Ver estadísticas e historial de ventas', icon: <TrendingUp className="w-5 h-5" />, color: 'text-green-600 bg-green-50' },
