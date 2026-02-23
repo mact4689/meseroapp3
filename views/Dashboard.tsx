@@ -37,11 +37,11 @@ import {
     Copy,
     Terminal,
     Receipt,
+    Notebook,
     Hand,
     ShoppingBag,
     Star,
-    Lock,
-    Notebook
+    Lock
 } from 'lucide-react';
 import { supabase } from '../services/client';
 import { diagnoseRealtimeConnection } from '../services/realtimeDiagnostics';

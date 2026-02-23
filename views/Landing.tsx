@@ -144,10 +144,10 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
   const faqs = [
     { q: '¿Necesito descargar alguna aplicación?', a: 'No. MeseroApp es 100% web. Funciona directamente en el navegador de cualquier dispositivo. Tus clientes solo necesitan escanear el QR para ver el menú y ordenar.' },
-    { q: '¿Cuánto tiempo toma configurar todo?', a: 'En promedio, los restaurantes configuran su menú digital, mesas y cocina en menos de 15 minutos. Nuestro asistente guiado te lleva paso a paso.' },
+    { q: '¿Cuánto tiempo toma configurar todo?', a: 'En promedio, los restaurantes configuran su menú digital, mesas y cocina en menos de 15 minutos.' },
     { q: '¿Funciona sin internet?', a: 'MeseroApp necesita conexión a internet para sincronizar pedidos en tiempo real. Sin embargo, el menú del cliente puede cargarse parcialmente offline una vez visitado.' },
     { q: '¿Puedo personalizar el diseño del menú?', a: 'Sí. Puedes añadir fotos HD, categorías personalizadas, descripciones, precios, ingredientes y hasta opciones/variaciones por platillo.' },
-    { q: '¿Es gratis?', a: 'MeseroApp ofrece un plan gratuito con todas las funcionalidades esenciales. Planes premium con características avanzadas están disponibles para negocios en crecimiento.' },
+    { q: '¿Es gratis?', a: 'MeseroApp ofrece una prueba gratuita de 7 días con acceso total a todas las herramientas. Después, podrás seguir impulsando tu negocio por solo $300 pesos al mes.' },
   ];
 
   return (
@@ -295,7 +295,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                   className="w-full sm:w-auto text-lg px-8 py-4 !bg-gradient-to-r !from-accent-500 !to-amber-500 hover:!from-accent-400 hover:!to-amber-400 !text-brand-900 font-bold shadow-[0_0_40px_-8px_rgba(212,175,55,0.5)] hover:shadow-[0_0_60px_-8px_rgba(212,175,55,0.7)] hover:scale-[1.03] transition-all duration-300"
                   icon={<ArrowRight className="w-5 h-5" />}
                 >
-                  Prueba Gratis por 30 Días
+                  Prueba Gratis por 7 Días
                 </Button>
 
               </div>
@@ -475,10 +475,10 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               },
               {
                 icon: <Users className="w-7 h-7" />,
-                title: 'Roles de Equipo',
-                desc: 'Cuentas para meseros, cocineros y propietarios con permisos diferenciados. Tu operación segura y organizada.',
+                title: 'Gestión Avanzada de Equipo',
+                desc: 'Crea roles personalizados y define permisos granulares. Controla quién puede ver ventas, editar el menú o gestionar pedidos con acceso seguro por PIN.',
                 gradient: 'from-blue-500 to-cyan-600',
-                tags: ['Multi-rol', 'Seguro', 'Escalable']
+                tags: ['Roles Custom', 'Permisos Granulares', 'Seguridad PIN']
               },
             ].map((feature, i) => (
               <div
@@ -552,7 +552,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 step: 3,
                 icon: <CheckCircle2 className="w-6 h-6" />,
                 title: 'Gestiona',
-                desc: 'Recibe la comanda, prepara y actualiza el estado. El cliente ve su progreso en tiempo real.',
+                desc: 'Recibe la comanda, prepara y actualiza el estado.',
                 color: 'emerald',
                 gradient: 'from-emerald-500 to-teal-600'
               }

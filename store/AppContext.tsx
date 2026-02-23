@@ -385,6 +385,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               ...prev,
               orders: [newOrder, ...prev.orders]
             }));
+
+            // Standard notification sound
             playNotificationSound();
           }
         )
