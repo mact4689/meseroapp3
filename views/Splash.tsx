@@ -67,7 +67,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
       return;
     }
     if (params.get('role_id') && params.get('uid')) {
-      // Role QR — go straight to Dashboard (AppContext has already loaded the virtual user)
+      // Role QR — go straight to Dashboard (now preserves params via updated useAppNavigation)
       onNavigate(AppView.DASHBOARD);
       return;
     }

@@ -30,7 +30,6 @@ export const useAppNavigation = () => {
   const handleNavigate = (view: AppView) => {
     const routeMap: Record<AppView, string> = {
       [AppView.SPLASH]: '/',
-
       [AppView.LANDING]: '/landing',
       [AppView.LOGIN]: '/login',
       [AppView.REGISTER]: '/register',
@@ -47,7 +46,13 @@ export const useAppNavigation = () => {
       [AppView.KDS_VIEW]: '/kds',
       [AppView.STAFF_MANAGEMENT]: '/setup/staff',
     };
-    navigate(routeMap[view] || '/');
+
+    const path = routeMap[view] || '/';
+    const params = new URLSearchParams(window.location.search);
+    const hasContext = params.get('uid') && (params.get('role_id') || params.get('table') || params.get('station'));
+
+    // Preserve query parameters during SPA navigation if we are in a QR/Station context
+    navigate(hasContext ? path + window.location.search : path);
   };
 
   return handleNavigate;

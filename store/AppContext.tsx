@@ -117,6 +117,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Helper to load ONLY business data without touching the user role
   const loadBusinessData = async (restaurantId: string) => {
+    setState(prev => ({ ...prev, isLoading: true }));
     try {
       const profile = await getProfile(restaurantId);
       if (profile) {
@@ -222,7 +223,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // ─── Check if this is a QR role access URL ───
   const isQrRoleAccess = (): boolean => {
     const params = new URLSearchParams(window.location.search);
-    return !!(params.get('role_id') && params.get('uid'));
+    const hasParams = !!(params.get('role_id') && params.get('uid'));
+    if (hasParams) return true;
+
+    // Check if we already have a virtual user in our current state instance
+    return !!(state.user?.id.startsWith('virtual-staff-'));
   };
 
   // ─── MAIN SESSION CHECK ───
@@ -254,6 +259,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             });
 
             if (pin.length === 4) {
+              // ─── OPTIMIZATION: If already authenticated as this virtual user, don't ask for PIN again ───
+              if (state.user?.id.startsWith('virtual-staff-') && state.user.restaurantId === uid) {
+                console.log('✅ Already authenticated as virtual user — skipping PIN screen');
+                setState(prev => ({ ...prev, isLoading: false }));
+                return;
+              }
+
               console.log('🔒 Custom Role requires PIN — showing lock screen');
               setState(prev => ({
                 ...prev,
@@ -328,6 +340,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           loadUserData(user.id);
         }
       } else {
+        // ─── CRITICAL: If we have a virtual user, DON'T reset state when session is null ───
+        if (state.user?.id.startsWith('virtual-staff-')) {
+          console.log('🛡️ Preserving virtual user session (ignoring null Supabase session)');
+          setState(prev => ({ ...prev, isLoading: false }));
+          return;
+        }
+
         setState({ ...baseState, isLoading: false });
         dataLoadedRef.current = null;
       }
