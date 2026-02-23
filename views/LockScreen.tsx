@@ -15,16 +15,21 @@ export const LockScreen: React.FC = () => {
         setIsLoading(true);
         setError(undefined);
 
-        // Use setTimeout to simulate a brief "verifying" state for UX
-        setTimeout(() => {
+        // Execute synchronously without setTimeout to avoid microtask/unmount clashes
+        try {
             const success = unlockRole(pin);
             if (!success) {
                 setError("Código incorrecto");
                 setIsLoading(false);
             } else {
-                // Success! unlockRole handles state update
+                console.log('✅ Role unlocked successfully, LockScreen should unmount now.');
+                // State updates internally, LockScreen will unmount automatically
             }
-        }, 300);
+        } catch (e) {
+            console.error('Error in unlockRole:', e);
+            setError("Ocurrió un error");
+            setIsLoading(false);
+        }
     };
 
     return (
