@@ -506,7 +506,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                                 type="checkbox"
                                                 checked={permissions[config.key]}
                                                 onChange={() => setPermissions(prev => ({ ...prev, [config.key]: !prev[config.key] }))}
-                                                className="sr-only"
+                                                className="hidden"
                                             />
                                         </label>
                                     ))}
