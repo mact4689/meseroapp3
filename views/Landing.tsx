@@ -23,7 +23,9 @@ import {
   ShoppingBag,
   Play,
   Menu,
-  X
+  X,
+  Tablet,
+  Wifi
 } from 'lucide-react';
 import { AppView } from '../types';
 
@@ -141,6 +143,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
   const testimonials = useInView();
   const faq = useInView();
   const cta = useInView();
+  const requirements = useInView();
 
   const faqs = [
     { q: '¿Necesito descargar alguna aplicación?', a: 'No. MeseroApp es 100% web. Funciona directamente en el navegador de cualquier dispositivo. Tus clientes solo necesitan escanear el QR para ver el menú y ordenar.' },
@@ -574,6 +577,78 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
                 <h3 className="text-2xl font-bold mb-3 font-serif">{s.title}</h3>
                 <p className="text-gray-400 leading-relaxed max-w-sm mx-auto">{s.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══════════════════════ REQUIREMENTS ═══════════════════════ */}
+      <section id="requirements" className="py-24 md:py-32 px-6 relative">
+        <div ref={requirements.ref} className="max-w-7xl mx-auto">
+          {/* Section Header */}
+          <div className={`text-center mb-20 max-w-3xl mx-auto transition-all duration-1000 ${requirements.isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 mb-6">
+              <Monitor className="w-3.5 h-3.5 text-blue-400" />
+              <span className="text-xs font-bold text-blue-400 uppercase tracking-wider">¿Qué necesitas?</span>
+            </div>
+            <h2 className="font-serif text-4xl md:text-5xl font-bold mb-6">
+              Requisitos <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-400">mínimos</span> para empezar
+            </h2>
+            <p className="text-gray-400 text-lg leading-relaxed">
+              No necesitas equipos costosos. MeseroApp está diseñado para funcionar en hardware accesible y fácil de conseguir.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                icon: <Wifi className="w-7 h-7" />,
+                title: 'Internet Estable',
+                desc: 'Una conexión Wi-Fi o datos móviles para sincronizar tus pedidos en tiempo real.',
+                status: 'Indispensable',
+                color: 'blue'
+              },
+              {
+                icon: <Tablet className="w-7 h-7" />,
+                title: 'Tablets o Celulares',
+                desc: 'Cualquier dispositivo Android o iOS para ver el KDS en cocina o tomar órdenes.',
+                status: 'Recomendado',
+                color: 'cyan'
+              },
+              {
+                icon: <Printer className="w-7 h-7" />,
+                title: 'Impresoras Térmicas',
+                desc: 'Modelos de 58mm o 80mm con Bluetooth, USB o Red para tickets físicos.',
+                status: 'Opcional',
+                color: 'amber'
+              },
+              {
+                icon: <QrCode className="w-7 h-7" />,
+                title: 'Códigos QR',
+                desc: 'Nosotros generamos los QR, tú solo los imprimes en papel, acrílico o madera para tus mesas.',
+                status: 'Incluido',
+                color: 'emerald'
+              }
+            ].map((req, i) => (
+              <div
+                key={i}
+                className={`p-8 rounded-3xl bg-white/[0.03] border border-white/5 hover:border-white/15 transition-all duration-500 ${requirements.isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+                style={{ transitionDelay: `${i * 100}ms` }}
+              >
+                <div className={`w-14 h-14 rounded-2xl bg-white/5 flex items-center justify-center mb-6 text-white`}>
+                  {req.icon}
+                </div>
+                <div className="flex items-center gap-2 mb-3">
+                  <h3 className="text-lg font-bold text-white font-serif">{req.title}</h3>
+                </div>
+                <p className="text-gray-400 text-sm leading-relaxed mb-6">{req.desc}</p>
+                <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${req.status === 'Indispensable' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
+                    req.status === 'Opcional' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                      'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                  }`}>
+                  {req.status}
+                </span>
               </div>
             ))}
           </div>
