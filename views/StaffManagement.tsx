@@ -77,6 +77,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
     const [permissions, setPermissions] = useState<RolePermissions>({ ...DEFAULT_PERMISSIONS });
     const [pinCode, setPinCode] = useState('');
     const [saving, setSaving] = useState(false);
+    const [localError, setLocalError] = useState<string | null>(null);
 
     // QR Modal state
     const [qrModalRole, setQrModalRole] = useState<CustomRole | null>(null);
@@ -137,11 +138,17 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
         setPermissions({ ...DEFAULT_PERMISSIONS });
         setPinCode('');
         setWizardStep('name');
+        setLocalError(null);
     };
 
     const handleSaveRole = async () => {
         if (!state.user?.id || !roleName.trim()) return;
         setSaving(true);
+        setLocalError(null);
+
+        // Determinar ID real del restaurante (dueño)
+        const currentRestId = state.user.restaurantId || state.user.id;
+
         try {
             if (editingRole) {
                 // UPDATE
@@ -156,7 +163,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                 const { error } = await supabase
                     .from('custom_roles')
                     .insert({
-                        restaurant_id: state.user.id,
+                        restaurant_id: currentRestId,
                         name: roleName.trim(),
                         permissions,
                         pin_code: pinCode.length === 4 ? pinCode : null,
@@ -168,7 +175,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
             closeWizard();
         } catch (err: any) {
             console.error('Error saving role:', err);
-            setMessage({ type: 'error', text: err.message || 'Error al guardar el rol.' });
+            setLocalError(err.message || 'Error al guardar el rol. Verifica tu conexión o permisos.');
         } finally {
             setSaving(false);
         }
@@ -573,66 +580,77 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                         </div>
 
                         {/* Wizard Footer */}
-                        <div className="p-5 border-t border-gray-100 bg-white flex gap-3">
-                            {wizardStep === 'name' && (
-                                <>
-                                    <button
-                                        onClick={closeWizard}
-                                        className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                                    >
-                                        Cancelar
-                                    </button>
-                                    <button
-                                        onClick={() => setWizardStep('permissions')}
-                                        disabled={!roleName.trim()}
-                                        className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
-                                    >
-                                        Siguiente
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </>
+                        <div className="p-5 border-t border-gray-100 bg-white flex flex-col gap-3">
+                            {localError && (
+                                <div className="p-3 mb-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center justify-between animate-in slide-in-from-top-2">
+                                    <div className="flex items-center gap-2">
+                                        <X className="w-4 h-4" />
+                                        <span>{localError}</span>
+                                    </div>
+                                </div>
                             )}
 
-                            {wizardStep === 'permissions' && (
-                                <>
-                                    <button
-                                        onClick={() => setWizardStep('name')}
-                                        className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                                    >
-                                        Atrás
-                                    </button>
-                                    <button
-                                        onClick={() => setWizardStep('security')}
-                                        className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
-                                    >
-                                        Siguiente: Configurar PIN
-                                        <ChevronRight className="w-4 h-4" />
-                                    </button>
-                                </>
-                            )}
+                            <div className="flex gap-3">
+                                {wizardStep === 'name' && (
+                                    <>
+                                        <button
+                                            onClick={closeWizard}
+                                            className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                        >
+                                            Cancelar
+                                        </button>
+                                        <button
+                                            onClick={() => setWizardStep('permissions')}
+                                            disabled={!roleName.trim()}
+                                            className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                                        >
+                                            Siguiente
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </>
+                                )}
 
-                            {wizardStep === 'security' && (
-                                <>
-                                    <button
-                                        onClick={() => setWizardStep('permissions')}
-                                        className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
-                                    >
-                                        Atrás
-                                    </button>
-                                    <button
-                                        onClick={handleSaveRole}
-                                        disabled={saving || (pinCode.length > 0 && pinCode.length < 4)}
-                                        className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-                                    >
-                                        {saving ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                        ) : (
-                                            <Save className="w-4 h-4" />
-                                        )}
-                                        {editingRole ? 'Guardar Cambios' : 'Crear Rol'}
-                                    </button>
-                                </>
-                            )}
+                                {wizardStep === 'permissions' && (
+                                    <>
+                                        <button
+                                            onClick={() => setWizardStep('name')}
+                                            className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                        >
+                                            Atrás
+                                        </button>
+                                        <button
+                                            onClick={() => setWizardStep('security')}
+                                            className="flex-1 py-3 text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
+                                        >
+                                            Siguiente: Configurar PIN
+                                            <ChevronRight className="w-4 h-4" />
+                                        </button>
+                                    </>
+                                )}
+
+                                {wizardStep === 'security' && (
+                                    <>
+                                        <button
+                                            onClick={() => setWizardStep('permissions')}
+                                            className="flex-1 py-3 text-sm font-bold text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+                                        >
+                                            Atrás
+                                        </button>
+                                        <button
+                                            onClick={handleSaveRole}
+                                            disabled={saving || (pinCode.length > 0 && pinCode.length < 4)}
+                                            className="flex-1 py-3 text-sm font-bold text-white bg-brand-900 hover:bg-brand-800 rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                                        >
+                                            {saving ? (
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                            ) : (
+                                                <Save className="w-4 h-4" />
+                                            )}
+                                            {editingRole ? 'Guardar Cambios' : 'Crear Rol'}
+                                        </button>
+                                    </>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
