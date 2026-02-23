@@ -398,7 +398,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
             {wizardOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={closeWizard} />
-                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh] min-h-[600px] overflow-hidden">
+                    <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col max-h-[90vh] overflow-hidden">
 
                         {/* Wizard Header */}
                         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
@@ -580,7 +580,7 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                         </div>
 
                         {/* Wizard Footer */}
-                        <div className="p-5 border-t border-gray-100 bg-white flex flex-col gap-3">
+                        <div className="p-5 border-t border-gray-100 bg-white flex flex-col gap-3 mt-auto shrink-0">
                             {localError && (
                                 <div className="p-3 mb-2 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-center justify-between animate-in slide-in-from-top-2">
                                     <div className="flex items-center gap-2">
