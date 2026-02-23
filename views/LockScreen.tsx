@@ -33,8 +33,8 @@ export const LockScreen: React.FC = () => {
     };
 
     return (
-        <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-4">
-            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in duration-300">
+        <div className="fixed inset-0 bg-gray-900/90 backdrop-blur-md z-[9999] flex items-center justify-center p-2 sm:p-4">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md max-h-[96vh] flex flex-col overflow-y-auto animate-in zoom-in duration-300">
                 {/* Header */}
                 <div className="bg-brand-50 p-4 sm:p-6 flex flex-col items-center border-b border-brand-100">
                     {business.logo ? (
@@ -64,14 +64,16 @@ export const LockScreen: React.FC = () => {
                 </div>
 
                 {/* PIN Pad */}
-                <PinPad
-                    length={4}
-                    title=""
-                    description="Ingresa el PIN de 4 dígitos para acceder"
-                    onComplete={handlePinComplete}
-                    error={error}
-                    isLoading={isLoading}
-                />
+                <div className="flex-1 pb-4">
+                    <PinPad
+                        length={4}
+                        title=""
+                        description="Ingresa el PIN de 4 dígitos para acceder"
+                        onComplete={handlePinComplete}
+                        error={error}
+                        isLoading={isLoading}
+                    />
+                </div>
             </div>
         </div>
     );

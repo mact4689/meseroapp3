@@ -69,19 +69,19 @@ export const PinPad: React.FC<PinPadProps> = ({
             </div>
 
             {error && (
-                <div className="text-red-500 text-sm font-medium mb-6 animate-pulse text-center">
+                <div className="text-red-500 text-sm font-medium mb-4 sm:mb-6 animate-pulse text-center">
                     {error}
                 </div>
             )}
 
             {/* Keypad */}
-            <div className="grid grid-cols-3 gap-3 sm:gap-4 w-full max-w-[280px]">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 w-full max-w-[280px]">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
                     <button
                         key={num}
                         onClick={() => handleNumberClick(num)}
                         disabled={isLoading}
-                        className="h-14 sm:h-16 w-full rounded-2xl bg-white border border-gray-100 shadow-sm text-xl sm:text-2xl font-bold text-gray-700 hover:bg-gray-50 hover:border-brand-200 hover:text-brand-900 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="h-12 sm:h-16 w-full rounded-2xl bg-white border border-gray-100 shadow-sm text-xl sm:text-2xl font-bold text-gray-700 hover:bg-gray-50 hover:border-brand-200 hover:text-brand-900 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {num}
                     </button>
@@ -90,7 +90,7 @@ export const PinPad: React.FC<PinPadProps> = ({
                 <button
                     onClick={handleClear}
                     disabled={isLoading || pin.length === 0}
-                    className="h-14 sm:h-16 w-full rounded-2xl bg-gray-50 text-xs sm:text-sm font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-95 transition-all outline-none flex items-center justify-center disabled:opacity-50"
+                    className="h-12 sm:h-16 w-full rounded-2xl bg-gray-50 text-xs sm:text-sm font-bold text-gray-500 hover:bg-gray-100 hover:text-gray-700 active:scale-95 transition-all outline-none flex items-center justify-center disabled:opacity-50"
                 >
                     BORRAR
                 </button>
@@ -98,7 +98,7 @@ export const PinPad: React.FC<PinPadProps> = ({
                 <button
                     onClick={() => handleNumberClick(0)}
                     disabled={isLoading}
-                    className="h-14 sm:h-16 w-full rounded-2xl bg-white border border-gray-100 shadow-sm text-xl sm:text-2xl font-bold text-gray-700 hover:bg-gray-50 hover:border-brand-200 hover:text-brand-900 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
+                    className="h-12 sm:h-16 w-full rounded-2xl bg-white border border-gray-100 shadow-sm text-xl sm:text-2xl font-bold text-gray-700 hover:bg-gray-50 hover:border-brand-200 hover:text-brand-900 active:scale-95 transition-all outline-none focus:ring-2 focus:ring-brand-500/20 disabled:opacity-50"
                 >
                     0
                 </button>
@@ -106,7 +106,7 @@ export const PinPad: React.FC<PinPadProps> = ({
                 <button
                     onClick={handleDelete}
                     disabled={isLoading || pin.length === 0}
-                    className="h-14 sm:h-16 w-full rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-500 active:scale-95 transition-all outline-none flex items-center justify-center disabled:opacity-50"
+                    className="h-12 sm:h-16 w-full rounded-2xl bg-gray-50 text-gray-500 hover:bg-red-50 hover:text-red-500 active:scale-95 transition-all outline-none flex items-center justify-center disabled:opacity-50"
                 >
                     <Delete className="w-5 h-5 sm:w-6 sm:h-6" />
                 </button>
