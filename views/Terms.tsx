@@ -1,11 +1,64 @@
 import React from 'react';
-import { ChevronLeft, Scale, ShieldCheck, FileText, MessageCircle } from 'lucide-react';
+import { ChevronLeft, Scale, ShieldCheck, FileText, MessageCircle, Lock, CreditCard } from 'lucide-react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
 
 interface TermsProps {
     onNavigate: (view: AppView) => void;
 }
+
+const termsContent = {
+    "title": "Términos y Condiciones para MeseroApp",
+    "lastUpdate": "27 de Febrero, 2026",
+    "intro": "Estos Términos y Condiciones ('TC') regulan el uso de la plataforma MeseroApp, una solución digital para gestión de menús y pedidos de restaurantes. Al acceder o usar MeseroApp, usted acepta estos TC en su totalidad.",
+    "sections": [
+        {
+            "id": 1,
+            "title": "Propiedad Intelectual",
+            "content": "Todos los derechos de autor, marcas registradas y demás propiedades intelectuales sobre MeseroApp pertenecen a MeseroApp. Usted adquiere solo una licencia limitada para usar la plataforma según estos TC. No se otorga ninguna otra licencia o derecho sobre el servicio.",
+            "iconName": "ShieldCheck"
+        },
+        {
+            "id": 2,
+            "title": "Suscripciones",
+            "content": "Las suscripciones a MeseroApp están sujetas a los plazos y tarifas establecidos. La cancelación de una suscripción debe ser realizada según las instrucciones proporcionadas dentro de la plataforma. El término de la suscripción se renueva automáticamente hasta que sea cancelado por usted, salvo que se decida suspender o terminar su servicio por incumplimiento.",
+            "iconName": "CreditCard"
+        },
+        {
+            "id": 3,
+            "title": "Privacidad de Datos",
+            "content": "Nos comprometemos a proteger sus datos personales. Al utilizar MeseroApp, usted consiente la recopilación, uso y conservación de sus datos en la medida necesaria para proporcionar el servicio. Conoce más detalles sobre cómo tratamos tus datos en nuestra Política de Privacidad.",
+            "iconName": "Lock"
+        },
+        {
+            "id": 4,
+            "title": "Responsabilidades del Usuario",
+            "content": "Usted se compromete a utilizar MeseroApp conforme a estos TC y la ley vigente. Usted será responsable por el contenido subido, los pedidos realizados y cualquier uso indebido de las credenciales de acceso a la plataforma.",
+            "iconName": "MessageCircle"
+        },
+        {
+            "id": 5,
+            "title": "Limitación de Responsabilidad",
+            "content": "MeseroApp no se hace responsable por ninguna pérdida de ingresos, daños directos o indirectos, o interrupciones del negocio que surjan como resultado del uso o la incapacidad de utilizar la plataforma, salvo lo dispuesto por ley.",
+            "iconName": "Scale"
+        },
+        {
+            "id": 6,
+            "title": "Modificaciones",
+            "content": "Nos reservamos el derecho a modificar estos TC en cualquier momento. Al continuar usando MeseroApp después de tales modificaciones, usted acepta los nuevos términos revisados.",
+            "iconName": "FileText"
+        }
+    ]
+};
+
+const IconMap: Record<string, React.ElementType> = {
+    ShieldCheck,
+    FileText,
+    MessageCircle,
+    Lock,
+    Scale,
+    CreditCard
+};
 
 export const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
     return (
@@ -36,62 +89,31 @@ export const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
                     <div className="space-y-4">
                         <div className="inline-flex items-center gap-2 px-3 py-1 bg-brand-50 text-brand-700 rounded-full text-xs font-semibold uppercase tracking-wider">
                             <FileText className="w-3.5 h-3.5" />
-                            Última actualización: 28 de Enero, 2026
+                            Última actualización: {termsContent.lastUpdate}
                         </div>
-                        <h2 className="text-2xl font-bold text-gray-900">Bienvenido a MeseroApp</h2>
-                        <p className="text-gray-600 leading-relaxed">
-                            Al utilizar nuestra plataforma, usted acepta cumplir con los siguientes términos y condiciones. Por favor, léalos cuidadosamente antes de comenzar a usar nuestros servicios.
+                        <h2 className="text-2xl font-bold text-gray-900 text-balance">{termsContent.title}</h2>
+                        <p className="text-gray-600 leading-relaxed text-sm">
+                            {termsContent.intro}
                         </p>
                     </div>
 
                     <div className="grid gap-8">
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
-                                    <ShieldCheck className="w-4 h-4 text-brand-600" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 text-lg">1. Uso del Servicio</h3>
-                            </div>
-                            <p className="text-gray-600 leading-relaxed text-sm">
-                                MeseroApp es una plataforma SaaS destinada a la gestión de menús digitales y pedidos para restaurantes. Usted se compromete a utilizar la aplicación de manera legal y ética, garantizando que la información proporcionada sobre su negocio es verídica.
-                            </p>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
-                                    <FileText className="w-4 h-4 text-brand-600" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 text-lg">2. Cuentas y Seguridad</h3>
-                            </div>
-                            <p className="text-gray-600 leading-relaxed text-sm">
-                                Usted es responsable de mantener la confidencialidad de sus credenciales de acceso. MeseroApp no se hace responsable por pérdidas derivadas del uso no autorizado de su cuenta debido a negligencia en la protección de sus datos de acceso.
-                            </p>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
-                                    <Scale className="w-4 h-4 text-brand-600" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 text-lg">3. Responsabilidad</h3>
-                            </div>
-                            <p className="text-gray-600 leading-relaxed text-sm">
-                                Aunque nos esforzamos por mantener la plataforma operativa las 24 horas del día, no garantizamos que el servicio sea ininterrumpido o libre de errores. MeseroApp no se responsabiliza por pérdidas económicas directas o indirectas derivadas del uso de la aplicación.
-                            </p>
-                        </section>
-
-                        <section className="space-y-3">
-                            <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
-                                    <MessageCircle className="w-4 h-4 text-brand-600" />
-                                </div>
-                                <h3 className="font-bold text-gray-900 text-lg">4. Contacto</h3>
-                            </div>
-                            <p className="text-gray-600 leading-relaxed text-sm">
-                                Si tiene alguna pregunta sobre estos términos, puede contactarnos a través de nuestro soporte técnico en la sección de ayuda del dashboard.
-                            </p>
-                        </section>
+                        {termsContent.sections.map((section) => {
+                            const Icon = IconMap[section.iconName] || FileText;
+                            return (
+                                <section key={section.id} className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-lg bg-brand-100 flex items-center justify-center">
+                                            <Icon className="w-4 h-4 text-brand-600" />
+                                        </div>
+                                        <h3 className="font-bold text-gray-900 text-lg">{section.id}. {section.title}</h3>
+                                    </div>
+                                    <p className="text-gray-600 leading-relaxed text-sm">
+                                        {section.content}
+                                    </p>
+                                </section>
+                            );
+                        })}
                     </div>
 
                     <div className="pt-8 border-t border-gray-100">
