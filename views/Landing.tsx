@@ -129,9 +129,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
     setMobileMenuOpen(false);
     const el = document.getElementById(id);
     if (el) {
-      const offset = 80;
-      const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
-      window.scrollTo({ top: pos, behavior: 'smooth' });
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -421,7 +419,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
 
       {/* ═══════════════════════ FEATURES GRID ═══════════════════════ */}
-      <section id="features" className="py-24 md:py-32 px-6 relative">
+      <section id="features" className="py-24 md:py-32 px-6 relative scroll-mt-24">
         <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
         <div ref={features.ref} className="max-w-7xl mx-auto">
           {/* Section Header */}
@@ -513,7 +511,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </section>
 
       {/* ═══════════════════════ HOW IT WORKS ═══════════════════════ */}
-      <section id="how-it-works" className="py-24 md:py-32 px-6 relative overflow-hidden">
+      <section id="how-it-works" className="py-24 md:py-32 px-6 relative overflow-hidden scroll-mt-24">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0e0e1a] to-[#0a0a0f]" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full opacity-10" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.3) 0%, transparent 70%)' }} />
 
@@ -644,8 +642,8 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
                 </div>
                 <p className="text-gray-400 text-sm leading-relaxed mb-6">{req.desc}</p>
                 <span className={`text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${req.status === 'Indispensable' ? 'bg-red-500/10 border-red-500/20 text-red-500' :
-                    req.status === 'Opcional' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
-                      'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
+                  req.status === 'Opcional' ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' :
+                    'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
                   }`}>
                   {req.status}
                 </span>
@@ -656,7 +654,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </section>
 
       {/* ═══════════════════════ TESTIMONIALS ═══════════════════════ */}
-      <section id="testimonials" className="py-24 md:py-32 px-6 relative">
+      <section id="testimonials" className="py-24 md:py-32 px-6 relative scroll-mt-24">
         <div ref={testimonials.ref} className="max-w-7xl mx-auto">
           {/* Section Header */}
           <div className={`text-center mb-16 max-w-3xl mx-auto transition-all duration-1000 ${testimonials.isInView ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
@@ -723,7 +721,7 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
       </section>
 
       {/* ═══════════════════════ FAQ ═══════════════════════ */}
-      <section id="faq" className="py-24 md:py-32 px-6 relative">
+      <section id="faq" className="py-24 md:py-32 px-6 relative scroll-mt-24">
         <div className="absolute inset-0 bg-gradient-to-b from-[#0a0a0f] via-[#0d0d18] to-[#0a0a0f]" />
         <div ref={faq.ref} className="max-w-3xl mx-auto relative z-10">
           {/* Section Header */}

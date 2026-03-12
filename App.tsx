@@ -189,7 +189,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full h-screen bg-white">
+    <div className="w-full min-h-screen bg-white">
       <PWAInstallPrompt />
       <OfflineStatus />
       <LockScreen />
