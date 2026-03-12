@@ -309,107 +309,14 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
               {/* Glow behind card */}
               <div className="absolute inset-0 bg-gradient-to-tr from-accent-500/30 to-purple-500/20 blur-3xl rounded-full scale-110" />
 
-              {/* Main Dashboard - REAL INTERFACE RECREATION */}
-              <div className="relative bg-white rounded-3xl overflow-hidden shadow-2xl transform lg:rotate-1 hover:rotate-0 transition-all duration-700 max-h-[500px] border border-gray-200">
-                {/* Header Profile Section */}
-                <div className="border-b border-gray-100 px-6 py-4 flex items-center justify-between bg-white/80 backdrop-blur-sm sticky top-0 z-10 text-gray-900">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-pink-50 border-2 border-pink-100 flex items-center justify-center">
-                      <ChefHat className="w-7 h-7 text-pink-500" />
-                    </div>
-                    <div className="text-left">
-                      <div className="text-base font-bold text-gray-900">Tu Restaurante</div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[11px] text-gray-500">Nombre del Propietario</span>
-                        <span className="bg-amber-50 text-amber-700 text-[9px] font-bold px-1.5 py-0.5 rounded-md border border-amber-100">PROPIETARIO</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
-                      <Star className="w-4 h-4 text-gray-400" />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
-                      <ArrowRight className="w-4 h-4 text-gray-400 rotate-180" />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Dashboard Inner Content */}
-                <div className="p-6 space-y-8 bg-gray-50/50">
-                  {/* Real Stats Cards Row */}
-                  <div className="grid grid-cols-5 gap-3">
-                    {[
-                      { icon: <UtensilsCrossed className="w-4 h-4" />, label: 'MENÚ', val: '16', sub: 'Editar platillos', color: 'bg-amber-50 text-amber-600' },
-                      { icon: <Grid2X2 className="w-4 h-4" />, label: 'MESAS', val: '12', sub: 'Administrar QR', color: 'bg-blue-50 text-blue-600' },
-                      { icon: <TrendingUp className="w-4 h-4" />, label: 'VENTAS', val: '$8.4k', sub: 'Ver historial', color: 'bg-emerald-50 text-emerald-600' },
-                      { icon: <ShoppingBag className="w-4 h-4" />, label: 'ÓRDENES', val: '61', sub: 'Completadas', color: 'bg-purple-50 text-purple-600' },
-                      { icon: <Users className="w-4 h-4" />, label: 'EQUIPO', val: 'Activo', sub: 'Roles', color: 'bg-indigo-50 text-indigo-600' },
-                    ].map((card, i) => (
-                      <div key={i} className="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm flex flex-col items-center text-center">
-                        <div className={`w-8 h-8 ${card.color} rounded-lg flex items-center justify-center mb-2`}>
-                          {card.icon}
-                        </div>
-                        <div className="text-[15px] font-bold text-gray-900">{card.val}</div>
-                        <div className="text-[10px] text-gray-400 font-medium uppercase tracking-tighter">{card.label}</div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Rendimiento Section */}
-                  <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
-                    <div className="flex items-center justify-between mb-6">
-                      <div className="flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4 text-orange-500" />
-                        <h4 className="text-sm font-bold text-gray-800">Rendimiento del Menú</h4>
-                      </div>
-                      <div className="flex bg-gray-100 p-0.5 rounded-lg">
-                        {['7d', '30d', 'Todo'].map((t) => (
-                          <span key={t} className={`px-2.5 py-1 text-[10px] font-bold rounded-md ${t === 'Todo' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>{t}</span>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      {[
-                        { name: 'Agua de Jamaica', price: '$520', qty: '26 u.', p: 'w-[75%]', color: 'bg-amber-400' },
-                        { name: 'Hamburguesa Clásica', price: '$2,400', qty: '16 u.', p: 'w-[50%]', color: 'bg-orange-500' },
-                        { name: 'Enchiladas Verdes', price: '$1,680', qty: '14 u.', p: 'w-[40%]', color: 'bg-emerald-500' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-4">
-                          <div className="w-8 h-8 rounded-lg bg-gray-100 overflow-hidden flex-shrink-0">
-                            <div className="w-full h-full bg-gray-200 animate-pulse" />
-                          </div>
-                          <div className="flex-1">
-                            <div className="flex justify-between items-center mb-1">
-                              <span className="text-xs font-bold text-gray-700">{item.name}</span>
-                              <div className="flex items-center gap-2">
-                                <span className="text-[10px] text-gray-400 font-bold">{item.qty}</span>
-                                <span className="text-xs font-bold text-gray-900">{item.price}</span>
-                              </div>
-                            </div>
-                            <div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                              <div className={`${item.p} h-full ${item.color} rounded-full`} />
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Floating QR Badge - Integrated Style */}
-              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-2xl border border-gray-100 shadow-2xl animate-[float_3s_ease-in-out_infinite]">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 bg-accent-500 rounded-xl flex items-center justify-center shadow-lg shadow-accent-500/20">
-                    <QrCode className="w-5 h-5 text-brand-900" />
-                  </div>
-                  <div className="text-left">
-                    <div className="text-sm font-bold text-gray-900">Escaneado Real</div>
-                    <div className="text-[11px] text-gray-500 italic">Ordena en segundos</div>
-                  </div>
-                </div>
+              {/* Main Infographic - BLACK & GOLD */}
+              <div className="relative rounded-[2rem] overflow-hidden shadow-2xl transform lg:rotate-1 hover:rotate-0 transition-all duration-700 border border-white/10 group">
+                <img
+                  src="/infografia.png"
+                  alt="MeseroApp Infografía"
+                  className="w-full h-auto object-cover opacity-90 group-hover:opacity-100 transition-opacity"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
               </div>
             </div>
           </div>
