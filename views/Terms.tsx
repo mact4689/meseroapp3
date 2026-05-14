@@ -62,7 +62,7 @@ const IconMap: Record<string, React.ElementType> = {
 
 export const Terms: React.FC<TermsProps> = ({ onNavigate }) => {
     return (
-        <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden">
+        <div className="flex flex-col min-h-screen bg-slate-50 relative overflow-hidden">
             {/* Decorative Background Elements */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-brand-500/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
             <div className="absolute bottom-0 left-0 w-80 h-80 bg-brand-900/5 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
