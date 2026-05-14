@@ -6,6 +6,7 @@ import { AppView } from './types';
 import { diagnoseRealtimeConnection } from './services/realtimeDiagnostics';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 import { LockScreen } from './views/LockScreen';
+import { SkipToContent } from './components/SkipToContent';
 
 // --- LAZY LOADED VIEWS ---
 const Landing = lazy(() => import('./views/Landing').then(m => ({ default: m.Landing })));
