@@ -762,7 +762,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             </header>
 
             {/* Menu Content */}
-            <main className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
+            <main id="main-content" className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
                 {categories.map((category) => (
                     <div key={category} className="scroll-mt-32" id={toId(category)}
                         ref={(el) => {

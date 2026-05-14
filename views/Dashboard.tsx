@@ -484,7 +484,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 </div>
             </header>
 
-            <main className="flex-1 p-3 pb-32 sm:p-6 sm:pb-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
+            <main id="main-content" className="flex-1 p-3 pb-32 sm:p-6 sm:pb-6 max-w-4xl mx-auto w-full space-y-4 sm:space-y-6">
 
                 {/* Stats Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">

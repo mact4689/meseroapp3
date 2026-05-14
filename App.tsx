@@ -1,29 +1,42 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { Routes, Route, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
-import { Landing } from './views/Landing';
 import { OfflineStatus } from './components/OfflineStatus';
-import { Login } from './views/Login';
-import { Register } from './views/Register';
-import { Welcome } from './views/Welcome';
-import { BusinessSetup } from './views/BusinessSetup';
-import { MenuSetup } from './views/MenuSetup';
-import { TableSetup } from './views/TableSetup';
-import { TicketConfigView } from './views/TicketConfig';
-import { StaffManagement } from './views/StaffManagement';
-import { Dashboard } from './views/Dashboard';
-import { Splash } from './views/Splash';
-import { CustomerMenu } from './views/CustomerMenu';
-import { Terms } from './views/Terms';
-import { Privacy } from './views/Privacy';
-import { KDSSetup } from './views/KDSSetup';
-import { KDSView } from './views/KDSView';
-import NotFound from './views/NotFound';
 import { AppView } from './types';
 import { diagnoseRealtimeConnection } from './services/realtimeDiagnostics';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { LockScreen } from './views/LockScreen';
+
+// --- LAZY LOADED VIEWS ---
+const Landing = lazy(() => import('./views/Landing').then(m => ({ default: m.Landing })));
+const Login = lazy(() => import('./views/Login').then(m => ({ default: m.Login })));
+const Register = lazy(() => import('./views/Register').then(m => ({ default: m.Register })));
+const Welcome = lazy(() => import('./views/Welcome').then(m => ({ default: m.Welcome })));
+const BusinessSetup = lazy(() => import('./views/BusinessSetup').then(m => ({ default: m.BusinessSetup })));
+const MenuSetup = lazy(() => import('./views/MenuSetup').then(m => ({ default: m.MenuSetup })));
+const TableSetup = lazy(() => import('./views/TableSetup').then(m => ({ default: m.TableSetup })));
+const TicketConfigView = lazy(() => import('./views/TicketConfig').then(m => ({ default: m.TicketConfigView })));
+const StaffManagement = lazy(() => import('./views/StaffManagement').then(m => ({ default: m.StaffManagement })));
+const Dashboard = lazy(() => import('./views/Dashboard').then(m => ({ default: m.Dashboard })));
+const Splash = lazy(() => import('./views/Splash').then(m => ({ default: m.Splash })));
+const CustomerMenu = lazy(() => import('./views/CustomerMenu').then(m => ({ default: m.CustomerMenu })));
+const Terms = lazy(() => import('./views/Terms').then(m => ({ default: m.Terms })));
+const Privacy = lazy(() => import('./views/Privacy').then(m => ({ default: m.Privacy })));
+const KDSSetup = lazy(() => import('./views/KDSSetup').then(m => ({ default: m.KDSSetup })));
+const KDSView = lazy(() => import('./views/KDSView').then(m => ({ default: m.KDSView })));
+const NotFound = lazy(() => import('./views/NotFound'));
+
+// --- GLOBAL LOADING SPINNER ---
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-[60vh] w-full">
+    <div className="relative w-12 h-12">
+      <div className="absolute inset-0 border-4 border-accent-500/20 rounded-full"></div>
+      <div className="absolute inset-0 border-4 border-accent-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  </div>
+);
 
 // --- LEGACY COMPATIBILITY WRAPPER ---
-// This hook allows old components (that use onNavigate) to work with React Router
 export const useAppNavigation = () => {
   const navigate = useNavigate();
 
@@ -51,7 +64,6 @@ export const useAppNavigation = () => {
     const params = new URLSearchParams(window.location.search);
     const hasContext = params.get('uid') && (params.get('role_id') || params.get('table') || params.get('station'));
 
-    // Preserve query parameters during SPA navigation if we are in a QR/Station context
     navigate(hasContext ? path + window.location.search : path);
   };
 
@@ -59,174 +71,72 @@ export const useAppNavigation = () => {
 };
 
 // --- ROUTE WRAPPER COMPONENTS ---
-// These wrap each view to inject the onNavigate prop for backward compatibility
-
-const SplashRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Splash onNavigate={onNavigate} />;
-};
-
-
-
-const LandingRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Landing onNavigate={onNavigate} />;
-};
-
-const LoginRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Login onNavigate={onNavigate} />;
-};
-
-const RegisterRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Register onNavigate={onNavigate} />;
-};
-
-const WelcomeRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Welcome onNavigate={onNavigate} />;
-};
-
-const BusinessSetupRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <BusinessSetup onNavigate={onNavigate} />;
-};
-
-const MenuSetupRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <MenuSetup onNavigate={onNavigate} />;
-};
-
-const TableSetupRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <TableSetup onNavigate={onNavigate} />;
-};
-
-const TicketConfigRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <TicketConfigView onNavigate={onNavigate} />;
-};
-
-const StaffManagementRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <StaffManagement onNavigate={onNavigate} />;
-};
-
-const DashboardRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Dashboard onNavigate={onNavigate} />;
-};
-
-const CustomerMenuRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <CustomerMenu onNavigate={onNavigate} />;
-};
-
-const TermsRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Terms onNavigate={onNavigate} />;
-};
-
-const PrivacyRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <Privacy onNavigate={onNavigate} />;
-};
-
-const KDSSetupRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <KDSSetup onNavigate={onNavigate} />;
-};
-
-const KDSViewRoute = () => {
-  const onNavigate = useAppNavigation();
-  return <KDSView onNavigate={onNavigate} />;
-};
-
-// --- LEGACY QR CODE REDIRECT ---
-// This component handles legacy QR codes with ?table= and ?view=KDS query params
-const LegacyRedirectHandler = () => {
-  const [searchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  useEffect(() => {
-    // Only run on root path with legacy query params
-    if (location.pathname === '/') {
-      const table = searchParams.get('table');
-      const uid = searchParams.get('uid');
-      const view = searchParams.get('view');
-      const station = searchParams.get('station');
-
-      if (table && uid) {
-        // Redirect legacy QR code URLs to new customer menu route
-        navigate(`/menu?table=${table}&uid=${uid}`, { replace: true });
-        return;
-      }
-
-      if (view === 'KDS' && station) {
-        // Redirect legacy KDS URLs to new KDS route
-        navigate(`/kds?station=${station}`, { replace: true });
-        return;
-      }
-    }
-  }, [searchParams, navigate, location.pathname]);
-
-  // Return null as this is just a redirect handler
-  return null;
-};
-
-
-import { PWAInstallPrompt } from './components/PWAInstallPrompt';
-
-import { LockScreen } from './views/LockScreen';
+const SplashRoute = () => <Splash onNavigate={useAppNavigation()} />;
+const LandingRoute = () => <Landing onNavigate={useAppNavigation()} />;
+const LoginRoute = () => <Login onNavigate={useAppNavigation()} />;
+const RegisterRoute = () => <Register onNavigate={useAppNavigation()} />;
+const WelcomeRoute = () => <Welcome onNavigate={useAppNavigation()} />;
+const BusinessSetupRoute = () => <BusinessSetup onNavigate={useAppNavigation()} />;
+const MenuSetupRoute = () => <MenuSetup onNavigate={useAppNavigation()} />;
+const TableSetupRoute = () => <TableSetup onNavigate={useAppNavigation()} />;
+const TicketConfigRoute = () => <TicketConfigView onNavigate={useAppNavigation()} />;
+const StaffManagementRoute = () => <StaffManagement onNavigate={useAppNavigation()} />;
+const DashboardRoute = () => <Dashboard onNavigate={useAppNavigation()} />;
+const CustomerMenuRoute = () => <CustomerMenu onNavigate={useAppNavigation()} />;
+const TermsRoute = () => <Terms onNavigate={useAppNavigation()} />;
+const PrivacyRoute = () => <Privacy onNavigate={useAppNavigation()} />;
+const KDSSetupRoute = () => <KDSSetup onNavigate={useAppNavigation()} />;
+const KDSViewRoute = () => <KDSView onNavigate={useAppNavigation()} />;
 
 const App: React.FC = () => {
-  // Expose diagnostic function to window for console access
   useEffect(() => {
     (window as any).diagnoseRealtime = diagnoseRealtimeConnection;
     console.log('💡 Realtime diagnostic available: Run window.diagnoseRealtime() in console');
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-white">
+    <div className="w-full min-h-screen bg-white font-sans selection:bg-accent-500/30 selection:text-brand-900">
+      <SkipToContent />
       <PWAInstallPrompt />
       <OfflineStatus />
       <LockScreen />
 
-      <Routes>
-        {/* Public routes */}
-        <Route path="/" element={<SplashRoute />} />
-        <Route path="/website" element={<LandingRoute />} />
-        <Route path="/landing" element={<LandingRoute />} />
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/register" element={<RegisterRoute />} />
-        <Route path="/terms" element={<TermsRoute />} />
-        <Route path="/privacy" element={<PrivacyRoute />} />
+      <Suspense fallback={<PageLoader />}>
+        <Routes>
+          {/* Public routes */}
+          <Route path="/" element={<SplashRoute />} />
+          <Route path="/website" element={<LandingRoute />} />
+          <Route path="/landing" element={<LandingRoute />} />
+          <Route path="/login" element={<LoginRoute />} />
+          <Route path="/register" element={<RegisterRoute />} />
+          <Route path="/terms" element={<TermsRoute />} />
+          <Route path="/privacy" element={<PrivacyRoute />} />
 
-        {/* Customer-facing routes (accessed via QR) */}
-        <Route path="/menu" element={<CustomerMenuRoute />} />
+          {/* Customer-facing routes */}
+          <Route path="/menu" element={<CustomerMenuRoute />} />
 
-        {/* Authenticated routes (owner/staff) */}
-        <Route path="/welcome" element={<WelcomeRoute />} />
-        <Route path="/dashboard" element={<DashboardRoute />} />
+          {/* Authenticated routes */}
+          <Route path="/welcome" element={<WelcomeRoute />} />
+          <Route path="/dashboard" element={<DashboardRoute />} />
 
-        {/* Setup routes */}
-        <Route path="/setup/business" element={<BusinessSetupRoute />} />
-        <Route path="/setup/menu" element={<MenuSetupRoute />} />
-        <Route path="/setup/tables" element={<TableSetupRoute />} />
-        <Route path="/setup/ticket" element={<TicketConfigRoute />} />
-        <Route path="/setup/staff" element={<StaffManagementRoute />} />
+          {/* Setup routes */}
+          <Route path="/setup/business" element={<BusinessSetupRoute />} />
+          <Route path="/setup/menu" element={<MenuSetupRoute />} />
+          <Route path="/setup/tables" element={<TableSetupRoute />} />
+          <Route path="/setup/ticket" element={<TicketConfigRoute />} />
+          <Route path="/setup/staff" element={<StaffManagementRoute />} />
 
-        {/* KDS routes */}
-        <Route path="/kds/setup" element={<KDSSetupRoute />} />
-        <Route path="/kds" element={<KDSViewRoute />} />
+          {/* KDS routes */}
+          <Route path="/kds/setup" element={<KDSSetupRoute />} />
+          <Route path="/kds" element={<KDSViewRoute />} />
 
-        {/* 404 Not Found route */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
+          {/* 404 route */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </Suspense>
     </div>
   );
 };
 
 export default App;
+

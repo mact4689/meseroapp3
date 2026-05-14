@@ -1,0 +1,69 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Hide scrollbar globally for PWA feel */
+  ::-webkit-scrollbar {
+    display: none;
+  }
+
+  * {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  html,
+  body {
+    width: 100%;
+  }
+
+  body {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Improved focus ring for accessibility */
+  :focus-visible {
+    @apply outline-none ring-2 ring-accent-500 ring-offset-2 ring-offset-white;
+  }
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+@layer components {
+  .fade-in {
+    @apply animate-fadeIn;
+  }
+
+  .slide-up {
+    @apply animate-slideUp;
+  }
+
+  .animate-in {
+    animation-duration: 0.5s;
+    animation-fill-mode: forwards;
+    opacity: 0;
+  }
+
+  .animate-in.fade-in {
+    animation-name: fadeIn;
+  }
+
+  .animate-in.zoom-in {
+    animation-name: zoomIn;
+  }
+
+  .animate-in.slide-in-from-bottom-4 {
+    animation-name: slideUp;
+  }
+}
