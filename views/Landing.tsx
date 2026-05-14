@@ -10,18 +10,11 @@ import {
   ArrowRight,
   CheckCircle2,
   Star,
-  Clock,
-  TrendingUp,
   Users,
-  Shield,
   Sparkles,
   Monitor,
   Printer,
   ChevronDown,
-  ChevronUp,
-  Grid2X2,
-  ShoppingBag,
-  Play,
   Menu,
   X,
   Tablet,
@@ -48,30 +41,10 @@ const useInView = (options?: IntersectionObserverInit) => {
 
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return { ref, isInView };
-};
-
-// --- Animated Counter Component ---
-const AnimatedCounter: React.FC<{ end: number; suffix?: string; duration?: number }> = ({ end, suffix = '', duration = 2000 }) => {
-  const [count, setCount] = useState(0);
-  const { ref, isInView } = useInView();
-
-  useEffect(() => {
-    if (!isInView) return;
-    let startTime: number;
-    const animate = (currentTime: number) => {
-      if (!startTime) startTime = currentTime;
-      const progress = Math.min((currentTime - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setCount(Math.floor(eased * end));
-      if (progress < 1) requestAnimationFrame(animate);
-    };
-    requestAnimationFrame(animate);
-  }, [isInView, end, duration]);
-
-  return <span ref={ref}>{count}{suffix}</span>;
 };
 
 // --- FAQ Accordion Item ---
@@ -140,7 +113,6 @@ export const Landing: React.FC<LandingProps> = ({ onNavigate }) => {
 
   // Intersection observer sections
   const hero = useInView();
-  const stats = useInView();
   const features = useInView();
   const howItWorks = useInView();
   const testimonials = useInView();

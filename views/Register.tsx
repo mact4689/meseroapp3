@@ -5,15 +5,15 @@ import { AppView } from '../types';
 import { ArrowLeft, User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { signUp } from '../services/auth';
 import { useAppStore } from '../store/AppContext';
-import { upsertProfile } from '../services/db';
 import { supabase } from '../services/client';
+
 
 interface RegisterProps {
   onNavigate: (view: AppView) => void;
 }
 
 export const Register: React.FC<RegisterProps> = ({ onNavigate }) => {
-  const { register } = useAppStore(); // Usamos el nuevo método register
+  useAppStore();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

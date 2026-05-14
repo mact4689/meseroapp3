@@ -125,7 +125,7 @@ export const diagnoseRealtimeConnection = async () => {
     // ===== LAYER 5: RLS Policy Check =====
     console.log('🔒 LAYER 5: Row Level Security');
     try {
-        const { data, error } = await supabase
+        const { error } = await supabase
             .from('orders')
             .select('id')
             .limit(1);

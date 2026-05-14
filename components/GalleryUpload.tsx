@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Camera, X, Plus, Image as ImageIcon } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 
 interface GalleryUploadProps {
     existingImages: string[];

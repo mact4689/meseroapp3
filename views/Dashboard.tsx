@@ -16,7 +16,6 @@ import {
     Bell,
     ChefHat,
     Printer,
-    CheckCircle2,
     FileText,
     Check,
     Clock,
@@ -28,23 +27,17 @@ import {
     AlertCircle,
     X,
     Calendar,
-    Filter,
     Download,
     Trophy,
     ArrowRight,
     Settings,
     ShieldCheck,
-    Copy,
-    Terminal,
     Receipt,
     Notebook,
     Hand,
-    ShoppingBag,
     Star,
     Lock
 } from 'lucide-react';
-import { supabase } from '../services/client';
-import { diagnoseRealtimeConnection } from '../services/realtimeDiagnostics';
 
 interface DashboardProps {
     onNavigate: (view: AppView) => void;
@@ -57,17 +50,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { business, menu, tables, user, orders, isOnboarding } = state;
     const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile, canViewOrders, canConfigureTickets, canManageStations, canAccessSettings } = usePermissions();
 
-    // ─── LOADING GUARD: Wait for AppContext to finish processing ───
-    if (state.isLoading || state.pendingRole) {
-        return (
-            <div className="flex flex-col h-full items-center justify-center bg-gray-50">
-                <div className="w-10 h-10 border-4 border-gray-200 border-t-brand-900 rounded-full animate-spin mb-4"></div>
-                <p className="text-sm text-gray-500 font-medium">
-                    {state.pendingRole ? 'Esperando autenticación...' : 'Cargando...'}
-                </p>
-            </div>
-        );
-    }
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
     const [showSalesModal, setShowSalesModal] = useState(false);
     const [showFullPerformanceModal, setShowFullPerformanceModal] = useState(false);
@@ -81,9 +63,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     // Eliminated unused showSqlModal state
     const [statsTimeRange, setStatsTimeRange] = useState<TimeRange>('all');
-    const [copyFeedback, setCopyFeedback] = useState(false);
     const [printingOrderId, setPrintingOrderId] = useState<string | null>(null);
-    const [activeOrdersView, setActiveOrdersView] = useState<'pending' | 'completed'>('pending');
     const [printingAll, setPrintingAll] = useState(false);
     const [promotingItemId, setPromotingItemId] = useState<string | null>(null);
     const [opportunitiesThreshold, setOpportunitiesThreshold] = useState(3);
@@ -171,7 +151,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const maxSales = topItems.length > 0 ? topItems[0].soldCount : 1;
 
         return { topItems, bottomItems, maxSales, allItems: sortedStats };
-    }, [filteredOrdersForStats, menu]);
+    }, [filteredOrdersForStats, menu, opportunitiesThreshold]);
 
     // --- LÓGICA DE VENTAS POR DÍA (HISTORIAL MODAL) ---
 
@@ -217,8 +197,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         const activeHours = hoursMap.map((count, hour) => ({
             hour: `${hour}:00`,
             count
-        })).filter((_, idx) => {
-            // Mostrar rango razonable si hay datos, si no todo el día
+        })).filter(() => {
             return true;
         }).slice(8, 24); // Mostrar de 8am a 12pm por defecto para limpieza visual
 
@@ -424,6 +403,18 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const baseUrl = window.location.origin;
     const publicMenuUrl = `${baseUrl}/?table=1&uid=${user?.id}`;
 
+    // Loading guard (after all hooks, before JSX)
+    if (state.isLoading || state.pendingRole) {
+        return (
+            <div className="flex flex-col h-full items-center justify-center bg-gray-50 min-h-screen">
+                <div className="w-10 h-10 border-4 border-gray-200 border-t-brand-900 rounded-full animate-spin mb-4"></div>
+                <p className="text-sm text-gray-500 font-medium">
+                    {state.pendingRole ? 'Esperando autenticación...' : 'Cargando...'}
+                </p>
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             {/* Navbar */}
@@ -585,7 +576,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     showHistoryModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowHistoryModal(false)}></div>
-                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-zoomIn overflow-hidden flex flex-col max-h-[80vh]">
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-purple-50 flex items-center justify-center text-purple-600">
@@ -687,7 +678,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     showSalesModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowSalesModal(false)}></div>
-                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[80vh]">
+                            <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl relative z-10 animate-zoomIn overflow-hidden flex flex-col max-h-[80vh]">
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center text-green-600">
@@ -774,13 +765,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
                                                     <div className="overflow-x-auto pb-2 scrollbar-hide">
                                                         <div className="flex items-end h-40 gap-3 min-w-[600px] px-2 pt-6">
-                                                            {dailyStats.peakHours.map((hour, idx) => {
-                                                                const maxCount = Math.max(...dailyStats.peakHours.map(h => h.count), 1); // Prevent div by zero
+                                                            {dailyStats.peakHours.map((hour) => {
+                                                                 const maxCount = Math.max(...dailyStats.peakHours.map(h => h.count), 1); // Prevent div by zero
                                                                 const heightPercent = (hour.count / maxCount) * 100;
                                                                 const isZero = hour.count === 0;
 
                                                                 return (
-                                                                    <div key={idx} className="flex flex-col items-center gap-2 flex-1 group relative min-w-[30px]">
+                                                                    <div key={hour.hour} className="flex flex-col items-center gap-2 flex-1 group relative min-w-[30px]">
                                                                         <div className="w-full relative flex items-end justify-center" style={{ height: '100%' }}>
                                                                             {/* Tooltip floating above */}
                                                                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-brand-900 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10 pointer-events-none transform translate-y-2 group-hover:translate-y-0 duration-200">
@@ -843,7 +834,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                     showFullPerformanceModal && (
                         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
                             <div className="absolute inset-0 bg-brand-900/40 backdrop-blur-sm" onClick={() => setShowFullPerformanceModal(false)}></div>
-                            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 overflow-hidden flex flex-col max-h-[85vh]">
+                            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 animate-zoomIn overflow-hidden flex flex-col max-h-[85vh]">
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-20">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-full bg-orange-50 flex items-center justify-center text-orange-600">
@@ -1135,10 +1126,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                         : [];
 
                                     // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
-                                    const allTableItems = isBill
-                                        ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')))
-                                        : [];
-
                                     // Calcular el total sumando todas las órdenes de la mesa
                                     const tableTotal = isBill
                                         ? tableOrders.reduce((sum, o) => sum + (o.total || 0), 0)
@@ -1512,7 +1499,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                 {confirmCloseTable && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-brand-900/60 backdrop-blur-md" onClick={() => setConfirmCloseTable(null)}></div>
-                        <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 animate-in zoom-in duration-200 p-6 text-center">
+                        <div className="bg-white w-full max-w-sm rounded-2xl shadow-2xl relative z-10 animate-zoomIn p-6 text-center">
                             <div className="w-16 h-16 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-4 text-red-500">
                                 <Receipt className="w-8 h-8" />
                             </div>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { AppView, Order, OrderItem, KitchenStation, PreparedItem } from '../types';
-import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, Loader2, AlertCircle, Sun } from 'lucide-react';
+import { ChefHat, Clock, Check, Volume2, VolumeX, RefreshCw, X, AlertCircle, Sun } from 'lucide-react';
 import { playNotificationSound } from '../services/notification';
 import { getStations, getOrders, updateOrderPreparedItemsSecure } from '../services/db';
 import { supabase } from '../services/client';
@@ -12,7 +12,7 @@ interface KDSViewProps {
 }
 
 
-export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
+export const KDSView: React.FC<KDSViewProps> = ({ onNavigate: _onNavigate }) => {
     const [soundEnabled, setSoundEnabled] = useState(true);
     const [lastOrderCount, setLastOrderCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -139,22 +139,13 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         } finally {
             if (!isSilent) setIsLoading(false);
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [userId]);
 
     // Initial load
     useEffect(() => {
         loadData();
     }, [loadData]);
-
-    const handlePinSubmit = (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (enteringPin.length === 4) {
-            localStorage.setItem('kds_pin', enteringPin);
-            setSavedPin(enteringPin);
-            setIsAuthorized(true);
-            setEnteringPin('');
-        }
-    };
 
     const handleLogoutPin = () => {
         localStorage.removeItem('kds_pin');
@@ -230,6 +221,7 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
             playNotificationSound();
         }
         setLastOrderCount(relevantOrders.length);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [relevantOrders.length, soundEnabled, isLoading]);
 
     // Force re-render every second to update timers
@@ -239,48 +231,23 @@ export const KDSView: React.FC<KDSViewProps> = ({ onNavigate }) => {
         return () => clearInterval(timer);
     }, []);
 
-    // Calculate formatted time elapsed
-    const getFormattedTimeElapsed = (createdAt: string) => {
-        const created = new Date(createdAt).getTime();
-        const now = Date.now();
-        const diff = Math.max(0, now - created);
-
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    // Calculate total minutes for color coding
-    const getTotalMinutes = (createdAt: string) => {
-        const created = new Date(createdAt).getTime();
-        const now = Date.now();
-        return Math.floor((now - created) / 60000);
-    };
-
-    // Get color based on time elapsed
-    const getTimeColor = (minutes: number) => {
-        if (minutes < 5) return 'text-green-600 bg-green-50';
-        if (minutes < 10) return 'text-yellow-600 bg-yellow-50';
-        return 'text-red-600 bg-red-50 animate-pulse';
-    };
-
-    // Check if an item is prepared
-    const isItemPrepared = (order: Order, itemId: string) => {
-        if (!order.prepared_items) return false;
-        return order.prepared_items.some(pi => pi.itemId === itemId && pi.stationId === stationId);
-    };
-
     // State for visual feedback when cancelling order
     const [cancellingOrderIds, setCancellingOrderIds] = useState<Set<string>>(new Set());
 
     // Auto-refresh timer display - faster tick for smooth disappearance (every 5s)
 
+    // Helper: Check if an item is prepared
+    const isItemPrepared = (order: Order, itemId: string) => {
+        return (order.prepared_items || []).some(
+            pi => pi.itemId === itemId && pi.stationId === stationId
+        );
+    };
 
-    // Helper: Calculate time since completion
-    const getMinutesSinceCompletion = (completedAt: number) => {
-        return (Date.now() - completedAt) / 60000;
+    // Helper: Get color based on time elapsed
+    const getTimeColor = (minutes: number) => {
+        if (minutes < 5) return 'text-green-600 bg-green-50';
+        if (minutes < 10) return 'text-yellow-600 bg-yellow-50';
+        return 'text-red-600 bg-red-50 animate-pulse';
     };
 
     // Handle Item Click:

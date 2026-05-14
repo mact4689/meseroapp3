@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { WifiOff, AlertTriangle, RefreshCcw } from 'lucide-react';
+import { WifiOff, RefreshCcw } from 'lucide-react';
 
 export const OfflineStatus: React.FC = () => {
     const [isOnline, setIsOnline] = useState(navigator.onLine);

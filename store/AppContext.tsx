@@ -353,6 +353,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     return () => subscription.unsubscribe();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // REALTIME SUBSCRIPTION FOR ORDERS
@@ -418,10 +419,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         supabase.removeChannel(channel);
       }
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.user?.id]);
 
   const loadUserData = async (userId: string) => {
     try {
+      // eslint-disable-next-line prefer-const
       let [profileData, menuData, stationsData] = await Promise.all([
         getProfile(userId),
         getMenuItems(userId),

@@ -15,7 +15,7 @@ export const compressImage = async (file: File): Promise<File> => {
     const QUALITY = 0.8;
     const MIME_TYPE = 'image/webp';
 
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
         const reader = new FileReader();
         reader.readAsDataURL(file);
 

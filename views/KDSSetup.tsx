@@ -71,6 +71,7 @@ export const KDSSetup: React.FC<KDSSetupProps> = ({ onNavigate }) => {
         if (stations.length > 0) {
             generateQRCodes();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stations]);
 
     const handleAddStation = async (e: React.FormEvent) => {

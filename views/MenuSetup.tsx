@@ -5,7 +5,7 @@ import { Input } from '../components/Input';
 import { ImageUpload } from '../components/ImageUpload';
 import { GalleryUpload } from '../components/GalleryUpload';
 import { AppView, MenuItem, ItemOptionsConfig, OptionGroup, ItemOption } from '../types';
-import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Settings2, Layers, Copy, Star } from 'lucide-react';
+import { ArrowLeft, Plus, DollarSign, Tag, Coffee, Trash2, Utensils, AlignLeft, Carrot, ImageIcon, Sparkles, Pencil, X, AlertTriangle, Ban, CheckCircle, ChevronRight, Check, ChefHat, Layers, Copy, Star } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -50,7 +50,7 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
       if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
         return crypto.randomUUID();
       }
-    } catch (e) {
+    } catch {
       // Fallback en caso de error en crypto
     }
 
@@ -238,31 +238,6 @@ export const MenuSetup: React.FC<MenuSetupProps> = ({ onNavigate }) => {
     setAdditionalImageFiles([]);
     setHasOptions(false);
     setOptionGroups([]);
-  };
-
-  const handleLoadSample = () => {
-    if (!state.user) return;
-    const samples: MenuItem[] = [
-      { id: generateId(), name: 'Tacos al Pastor', price: '25', category: 'Platillos', description: 'Tacos de cerdo adobado con piña', ingredients: 'Tortilla, Cerdo, Piña, Cilantro, Cebolla', image: null, available: true },
-      { id: generateId(), name: 'Enchiladas Verdes', price: '120', category: 'Platillos', description: 'Rellenas de pollo con salsa verde', ingredients: 'Pollo, Tortilla, Tomate, Crema, Queso', image: null, available: true },
-      { id: generateId(), name: 'Hamburguesa Clásica', price: '150', category: 'Platillos', description: 'Carne angus 100%', ingredients: 'Res, Pan, Queso, Lechuga, Tomate', image: null, available: true },
-    ];
-
-    // Cargar secuencialmente para evitar condiciones de carrera en conexiones lentas
-    const loadAll = async () => {
-      setIsSubmittingItem(true);
-      try {
-        for (const item of samples) {
-          await addMenuItem(item);
-        }
-      } catch (e: any) {
-        console.error("Error loading sample:", e);
-        alert("Error al cargar ejemplos: " + e.message);
-      } finally {
-        setIsSubmittingItem(false);
-      }
-    };
-    loadAll();
   };
 
   const handleBack = () => {

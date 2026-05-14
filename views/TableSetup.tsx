@@ -74,6 +74,7 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
     };
 
     initTables();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state.tables.count, state.user?.id]);
 
   const generateQRs = async (count: number) => {

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Button } from '../components/Button';
 import { AppView } from '../types';
-import { ArrowRight, UtensilsCrossed, CheckCircle2 } from 'lucide-react';
+import { UtensilsCrossed, CheckCircle2 } from 'lucide-react';
 
 interface WelcomeProps {
   onNavigate: (view: AppView) => void;

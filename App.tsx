@@ -1,6 +1,6 @@
 
 import React, { useEffect, Suspense, lazy } from 'react';
-import { Routes, Route, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
+import { Routes, Route, useNavigate } from 'react-router-dom';
 import { OfflineStatus } from './components/OfflineStatus';
 import { AppView } from './types';
 import { diagnoseRealtimeConnection } from './services/realtimeDiagnostics';

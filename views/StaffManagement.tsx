@@ -62,7 +62,7 @@ interface StaffManagementProps {
 type WizardStep = 'name' | 'permissions' | 'security';
 
 export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) => {
-    const { state, logout } = useAppStore();
+    const { state } = useAppStore();
 
     // ─── STATE ────────────────────────────────────────────
     const [roles, setRoles] = useState<CustomRole[]>([]);

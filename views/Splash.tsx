@@ -55,6 +55,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
     if (minTimeElapsed && !state.isLoading) {
       handleRouting();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [minTimeElapsed, state.isLoading, state.user, state.isOnboarding]);
 
   const handleRouting = () => {

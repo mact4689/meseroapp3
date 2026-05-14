@@ -48,7 +48,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         setSuccessMessage("Se ha enviado un enlace de recuperación a tu correo.");
         // Optional: clear email or keep it for user convenience
       }
-    } catch (err) {
+    } catch {
       setError("Error al enviar el correo de recuperación.");
     } finally {
       setLoading(false);
@@ -83,7 +83,7 @@ export const Login: React.FC<LoginProps> = ({ onNavigate }) => {
         // Ir directamente al dashboard
         onNavigate(AppView.DASHBOARD);
       }
-    } catch (err) {
+    } catch {
       setError("Error al iniciar sesión. Por favor verifica tus credenciales.");
     } finally {
       setLoading(false);

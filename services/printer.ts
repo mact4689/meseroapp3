@@ -1,7 +1,7 @@
 import { Order, OrderItem, TicketConfig } from '../types';
 
 // Cola de impresión para evitar diálogos superpuestos
-let printQueue: { items: OrderItem[], order: Order, config: TicketConfig }[] = [];
+const printQueue: { items: OrderItem[], order: Order, config: TicketConfig }[] = [];
 let isPrinting = false;
 
 /**

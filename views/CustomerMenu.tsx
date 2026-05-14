@@ -1,10 +1,9 @@
 
 import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useAppStore } from '../store/AppContext';
-import { AppView, MenuItem, OrderItem, SelectedOption, OptionGroup } from '../types';
-import { Store, Bell, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, ChevronLeft, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles, Info, Leaf } from 'lucide-react';
+import { AppView, MenuItem, OrderItem, SelectedOption } from '../types';
+import { Store, ShoppingBag, AlertCircle, Plus, Minus, X, ChevronRight, ChevronLeft, Utensils, Receipt, Loader2, ArrowLeft, Eye, MessageSquare, CreditCard, CheckCircle, RefreshCw, Hand, Check, Sparkles, Info, Leaf } from 'lucide-react';
 import { Button } from '../components/Button';
-import { ItemGallery } from '../components/ItemGallery';
 import { getProfile, getMenuItems, createOrder } from '../services/db';
 
 interface CustomerMenuProps {
@@ -12,9 +11,7 @@ interface CustomerMenuProps {
 }
 
 // Extends MenuItem but includes cart specific logic
-interface CartItem extends OrderItem { }
-
-const SCROLL_OFFSET = 120; // Header height + padding reference
+type CartItem = OrderItem;
 
 
 export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
@@ -144,6 +141,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
     useEffect(() => {
         loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [uid]);
 
     // Show promotion once data is loaded
@@ -402,7 +400,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             setActiveCategory(category);
             isAutoScrolling.current = false;
         }
-    }, [isAdminPreview]);
+    }, []);
 
     const handleSendOrder = async () => {
         if (isAdminPreview) {
@@ -494,7 +492,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
 
             setBillRequested(true);
             setTimeout(() => setBillRequested(false), 4000);
-        } catch (e) {
+        } catch {
             alert("Error al pedir la cuenta.");
         } finally {
             setIsRequestingBill(false);
@@ -539,7 +537,7 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
             setShowHelpModal(false);
             setHelpMessage('');
             setTimeout(() => setHelpRequested(false), 4000);
-        } catch (e) {
+        } catch {
             alert("Error al solicitar ayuda.");
         } finally {
             setIsRequestingHelp(false);
@@ -1319,8 +1317,6 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                     ...(detailItem.additional_images || [])
                 ].filter((img): img is string => typeof img === 'string' && img.length > 0);
                 const hasImages = allImages.length > 0;
-                const detailQty = getItemQty(detailItem.id);
-                const isDetailAvailable = detailItem.available !== false;
 
                 return (
                     <div

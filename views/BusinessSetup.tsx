@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '../components/Button';
 import { Input } from '../components/Input';
 import { AppView } from '../types';
-import { ArrowLeft, Upload, CheckCircle, Store, MapPin, Phone, Globe, DollarSign, Wallet, CreditCard, Camera, Plus, UtensilsCrossed, ChevronRight, Check } from 'lucide-react';
+import { ArrowLeft, Store, Camera, Plus, UtensilsCrossed, ChevronRight, Check } from 'lucide-react';
 import { useAppStore } from '../store/AppContext';
 import { uploadImage } from '../services/db';
 
@@ -35,7 +35,8 @@ export const BusinessSetup: React.FC<BusinessSetupProps> = ({ onNavigate }) => {
         logoUrl: state.business.logo
       }));
     }
-  }, [state.business]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [state.business]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
