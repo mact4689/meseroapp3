@@ -96,7 +96,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-white font-sans selection:bg-accent-500/30 selection:text-brand-900">
+    <div className="w-full min-h-screen bg-transparent font-sans selection:bg-accent-500/30 selection:text-brand-900">
       <SkipToContent />
       <PWAInstallPrompt />
       <OfflineStatus />

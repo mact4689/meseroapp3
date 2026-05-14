@@ -101,7 +101,7 @@ export const Splash: React.FC<SplashProps> = ({ onNavigate }) => {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-brand-900 items-center justify-center relative overflow-hidden">
+    <div className="flex flex-col min-h-[100dvh] w-full bg-brand-900 items-center justify-center relative overflow-hidden">
       {/* Background Effects */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-accent-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none animate-pulse" />
       <div className="absolute bottom-0 left-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none" />
