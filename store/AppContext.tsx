@@ -3,6 +3,7 @@ import { MenuItem, User, Order, KitchenStation, TicketConfig, UserRole, RolePerm
 import { getProfile, getMenuItems, upsertProfile, insertMenuItem, updateMenuItemDb, deleteMenuItemDb, getOrders, updateOrderStatusDb, getStations, insertStation, deleteStationDb, updateOrderPreparedItemsDb, promoteMenuItem } from '../services/db';
 import { supabase } from '../services/client';
 import { playNotificationSound } from '../services/notification';
+import { useOrdersStore } from './ordersStore';
 
 interface PendingRole {
   roleId: string;
@@ -28,7 +29,6 @@ interface AppState {
   };
   ticketConfig: TicketConfig;
   stations: KitchenStation[];
-  orders: Order[];
   isOnboarding: boolean;
   isLoading: boolean;
 }
@@ -75,7 +75,6 @@ const baseState: AppState = {
   tables: { count: '', generated: [] },
   ticketConfig: defaultTicketConfig,
   stations: [],
-  orders: [],
   isOnboarding: false,
   isLoading: true
 };
@@ -366,7 +365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       getOrders(userId).then(orders => {
         console.log('📋 Initial orders loaded:', orders.length);
-        setState(prev => ({ ...prev, orders }));
+        useOrdersStore.getState().setOrders(orders);
       });
 
       channel = supabase
@@ -382,10 +381,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (payload) => {
             const newOrder = payload.new as Order;
             console.log('🔔 NEW ORDER RECEIVED via Realtime:', newOrder);
-            setState(prev => ({
-              ...prev,
-              orders: [newOrder, ...prev.orders]
-            }));
+            useOrdersStore.getState().addOrder(newOrder);
 
             // Standard notification sound
             playNotificationSound();
@@ -402,10 +398,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           (payload) => {
             const updatedOrder = payload.new as Order;
             console.log('🔄 Order updated via Realtime:', updatedOrder);
-            setState(prev => ({
-              ...prev,
-              orders: prev.orders.map(o => o.id === updatedOrder.id ? updatedOrder : o)
-            }));
+            useOrdersStore.getState().updateOrder(updatedOrder);
           }
         )
         .subscribe((status: string) => {
@@ -674,35 +667,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const completeOrder = async (orderId: string, status: 'completed' | 'delivered' = 'completed') => {
-    const originalOrders = [...state.orders];
+    const ordersStore = useOrdersStore.getState();
+    const originalOrders = [...ordersStore.orders];
 
-    setState(prev => ({
-      ...prev,
-      orders: prev.orders.map(o => o.id === orderId ? { ...o, status } : o)
-    }));
+    ordersStore.setOrders(originalOrders.map(o => o.id === orderId ? { ...o, status } : o));
 
     const error = await updateOrderStatusDb(orderId, status);
 
     if (error) {
       console.error("Failed to update order status, rolling back:", error);
-      setState(prev => ({ ...prev, orders: originalOrders }));
+      ordersStore.setOrders(originalOrders);
       throw error;
     }
   };
 
   const closeTable = async (tableNumber: string) => {
-    const tableOrders = state.orders.filter(
+    const ordersStore = useOrdersStore.getState();
+    const tableOrders = ordersStore.orders.filter(
       o => o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered')
     );
 
-    setState(prev => ({
-      ...prev,
-      orders: prev.orders.map(o =>
-        (o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered'))
-          ? { ...o, status: 'completed' }
-          : o
-      )
-    }));
+    ordersStore.setOrders(ordersStore.orders.map(o =>
+      (o.table_number === tableNumber && (o.status === 'pending' || o.status === 'delivered'))
+        ? { ...o, status: 'completed' }
+        : o
+    ));
 
     const updatePromises = tableOrders.map(o => updateOrderStatusDb(o.id, 'completed'));
     await Promise.all(updatePromises);
@@ -739,7 +728,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleItemPrepared = async (orderId: string, itemId: string, stationId: string) => {
-    const order = state.orders.find(o => o.id === orderId);
+    const ordersStore = useOrdersStore.getState();
+    const order = ordersStore.orders.find(o => o.id === orderId);
     if (!order) return;
 
     const preparedItems = order.prepared_items || [];
@@ -756,10 +746,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }];
     }
 
-    setState(prev => ({
-      ...prev,
-      orders: prev.orders.map(o => o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o)
-    }));
+    ordersStore.setOrders(ordersStore.orders.map(o => o.id === orderId ? { ...o, prepared_items: newPreparedItems } : o));
 
     await updateOrderPreparedItemsDb(orderId, newPreparedItems);
   };

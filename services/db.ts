@@ -2,6 +2,7 @@
 import { supabase } from './client';
 import { MenuItem, Order } from '../types';
 import { compressImage } from '../utils/imageOptimizer';
+import { MenuItemSchema, OrderSchema } from '../utils/schemas';
 
 // Helper para reintentar operaciones en caso de fallo de red
 async function withRetry<T>(operation: () => Promise<T>, retries = 3, delay = 1000): Promise<T> {
@@ -118,26 +119,27 @@ export const getMenuItems = async (userId: string) => {
 };
 
 export const insertMenuItem = async (userId: string, item: MenuItem) => {
-  const numericPrice = parseFloat(item.price) || 0;
-
-  const payload = {
-    id: item.id,
-    user_id: userId,
-    name: item.name,
-    price: numericPrice,
-    category: item.category,
-    description: item.description,
-    ingredients: item.ingredients,
-    image_url: item.image,
-    available: item.available ?? true,
-    printer_id: item.printerId || null,
-    station_id: item.stationId || null,
-    options: item.options || null,
-    additional_images: item.additional_images || null,
-    is_promoted: item.isPromoted ?? false
-  };
-
   const attemptInsert = async () => {
+    // Validate with Zod
+    const validatedData = MenuItemSchema.parse(item);
+
+    const payload = {
+      id: validatedData.id,
+      user_id: userId,
+      name: validatedData.name,
+      price: validatedData.price,
+      category: validatedData.category,
+      description: validatedData.description,
+      ingredients: validatedData.ingredients,
+      image_url: validatedData.image,
+      available: validatedData.available,
+      printer_id: validatedData.printerId || null,
+      station_id: validatedData.stationId || null,
+      options: validatedData.options || null,
+      additional_images: validatedData.additional_images || null,
+      is_promoted: validatedData.isPromoted
+    };
+
     const { error } = await supabase
       .from('menu_items')
       .insert(payload);
@@ -242,21 +244,24 @@ export const deleteMenuItemDb = async (itemId: string) => {
 
 export const createOrder = async (order: Omit<Order, 'id' | 'created_at'>) => {
   const attemptCreateOrder = async () => {
+    // Validate with Zod
+    const validatedOrder = OrderSchema.parse(order);
+
     console.log('📤 Attempting to create order:', {
-      user_id: order.user_id,
-      table_number: order.table_number,
-      total: order.total,
-      itemsCount: order.items?.length
+      user_id: validatedOrder.user_id,
+      table_number: validatedOrder.table_number,
+      total: validatedOrder.total,
+      itemsCount: validatedOrder.items?.length
     });
 
     const { data, error } = await supabase
       .from('orders')
       .insert({
-        user_id: order.user_id,
-        table_number: order.table_number,
+        user_id: validatedOrder.user_id,
+        table_number: validatedOrder.table_number,
         status: 'pending',
-        total: order.total,
-        items: order.items
+        total: validatedOrder.total,
+        items: validatedOrder.items
       })
       .select()
       .single();
@@ -287,7 +292,8 @@ export const getOrders = async (userId: string) => {
       .from('orders')
       .select('*')
       .eq('user_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(2000);
 
     if (error) throw error;
     return data || [];

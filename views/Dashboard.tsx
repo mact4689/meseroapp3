@@ -1,6 +1,6 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import { useAppStore } from '../store/AppContext';
+import { useOrdersStore } from '../store/ordersStore';
 import { usePermissions } from '../hooks/usePermissions';
 import { AppView } from '../types';
 import { Button } from '../components/Button';
@@ -47,7 +47,8 @@ type TimeRange = 'today' | '7days' | '30days' | 'all';
 
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
-    const { business, menu, tables, user, orders, isOnboarding } = state;
+    const { business, menu, tables, user, isOnboarding } = state;
+    const orders = useOrdersStore(s => s.orders);
     const { role, canEditMenu, canManageTables, canViewReports, canManageStaff, canEditBusinessProfile, canViewOrders, canConfigureTickets, canManageStations, canAccessSettings } = usePermissions();
 
     const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -156,7 +157,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     // --- LÓGICA DE VENTAS POR DÍA (HISTORIAL MODAL) ---
 
     // --- ANALÍTICA DE VENTAS (MODAL MEJORADO) ---
-    const [salesHistoryDate, setSalesHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [salesHistoryDate, setSalesHistoryDate] = useState(() => {
+        // Fix Timezone bug: use local date string in YYYY-MM-DD format
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
 
     const dailyStats = useMemo(() => {
         // 1. Filtrar órdenes por fecha seleccionada
@@ -239,7 +247,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
     // --- HISTORIAL DE ÓRDENES CON FECHA ---
     const [showHistoryModal, setShowHistoryModal] = useState(false);
-    const [historyDate, setHistoryDate] = useState(() => new Date().toISOString().split('T')[0]);
+    const [historyDate, setHistoryDate] = useState(() => {
+        // Fix Timezone bug: use local date string in YYYY-MM-DD format
+        const d = new Date();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
 
     const ordersHistory = useMemo(() => {
         return completedOrders

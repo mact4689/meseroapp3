@@ -1,0 +1,44 @@
+{
+  "team": "mesero-app",
+  "project": "MeseroApp",
+  "defaultPriority": "0",
+  "defaultState": "backlog",
+  "labels": [
+    "bug",
+    "feature",
+    "enhancement",
+    "documentation",
+    "performance"
+  ],
+  "states": [
+    "backlog",
+    "todo",
+    "in progress",
+    "in review",
+    "done",
+    "cancelled"
+  ],
+  "issueTemplates": {
+    "bug": {
+      "title": "Bug: [Title]",
+      "description": "## Description\n\n## Steps to Reproduce\n\n## Expected Behavior\n\n## Actual Behavior\n\n## Environment\n\n- Version: \n- Platform: \n",
+      "type": "Bug",
+      "priority": 0,
+      "label": "bug"
+    },
+    "feature": {
+      "title": "Feature: [Title]",
+      "description": "## Description\n\n## Acceptance Criteria\n\n## Implementation Notes\n\n## Dependencies\n",
+      "type": "Feature Request",
+      "priority": 0,
+      "label": "feature"
+    },
+    "enhancement": {
+      "title": "Enhancement: [Title]",
+      "description": "## Description\n\n## Current Behavior\n\n## Proposed Changes\n\n## Benefits\n",
+      "type": "Enhancement",
+      "priority": 0,
+      "label": "enhancement"
+    }
+  }
+}
