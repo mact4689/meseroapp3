@@ -82,7 +82,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { pendingOrders, completedOrders } = useMemo(() => {
         return {
             pendingOrders: orders.filter(o => o.status === 'pending'),
-            completedOrders: orders.filter(o => o.status === 'completed')
+            completedOrders: orders.filter(o => o.status === 'completed' || o.status === 'delivered')
         };
     }, [orders]);
 
@@ -95,6 +95,71 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const isHelpRequest = (order: typeof orders[0]) => {
         return order.items.some(item => item.id === 'help-req' || item.name?.includes('SOLICITUD DE AYUDA'));
     };
+
+    // Obtener mesas activas con consumo (órdenes pendientes o entregadas)
+    const activeTablesList = useMemo(() => {
+        // Filtrar órdenes que están activas y no son de sistema o de llevar
+        const activeOrdersByTable = orders.filter(
+            o => (o.status === 'pending' || o.status === 'delivered') && 
+                 !isBillRequest(o) && 
+                 !isHelpRequest(o) &&
+                 o.table_number !== 'LLEVAR' &&
+                 !o.table_number.startsWith('LLEVAR')
+        );
+
+        const tableMap = new Map<string, { 
+            tableNumber: string, 
+            orders: typeof orders, 
+            total: number, 
+            pendingCount: number,
+            deliveredCount: number,
+            hasBillRequest: boolean,
+            latestOrderTime: string 
+        }>();
+
+        activeOrdersByTable.forEach(order => {
+            const table = order.table_number;
+            const existing = tableMap.get(table) || { 
+                tableNumber: table, 
+                orders: [], 
+                total: 0, 
+                pendingCount: 0,
+                deliveredCount: 0,
+                hasBillRequest: false,
+                latestOrderTime: order.created_at 
+            };
+            
+            existing.orders.push(order);
+            existing.total += order.total || 0;
+            if (order.status === 'pending') {
+                existing.pendingCount++;
+            } else if (order.status === 'delivered') {
+                existing.deliveredCount++;
+            }
+            
+            if (new Date(order.created_at).getTime() > new Date(existing.latestOrderTime).getTime()) {
+                existing.latestOrderTime = order.created_at;
+            }
+            
+            tableMap.set(table, existing);
+        });
+
+        // Revisar si hay alguna solicitud de cuenta pendiente para cada mesa
+        orders.forEach(o => {
+            if (isBillRequest(o) && o.status === 'pending') {
+                const table = o.table_number;
+                const existing = tableMap.get(table);
+                if (existing) {
+                    existing.hasBillRequest = true;
+                    tableMap.set(table, existing);
+                }
+            }
+        });
+
+        return Array.from(tableMap.values()).sort((a, b) => 
+            a.tableNumber.localeCompare(b.tableNumber, undefined, { numeric: true })
+        );
+    }, [orders]);
 
     // Calculate total stats
     const todayTotal = completedOrders.reduce((acc, o) => {
@@ -1376,6 +1441,108 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                 })}
                             </div>
                         )}
+                    </div>
+                )}
+
+                {/* ACTIVE TABLES SECTION */}
+                {canViewOrders && activeTablesList.length > 0 && (
+                    <div id="active-tables" className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-gray-100 mt-6 animate-in fade-in duration-200">
+                        <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                            <div className="w-10 h-10 sm:w-8 sm:h-8 rounded-lg bg-emerald-50 flex items-center justify-center text-emerald-500 shrink-0">
+                                <Receipt className="w-5 h-5" />
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <h3 className="font-bold text-brand-900 text-lg">Mesas Activas con Consumo</h3>
+                                <span className="bg-emerald-100 text-emerald-600 text-xs font-bold px-2.5 py-1 rounded-full">
+                                    {activeTablesList.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                            {activeTablesList.map((table) => {
+                                const tableItems = table.orders.flatMap(o => o.items);
+                                const virtualOrder = {
+                                    id: `virtual-${table.tableNumber}`,
+                                    user_id: state.user?.id || '',
+                                    table_number: table.tableNumber,
+                                    items: tableItems,
+                                    total: table.total,
+                                    created_at: table.latestOrderTime,
+                                    status: 'delivered' as const
+                                };
+
+                                return (
+                                    <div 
+                                        key={table.tableNumber} 
+                                        className={`p-4 rounded-xl border transition-all flex flex-col justify-between ${
+                                            table.hasBillRequest 
+                                                ? 'border-green-300 bg-green-50/50 shadow-sm ring-1 ring-green-300' 
+                                                : 'border-gray-200 bg-white hover:border-brand-900/20 hover:shadow-sm'
+                                        }`}
+                                    >
+                                        <div>
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className="text-base font-bold text-brand-900 bg-gray-100 px-3 py-1 rounded-lg">
+                                                    Mesa {table.tableNumber}
+                                                </span>
+                                                {table.hasBillRequest && (
+                                                    <span className="text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full animate-pulse flex items-center gap-1 border border-green-200">
+                                                        🛎️ Solicitó Cuenta
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="space-y-1 text-xs text-gray-600 mb-4">
+                                                <div className="flex justify-between">
+                                                    <span>Consumo Total:</span>
+                                                    <span className="font-bold text-gray-900">${table.total.toFixed(2)}</span>
+                                                </div>
+                                                <div className="flex justify-between">
+                                                    <span>Órdenes:</span>
+                                                    <span className="font-medium text-gray-800">
+                                                        {table.orders.length} ({table.deliveredCount} entregadas, {table.pendingCount} pendientes)
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 mt-auto">
+                                            <button
+                                                onClick={async (e) => {
+                                                    e.stopPropagation();
+                                                    setPrintingOrderId(virtualOrder.id);
+                                                    try {
+                                                        await printOrder(virtualOrder, state.ticketConfig, business.name);
+                                                    } catch (error) {
+                                                        console.error('Error printing combined bill:', error);
+                                                    } finally {
+                                                        setPrintingOrderId(null);
+                                                    }
+                                                }}
+                                                className="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-lg flex items-center justify-center flex-1 transition-colors text-xs font-semibold gap-1"
+                                                title="Imprimir Cuenta Previa"
+                                                disabled={printingOrderId === virtualOrder.id}
+                                            >
+                                                <Printer className="w-3.5 h-3.5" />
+                                                <span>Cuenta</span>
+                                            </button>
+                                            
+                                            <Button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setConfirmCloseTable(table.tableNumber);
+                                                }}
+                                                className="flex-1 h-9 justify-center bg-emerald-600 hover:bg-emerald-700 border-transparent text-xs py-1"
+                                                icon={<Check className="w-3.5 h-3.5" />}
+                                            >
+                                                Cerrar Mesa
+                                            </Button>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
                     </div>
                 )}
 
