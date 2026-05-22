@@ -52,8 +52,8 @@ export const MenuItemSchema = z.object({
   image: z.string().url().nullable().optional(),
   additional_images: z.array(z.string().url()).optional(),
   available: z.boolean().optional(),
-  printerId: z.string().uuid().optional(),
-  stationId: z.string().uuid().optional(),
+  printerId: z.string().nullable().optional(),
+  stationId: z.string().nullable().optional(),
   options: ItemOptionsConfigSchema.nullable().optional(),
   isPromoted: z.boolean().optional(),
 });

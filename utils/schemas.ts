@@ -22,9 +22,9 @@ export const OrderItemSchema = z.object({
   price: z.preprocess((val) => Number(val), z.number().min(0)),
   quantity: z.number().int().min(1),
   notes: z.string().optional().default(''),
-  printerId: z.string().optional(),
-  stationId: z.string().optional(),
-  category: z.string().optional()
+  printerId: z.string().nullable().optional(),
+  stationId: z.string().nullable().optional(),
+  category: z.string().nullable().optional()
 });
 
 export const OrderSchema = z.object({
