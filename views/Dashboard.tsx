@@ -82,7 +82,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { pendingOrders, completedOrders } = useMemo(() => {
         return {
             pendingOrders: orders.filter(o => o.status === 'pending'),
-            completedOrders: orders.filter(o => o.status === 'completed' || o.status === 'delivered')
+            completedOrders: orders.filter(o => o.status === 'completed')
         };
     }, [orders]);
 
