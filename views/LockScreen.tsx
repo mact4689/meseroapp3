@@ -15,9 +15,9 @@ export const LockScreen: React.FC = () => {
         setIsLoading(true);
         setError(undefined);
 
-        // Execute synchronously without setTimeout to avoid microtask/unmount clashes
+        // Execute with await as unlockRole is now asynchronous (secure database RPC validation)
         try {
-            const success = unlockRole(pin);
+            const success = await unlockRole(pin);
             if (!success) {
                 setError("Código incorrecto");
                 setIsLoading(false);

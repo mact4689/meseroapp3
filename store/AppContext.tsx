@@ -38,7 +38,7 @@ interface AppContextType {
   register: (user: User) => void;
   login: (user: User) => void;
   logout: () => void;
-  unlockRole: (pin: string) => boolean;
+  unlockRole: (pin: string) => Promise<boolean>;
   updateBusiness: (data: Partial<AppState['business']>) => Promise<void>;
   addMenuItem: (item: MenuItem) => Promise<void>;
   updateMenuItem: (id: string, item: MenuItem) => Promise<void>;
@@ -94,7 +94,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const { data, error } = await supabase
         .from('custom_roles')
-        .select('permissions, pin_code, name')
+        .select('permissions, name, requires_pin')
         .eq('id', roleId)
         .single();
 
@@ -102,10 +102,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         console.warn('⚠️ Could not fetch custom role:', error?.message);
         return null;
       }
-      console.log('🔐 Custom role data loaded:', { permissions: data.permissions, pin_code: data.pin_code, name: data.name });
+      console.log('🔐 Custom role data loaded:', { permissions: data.permissions, name: data.name, requires_pin: data.requires_pin });
       return {
         permissions: data.permissions as RolePermissions,
-        pin_code: data.pin_code,
+        pin_code: data.requires_pin ? '9999' : '', // Flag placeholder de 4 caracteres para indicar PIN requerido sin fugarlo
         role_name: data.name
       };
     } catch (e) {
@@ -190,18 +190,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     loadBusinessData(uid);
   };
 
-  const unlockRole = (pin: string): boolean => {
+  const unlockRole = async (pin: string): Promise<boolean> => {
     if (!state.pendingRole) return false;
 
-    if (pin === state.pendingRole.pinCode) {
-      const { uid, permissions, roleName } = state.pendingRole;
+    try {
+      // Validar PIN de forma criptográfica y segura en la base de datos a través del RPC
+      const { data: verifiedPermissions, error } = await supabase
+        .rpc('verify_custom_role', {
+          provided_role_id: state.pendingRole.roleId,
+          provided_pin: pin
+        });
 
+      if (error || !verifiedPermissions) {
+        console.warn("❌ Intento de login fallido por PIN incorrecto");
+        return false;
+      }
+
+      const { uid, roleName } = state.pendingRole;
       const virtualUser: User = {
         id: 'virtual-staff-' + Math.random().toString(36).substr(2, 9),
         email: 'staff@virtual.com',
         name: 'Personal (QR)',
         role: 'waiter',
-        customPermissions: permissions,
+        customPermissions: verifiedPermissions as RolePermissions,
         customRoleName: roleName,
         restaurantId: uid
       };
@@ -214,9 +225,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       loadBusinessData(uid);
       return true;
+    } catch (e) {
+      console.error('Error durante el desbloqueo por PIN:', e);
+      return false;
     }
-
-    return false;
   };
 
   // ─── Check if this is a QR role access URL ───

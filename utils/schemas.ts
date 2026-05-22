@@ -6,7 +6,7 @@ export const MenuItemSchema = z.object({
   price: z.preprocess((val) => Number(val), z.number().min(0, 'El precio no puede ser negativo')),
   category: z.string().min(1, 'La categoría no puede estar vacía'),
   description: z.string().optional().default(''),
-  ingredients: z.array(z.string()).optional().default([]),
+  ingredients: z.string().optional().default(''),
   image: z.string().nullable().optional(),
   available: z.boolean().optional().default(true),
   printerId: z.string().nullable().optional(),

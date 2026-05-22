@@ -158,24 +158,25 @@ export const insertMenuItem = async (userId: string, item: MenuItem) => {
 };
 
 export const updateMenuItemDb = async (itemId: string, item: MenuItem) => {
-  const numericPrice = parseFloat(item.price) || 0;
-
-  const payload = {
-    name: item.name,
-    price: numericPrice,
-    category: item.category,
-    description: item.description,
-    ingredients: item.ingredients,
-    image_url: item.image,
-    available: item.available,
-    printer_id: item.printerId,
-    station_id: item.stationId,
-    options: item.options || null,
-    additional_images: item.additional_images || null,
-    is_promoted: item.isPromoted
-  };
-
   const attemptUpdate = async () => {
+    // Validate with Zod
+    const validatedData = MenuItemSchema.parse(item);
+
+    const payload = {
+      name: validatedData.name,
+      price: validatedData.price,
+      category: validatedData.category,
+      description: validatedData.description,
+      ingredients: validatedData.ingredients,
+      image_url: validatedData.image,
+      available: validatedData.available,
+      printer_id: validatedData.printerId || null,
+      station_id: validatedData.stationId || null,
+      options: validatedData.options || null,
+      additional_images: validatedData.additional_images || null,
+      is_promoted: validatedData.isPromoted
+    };
+
     const { error } = await supabase
       .from('menu_items')
       .update(payload)
