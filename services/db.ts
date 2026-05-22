@@ -59,16 +59,16 @@ export const uploadImage = async (file: File, path: string): Promise<string | nu
 
 // --- DATABASE (Datos) ---
 
-export const getProfile = async (userId: string) => {
+export const getProfile = async (userId: string): Promise<any> => {
   const fetchProfile = async () => {
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, name, cuisine, logo_url, role, tables_count')
       .eq('id', userId)
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    return data as any;
   };
 
   try {
@@ -97,15 +97,15 @@ export const upsertProfile = async (userId: string, updates: any) => {
   }
 };
 
-export const getMenuItems = async (userId: string) => {
+export const getMenuItems = async (userId: string): Promise<any[]> => {
   const fetchMenu = async () => {
     const { data, error } = await supabase
       .from('menu_items')
-      .select('*')
+      .select('id, name, price, category, description, ingredients, image_url, available, printer_id, station_id, options, additional_images, is_promoted')
       .eq('user_id', userId);
 
     if (error) throw error;
-    return data || [];
+    return (data as any[]) || [];
   };
 
   try {
@@ -349,16 +349,16 @@ export const updateOrderPreparedItemsDb = async (orderId: string, preparedItems:
 
 // --- KITCHEN STATIONS ---
 
-export const getStations = async (userId: string) => {
+export const getStations = async (userId: string): Promise<any[]> => {
   const fetchStations = async () => {
     const { data, error } = await supabase
       .from('kitchen_stations')
-      .select('*')
+      .select('id, name, color')
       .eq('user_id', userId)
       .order('created_at', { ascending: true });
 
     if (error) throw error;
-    return data || [];
+    return (data as any[]) || [];
   };
 
   try {
