@@ -45,6 +45,14 @@ interface DashboardProps {
 
 type TimeRange = 'today' | '7days' | '30days' | 'all';
 
+// Helper to reliably format a Date object as YYYY-MM-DD in local time
+const getLocalYYYYMMDD = (date: Date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+};
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
     const { business, menu, tables, user, isOnboarding } = state;
@@ -170,7 +178,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // 1. Filtrar órdenes por fecha seleccionada
         const filteredOrders = completedOrders.filter(order => {
             if (!order.created_at) return false;
-            return new Date(order.created_at).toLocaleDateString('en-CA') === salesHistoryDate;
+            return getLocalYYYYMMDD(new Date(order.created_at)) === salesHistoryDate;
         });
 
         // 2. Calcular Totales Básicos
@@ -216,7 +224,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         // Generar CSV
         const headers = ['Orden ID', 'Hora', 'Mesa', 'Total', 'Items'];
         const rows = completedOrders
-            .filter(o => new Date(o.created_at).toLocaleDateString('en-CA') === salesHistoryDate)
+            .filter(o => getLocalYYYYMMDD(new Date(o.created_at)) === salesHistoryDate)
             .map(o => [
                 o.id.slice(0, 6),
                 new Date(o.created_at).toLocaleTimeString(),
@@ -260,7 +268,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         return completedOrders
             .filter(order => {
                 if (!order.created_at) return false;
-                const orderDate = new Date(order.created_at).toLocaleDateString('en-CA'); // YYYY-MM-DD
+                const orderDate = getLocalYYYYMMDD(new Date(order.created_at)); // YYYY-MM-DD
                 return orderDate === historyDate;
             })
             .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
