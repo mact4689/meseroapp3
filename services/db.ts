@@ -289,12 +289,16 @@ export const createOrder = async (order: Omit<Order, 'id' | 'created_at'>) => {
 
 export const getOrders = async (userId: string) => {
   const fetchOrders = async () => {
+    // Limit to last 24 hours to prevent memory overload and slow initial loads
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
     const { data, error } = await supabase
       .from('orders')
       .select('*')
       .eq('user_id', userId)
+      .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: false })
-      .limit(2000);
+      .limit(500);
 
     if (error) throw error;
     return data || [];

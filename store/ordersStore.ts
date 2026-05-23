@@ -12,8 +12,8 @@ export const useOrdersStore = create<OrdersState>((set) => ({
   orders: [],
   setOrders: (orders) => set({ orders }),
   addOrder: (order) => set((state) => {
-    // Prevent memory leak by limiting to 2000 items
-    return { orders: [order, ...state.orders].slice(0, 2000) };
+    // Prevent memory leak by limiting to 500 items
+    return { orders: [order, ...state.orders].slice(0, 500) };
   }),
   updateOrder: (order) => set((state) => ({
     orders: state.orders.map((o) => (o.id === order.id ? order : o)),

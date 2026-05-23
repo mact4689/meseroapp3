@@ -53,6 +53,314 @@ const getLocalYYYYMMDD = (date: Date) => {
     return `${year}-${month}-${day}`;
 };
 
+// Helper: Detectar si una orden es solicitud de cuenta cerrada
+const isBillRequest = (order: any) => {
+    return order.items.some((item: any) => item.id === 'bill-req' || item.name?.includes('SOLICITUD DE CUENTA'));
+};
+
+// Helper: Detectar si una orden es solicitud de ayuda
+const isHelpRequest = (order: any) => {
+    return order.items.some((item: any) => item.id === 'help-req' || item.name?.includes('SOLICITUD DE AYUDA'));
+};
+
+const getFormattedTimeElapsed = (createdAt: string) => {
+    const created = new Date(createdAt).getTime();
+    const now = Date.now();
+    const diff = Math.max(0, now - created);
+
+    const hours = Math.floor(diff / 3600000);
+    const minutes = Math.floor((diff % 3600000) / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
+const getTimeColor = (minutes: number) => {
+    if (minutes < 5) return 'text-green-600 bg-green-50';
+    if (minutes < 10) return 'text-yellow-600 bg-yellow-50';
+    return 'text-red-600 bg-red-50 animate-pulse';
+};
+
+const HistoryOrderRow = React.memo<{
+    order: any;
+    printingOrderId: string | null;
+    onReprintOrder: (order: any) => void;
+}>(({ order, printingOrderId, onReprintOrder }) => {
+    return (
+        <div className="p-4 bg-white hover:bg-gray-50 transition-colors flex items-center justify-between group border-b border-gray-100 last:border-0">
+            <div className="flex items-start gap-4">
+                <div className={`
+                    w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 shadow-sm
+                    ${order.table_number.startsWith('LLEVAR') ? 'bg-orange-100 text-orange-600' : 'bg-brand-50 text-brand-900'}
+                `}>
+                    {order.table_number.startsWith('LLEVAR') ? '🛍️' : order.table_number}
+                </div>
+                <div>
+                    <div className="flex items-center gap-2 mb-1">
+                        <p className="font-bold text-brand-900 text-base">
+                            {order.table_number.startsWith('LLEVAR')
+                                ? `Orden para llevar #${order.table_number.split('-')[1] || '?'}`
+                                : `Mesa ${order.table_number}`}
+                        </p>
+                        <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
+                            Completada
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
+                        <span className="flex items-center bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
+                            #{order.id.slice(0, 4)}
+                        </span>
+                        <span className="flex items-center">
+                            <Clock className="w-3 h-3 mr-1 text-gray-400" />
+                            {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div className="flex flex-col items-end gap-2">
+                <span className="block font-bold text-brand-900 text-lg">${(order.total || 0).toFixed(2)}</span>
+
+                <Button
+                    variant="secondary"
+                    onClick={() => onReprintOrder(order)}
+                    disabled={printingOrderId === order.id}
+                    className="h-8 text-xs !px-3 bg-gray-100 hover:bg-gray-200 text-brand-900 border-none flex items-center gap-1.5"
+                >
+                    {printingOrderId === order.id ? (
+                        <div className="animate-spin w-3 h-3 border-2 border-brand-900 border-t-transparent rounded-full" />
+                    ) : (
+                        <Printer className="w-3.5 h-3.5" />
+                    )}
+                    Reimprimir
+                </Button>
+            </div>
+        </div>
+    );
+});
+
+const PendingOrderCard = React.memo<{
+    order: any;
+    tableOrders: any[];
+    tableTotal: number;
+    expandedOrder: string | null;
+    printingOrderId: string | null;
+    onToggleOrder: (id: string) => void;
+    onPrintOrder: (orderId: string, e: React.MouseEvent) => void;
+    onCompleteOrder: (orderId: string, e: React.MouseEvent) => void;
+}>(({
+    order, tableOrders, tableTotal, expandedOrder, printingOrderId,
+    onToggleOrder, onPrintOrder, onCompleteOrder
+}) => {
+    const isBill = isBillRequest(order);
+    const isHelp = isHelpRequest(order);
+
+    return (
+        <div
+            onClick={() => onToggleOrder(order.id)}
+            className={`
+                border rounded-xl overflow-hidden transition-all cursor-pointer
+                ${isHelp
+                    ? (expandedOrder === order.id
+                        ? 'border-yellow-500 ring-2 ring-yellow-500 bg-yellow-50'
+                        : 'border-yellow-300 hover:border-yellow-400 bg-yellow-50')
+                    : isBill
+                        ? (expandedOrder === order.id
+                            ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
+                            : 'border-green-300 hover:border-green-400 bg-green-50')
+                        : (expandedOrder === order.id
+                            ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
+                            : 'border-gray-200 hover:border-gray-300 bg-white')}
+            `}
+        >
+            <div className="p-3 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
+                    <div className="flex items-start gap-3 w-full sm:w-auto">
+                        {order.table_number.startsWith('LLEVAR') ? (
+                            <div className="bg-orange-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm">
+                                <span className="text-[8px] font-medium opacity-80">🛍️</span>
+                                <span className="text-base sm:text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
+                            </div>
+                        ) : (
+                            <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm`}>
+                                <span className="text-[9px] sm:text-[10px] font-medium opacity-80">Mesa</span>
+                                <span className="text-lg sm:text-xl font-bold">{order.table_number}</span>
+                            </div>
+                        )}
+
+                        <div className="flex-1 min-w-0 pt-0.5">
+                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-sm sm:text-base mb-0.5">
+                                {order.table_number.startsWith('LLEVAR') ? (
+                                    <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5">
+                                        🛍️ <span className="xs:inline">Orden para llevar</span> #{order.table_number.split('-')[1] || '?'}
+                                    </span>
+                                ) : isHelp ? (
+                                    <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5">
+                                        <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        🆘 AYUDA
+                                    </span>
+                                ) : isBill ? (
+                                    <span className="font-bold text-green-700 flex items-center gap-1 sm:gap-1.5">
+                                        <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                                        Cuenta Cerrada
+                                    </span>
+                                ) : (
+                                    <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
+                                )}
+                                <span className={`text-[11px] sm:text-xs font-bold rounded px-1.5 py-0.5 flex items-center ${getTimeColor(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000))}`}>
+                                    <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
+                                    {getFormattedTimeElapsed(order.created_at)}
+                                </span>
+                            </div>
+                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
+                                {order.table_number.startsWith('LLEVAR')
+                                    ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
+                                    : isHelp
+                                        ? <span className="text-yellow-700 font-medium italic">"{order.items.find((i:any) => i.id === 'help-req')?.notes || 'Asistencia solicitada'}"</span>
+                                        : isBill
+                                            ? <span className="text-green-600 font-medium">Solicitud de ticket</span>
+                                            : (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="text-gray-900">{order.items.length} items</span>
+                                                    <span className="text-gray-300">•</span>
+                                                    <span className="font-bold text-gray-900">${(order.total || 0).toFixed(2)}</span>
+                                                    {order.items.length > 0 && (
+                                                        <>
+                                                            <span className="text-gray-300">•</span>
+                                                            <div className="flex items-center gap-1">
+                                                                {order.prepared_items && order.prepared_items.length > 0 ? (
+                                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.prepared_items.length === order.items.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                        {order.prepared_items.length === order.items.length ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
+                                                                        {order.prepared_items.length}/{order.items.length} listos
+                                                                    </span>
+                                                                ) : (
+                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
+                                                                        <Clock className="w-2.5 h-2.5" />
+                                                                        En preparación
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end mt-2 pt-2 border-t border-gray-100 sm:mt-0 sm:pt-0 sm:border-0">
+                        <button
+                            onClick={(e) => onPrintOrder(order.id, e)}
+                            className={`p-2.5 flex items-center justify-center gap-1.5 ${isHelp ? 'text-yellow-600 bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : isBill ? 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200'} rounded-lg transition-colors border sm:border-0`}
+                            title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
+                            disabled={printingOrderId === order.id}
+                        >
+                            <Printer className={`w-5 h-5 sm:w-4 sm:h-4 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
+                            <span className="text-xs font-semibold hidden sm:hidden">Imprimir</span>
+                        </button>
+
+                        {(() => {
+                            const realItems = order.items.filter((item:any) => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'));
+                            const allItemsReady = !isHelp && !isBill && realItems.length > 0
+                                ? (order.prepared_items?.length || 0) >= realItems.length
+                                : true;
+
+                            return (
+                                <Button
+                                    onClick={(e) => allItemsReady ? onCompleteOrder(order.id, e) : e.stopPropagation()}
+                                    className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700'
+                                        : isBill ? 'bg-green-700 hover:bg-green-800'
+                                            : allItemsReady ? 'bg-green-600 hover:bg-green-700'
+                                                : 'bg-gray-400 cursor-not-allowed opacity-60'
+                                        } border-transparent shadow-sm`}
+                                    icon={<Check className="w-4 h-4" />}
+                                    title={!allItemsReady ? 'Esperando que cocina termine todos los items' : ''}
+                                    disabled={!allItemsReady}
+                                >
+                                    {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Entregado'}
+                                </Button>
+                            );
+                        })()}
+
+                        <button
+                            onClick={() => onToggleOrder(order.id)}
+                            className="text-gray-400 p-2 hover:bg-gray-100 rounded-lg shrink-0"
+                        >
+                            {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {expandedOrder === order.id && (
+                <div className={`px-4 pb-4 pt-0 border-t ${isHelp ? 'border-yellow-200 bg-white' : isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
+                    {isHelp && (
+                        <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                            <Hand className="w-5 h-5 text-yellow-600" />
+                            <p className="text-sm text-yellow-700 font-medium">
+                                {order.items.find((i:any) => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}
+                            </p>
+                        </div>
+                    )}
+                    {isBill && (
+                        <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
+                            <Receipt className="w-5 h-5 text-green-600" />
+                            <p className="text-sm text-green-700 font-medium">
+                                El cliente ha solicitado la cuenta. Puedes imprimir el ticket y entregárselo.
+                            </p>
+                        </div>
+                    )}
+                    <ul className="divide-y divide-gray-100">
+                        {(isHelp ? [] : isBill ? tableOrders.flatMap(o => o.items.filter((item:any) => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map((i:any) => ({ ...i, parentOrder: o }))) : order.items.filter((item:any) => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item: any, idx: number) => {
+                            const targetOrder = isBill ? item.parentOrder : order;
+                            const isPrepared = targetOrder?.prepared_items?.some((p: any) => p.itemId === item.id);
+
+                            return (
+                                <li key={idx} className="py-3 flex justify-between items-start">
+                                    <div className="flex gap-3">
+                                        <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
+                                            {item.quantity}x
+                                        </span>
+                                        <div>
+                                            <p className="font-medium text-gray-900 text-sm">{item.name}</p>
+                                            {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
+
+                                            <div className="mt-1 flex items-center gap-1.5">
+                                                {isPrepared ? (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
+                                                        <Check className="w-3 h-3" />
+                                                        Listo para entregar
+                                                    </span>
+                                                ) : (
+                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
+                                                        <Clock className="w-3 h-3" />
+                                                        En preparación
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <span className="text-sm font-medium text-gray-900">
+                                        ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
+                                    </span>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                    {isBill && (
+                        <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
+                            <div className="flex justify-between items-center text-lg font-bold">
+                                <span>Total a Cobrar:</span>
+                                <span className="text-green-600">${tableTotal.toFixed(2)}</span>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+
 export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     const { state, logout, completeOrder, closeTable, promoteItem } = useAppStore();
     const { business, menu, tables, user, isOnboarding } = state;
@@ -85,16 +393,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             completedOrders: orders.filter(o => o.status === 'completed')
         };
     }, [orders]);
-
-    // Helper: Detectar si una orden es solicitud de cuenta cerrada
-    const isBillRequest = (order: typeof orders[0]) => {
-        return order.items.some(item => item.id === 'bill-req' || item.name?.includes('SOLICITUD DE CUENTA'));
-    };
-
-    // Helper: Detectar si una orden es solicitud de ayuda
-    const isHelpRequest = (order: typeof orders[0]) => {
-        return order.items.some(item => item.id === 'help-req' || item.name?.includes('SOLICITUD DE AYUDA'));
-    };
 
     // Obtener mesas activas con consumo (órdenes pendientes o entregadas)
     const activeTablesList = useMemo(() => {
@@ -469,24 +767,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
         return () => clearInterval(timer);
     }, []);
 
-    const getFormattedTimeElapsed = (createdAt: string) => {
-        const created = new Date(createdAt).getTime();
-        const now = Date.now();
-        const diff = Math.max(0, now - created);
-
-        const hours = Math.floor(diff / 3600000);
-        const minutes = Math.floor((diff % 3600000) / 60000);
-        const seconds = Math.floor((diff % 60000) / 1000);
-
-        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    };
-
-    const getTimeColor = (minutes: number) => {
-        if (minutes < 5) return 'text-green-600 bg-green-50';
-        if (minutes < 10) return 'text-yellow-600 bg-yellow-50';
-        return 'text-red-600 bg-red-50 animate-pulse';
-    };
-
     // Safe Base URL Calculation - strictly use origin
     const baseUrl = window.location.origin;
     const publicMenuUrl = `${baseUrl}/?table=1&uid=${user?.id}`;
@@ -703,55 +983,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                     ) : (
                                         <div className="divide-y divide-gray-100">
                                             {ordersHistory.map(order => (
-                                                <div key={order.id} className="p-4 bg-white hover:bg-gray-50 transition-colors flex items-center justify-between group border-b border-gray-100 last:border-0">
-                                                    <div className="flex items-start gap-4">
-                                                        <div className={`
-                                                            w-12 h-12 rounded-xl flex items-center justify-center text-xl font-bold shrink-0 shadow-sm
-                                                            ${order.table_number.startsWith('LLEVAR') ? 'bg-orange-100 text-orange-600' : 'bg-brand-50 text-brand-900'}
-                                                        `}>
-                                                            {order.table_number.startsWith('LLEVAR') ? '🛍️' : order.table_number}
-                                                        </div>
-                                                        <div>
-                                                            <div className="flex items-center gap-2 mb-1">
-                                                                <p className="font-bold text-brand-900 text-base">
-                                                                    {order.table_number.startsWith('LLEVAR')
-                                                                        ? `Orden para llevar #${order.table_number.split('-')[1] || '?'}`
-                                                                        : `Mesa ${order.table_number}`}
-                                                                </p>
-                                                                <span className="text-[10px] uppercase font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full border border-green-100">
-                                                                    Completada
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex items-center gap-3 text-xs text-gray-500 font-medium">
-                                                                <span className="flex items-center bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">
-                                                                    #{order.id.slice(0, 4)}
-                                                                </span>
-                                                                <span className="flex items-center">
-                                                                    <Clock className="w-3 h-3 mr-1 text-gray-400" />
-                                                                    {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        <span className="block font-bold text-brand-900 text-lg">${(order.total || 0).toFixed(2)}</span>
-
-                                                        <Button
-                                                            variant="secondary"
-                                                            onClick={() => handleReprintOrder(order)}
-                                                            disabled={printingOrderId === order.id}
-                                                            className="h-8 text-xs !px-3 bg-gray-100 hover:bg-gray-200 text-brand-900 border-none flex items-center gap-1.5"
-                                                        >
-                                                            {printingOrderId === order.id ? (
-                                                                <div className="animate-spin w-3 h-3 border-2 border-brand-900 border-t-transparent rounded-full" />
-                                                            ) : (
-                                                                <Printer className="w-3.5 h-3.5" />
-                                                            )}
-                                                            Reimprimir
-                                                        </Button>
-                                                    </div>
-                                                </div>
+                                                <HistoryOrderRow
+                                                    key={order.id}
+                                                    order={order}
+                                                    printingOrderId={printingOrderId}
+                                                    onReprintOrder={handleReprintOrder}
+                                                />
                                             ))}
                                         </div>
                                     )}
@@ -1202,9 +1439,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                             <div className="space-y-4">
                                 {pendingOrders.map((order) => {
                                     const isBill = isBillRequest(order);
-                                    const isHelp = isHelpRequest(order);
-
-                                    // Si es solicitud de cuenta, obtener todas las órdenes activas de esa mesa (pending + delivered)
+                                    
                                     const tableOrders = isBill
                                         ? orders.filter(o =>
                                             o.table_number === order.table_number &&
@@ -1213,230 +1448,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
                                         )
                                         : [];
 
-                                    // Combinar todos los items de las órdenes de la mesa (sin los items de sistema)
-                                    // Calcular el total sumando todas las órdenes de la mesa
                                     const tableTotal = isBill
                                         ? tableOrders.reduce((sum, o) => sum + (o.total || 0), 0)
                                         : order.total || 0;
 
                                     return (
-                                        <div
+                                        <PendingOrderCard
                                             key={order.id}
-                                            onClick={() => toggleOrder(order.id)}
-                                            className={`
-                                        border rounded-xl overflow-hidden transition-all cursor-pointer
-                                        ${isHelp
-                                                    ? (expandedOrder === order.id
-                                                        ? 'border-yellow-500 ring-2 ring-yellow-500 bg-yellow-50'
-                                                        : 'border-yellow-300 hover:border-yellow-400 bg-yellow-50')
-                                                    : isBill
-                                                        ? (expandedOrder === order.id
-                                                            ? 'border-green-500 ring-2 ring-green-500 bg-green-50'
-                                                            : 'border-green-300 hover:border-green-400 bg-green-50')
-                                                        : (expandedOrder === order.id
-                                                            ? 'border-brand-900 ring-1 ring-brand-900 bg-gray-50'
-                                                            : 'border-gray-200 hover:border-gray-300 bg-white')}
-                                    `}
-                                        >
-                                            {/* Order Header */}
-                                            {/* Order Header */}
-                                            <div className="p-3 sm:p-4">
-                                                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:justify-between">
-
-                                                    {/* Top section on mobile: Badge + Info */}
-                                                    <div className="flex items-start gap-3 w-full sm:w-auto">
-                                                        {/* Table/Takeout Badge */}
-                                                        {order.table_number.startsWith('LLEVAR') ? (
-                                                            <div className="bg-orange-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm">
-                                                                <span className="text-[8px] font-medium opacity-80">🛍️</span>
-                                                                <span className="text-base sm:text-lg font-bold">#{order.table_number.split('-')[1] || '?'}</span>
-                                                            </div>
-                                                        ) : (
-                                                            <div className={`${isHelp ? 'bg-yellow-600' : isBill ? 'bg-green-600' : 'bg-brand-900'} text-white w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex flex-col items-center justify-center leading-none shrink-0 shadow-sm`}>
-                                                                <span className="text-[9px] sm:text-[10px] font-medium opacity-80">Mesa</span>
-                                                                <span className="text-lg sm:text-xl font-bold">{order.table_number}</span>
-                                                            </div>
-                                                        )}
-
-                                                        {/* Order Info */}
-                                                        <div className="flex-1 min-w-0 pt-0.5">
-                                                            <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-sm sm:text-base mb-0.5">
-                                                                {order.table_number.startsWith('LLEVAR') ? (
-                                                                    <span className="font-bold text-orange-600 flex items-center gap-1 sm:gap-1.5">
-                                                                        🛍️ <span className="xs:inline">Orden para llevar</span> #{order.table_number.split('-')[1] || '?'}
-                                                                    </span>
-                                                                ) : isHelp ? (
-                                                                    <span className="font-bold text-yellow-700 flex items-center gap-1 sm:gap-1.5">
-                                                                        <Hand className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                                        🆘 AYUDA
-                                                                    </span>
-                                                                ) : isBill ? (
-                                                                    <span className="font-bold text-green-700 flex items-center gap-1 sm:gap-1.5">
-                                                                        <Receipt className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                                                                        Cuenta Cerrada
-                                                                    </span>
-                                                                ) : (
-                                                                    <span className="font-bold text-brand-900">Orden #{order.id.slice(0, 4)}</span>
-                                                                )}
-                                                                <span className={`text-[11px] sm:text-xs font-bold rounded px-1.5 py-0.5 flex items-center ${getTimeColor(Math.floor((Date.now() - new Date(order.created_at).getTime()) / 60000))}`}>
-                                                                    <Clock className="w-3 h-3 mr-0.5 sm:mr-1" />
-                                                                    {getFormattedTimeElapsed(order.created_at)}
-                                                                </span>
-                                                            </div>
-                                                            <p className="text-xs sm:text-sm text-gray-600 line-clamp-2">
-                                                                {order.table_number.startsWith('LLEVAR')
-                                                                    ? <><span className="text-orange-600 font-medium">{order.items.length} items</span> • <span className="font-bold">${(order.total || 0).toFixed(2)}</span></>
-                                                                    : isHelp
-                                                                        ? <span className="text-yellow-700 font-medium italic">"{order.items.find(i => i.id === 'help-req')?.notes || 'Asistencia solicitada'}"</span>
-                                                                        : isBill
-                                                                            ? <span className="text-green-600 font-medium">Solicitud de ticket</span>
-                                                                            : (
-                                                                                <div className="flex items-center gap-2">
-                                                                                    <span className="text-gray-900">{order.items.length} items</span>
-                                                                                    <span className="text-gray-300">•</span>
-                                                                                    <span className="font-bold text-gray-900">${(order.total || 0).toFixed(2)}</span>
-                                                                                    {/* Status Summary in Collapsed View */}
-                                                                                    {order.items.length > 0 && (
-                                                                                        <>
-                                                                                            <span className="text-gray-300">•</span>
-                                                                                            <div className="flex items-center gap-1">
-                                                                                                {order.prepared_items && order.prepared_items.length > 0 ? (
-                                                                                                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${order.prepared_items.length === order.items.length ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
-                                                                                                        {order.prepared_items.length === order.items.length ? <Check className="w-2.5 h-2.5" /> : <Clock className="w-2.5 h-2.5" />}
-                                                                                                        {order.prepared_items.length}/{order.items.length} listos
-                                                                                                    </span>
-                                                                                                ) : (
-                                                                                                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600">
-                                                                                                        <Clock className="w-2.5 h-2.5" />
-                                                                                                        En preparación
-                                                                                                    </span>
-                                                                                                )}
-                                                                                            </div>
-                                                                                        </>
-                                                                                    )}
-                                                                                </div>
-                                                                            )}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-
-                                                    {/* Action Buttons - Row at bottom on mobile, Right side on desktop */}
-                                                    <div className="flex items-center gap-2 w-full sm:w-auto sm:justify-end mt-2 pt-2 border-t border-gray-100 sm:mt-0 sm:pt-0 sm:border-0">
-                                                        <button
-                                                            onClick={(e) => handlePrintOrder(order.id, e)}
-                                                            className={`p-2.5 flex items-center justify-center gap-1.5 ${isHelp ? 'text-yellow-600 bg-yellow-50 hover:bg-yellow-100 border-yellow-200' : isBill ? 'text-green-600 bg-green-50 hover:bg-green-100 border-green-200' : 'text-blue-600 bg-blue-50 hover:bg-blue-100 border-blue-200'} rounded-lg transition-colors border sm:border-0`}
-                                                            title={isHelp ? 'Imprimir solicitud de ayuda' : isBill ? 'Imprimir ticket de cuenta' : 'Imprimir orden'}
-                                                            disabled={printingOrderId === order.id}
-                                                        >
-                                                            <Printer className={`w-5 h-5 sm:w-4 sm:h-4 ${printingOrderId === order.id ? 'animate-pulse' : ''}`} />
-                                                            {/* TEXT HIDDEN ON MOBILE TO SAVE SPACE AND FIX CUT-OFF */}
-                                                            <span className="text-xs font-semibold hidden sm:hidden">Imprimir</span>
-                                                        </button>
-
-                                                        {(() => {
-                                                            // For normal orders, check if all real items are prepared by KDS
-                                                            const realItems = order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'));
-                                                            const allItemsReady = !isHelp && !isBill && realItems.length > 0
-                                                                ? (order.prepared_items?.length || 0) >= realItems.length
-                                                                : true; // Help/Bill requests are always enabled
-
-                                                            return (
-                                                                <Button
-                                                                    onClick={(e) => allItemsReady ? handleCompleteOrder(order.id, e) : e.stopPropagation()}
-                                                                    className={`h-10 flex-1 sm:flex-none justify-center px-4 ${isHelp ? 'bg-yellow-600 hover:bg-yellow-700'
-                                                                        : isBill ? 'bg-green-700 hover:bg-green-800'
-                                                                            : allItemsReady ? 'bg-green-600 hover:bg-green-700'
-                                                                                : 'bg-gray-400 cursor-not-allowed opacity-60'
-                                                                        } border-transparent shadow-sm`}
-                                                                    icon={<Check className="w-4 h-4" />}
-                                                                    title={!allItemsReady ? 'Esperando que cocina termine todos los items' : ''}
-                                                                    disabled={!allItemsReady}
-                                                                >
-                                                                    {isHelp ? 'Atendido' : isBill ? 'Cerrar mesa' : 'Entregado'}
-                                                                </Button>
-                                                            );
-                                                        })()}
-
-                                                        <button
-                                                            onClick={() => toggleOrder(order.id)}
-                                                            className="text-gray-400 p-2 hover:bg-gray-100 rounded-lg shrink-0"
-                                                        >
-                                                            {expandedOrder === order.id ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Expanded Details */}
-                                            {expandedOrder === order.id && (
-                                                <div className={`px-4 pb-4 pt-0 border-t ${isHelp ? 'border-yellow-200 bg-white' : isBill ? 'border-green-200 bg-white' : 'border-gray-200 bg-white'} mt-2`}>
-                                                    {isHelp && (
-                                                        <div className="bg-yellow-100 border border-yellow-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
-                                                            <Hand className="w-5 h-5 text-yellow-600" />
-                                                            <p className="text-sm text-yellow-700 font-medium">
-                                                                {order.items.find(i => i.id === 'help-req')?.notes || 'El cliente necesita asistencia'}
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    {isBill && (
-                                                        <div className="bg-green-100 border border-green-200 rounded-lg p-3 mb-3 mt-3 flex items-center gap-2">
-                                                            <Receipt className="w-5 h-5 text-green-600" />
-                                                            <p className="text-sm text-green-700 font-medium">
-                                                                El cliente ha solicitado la cuenta. Puedes imprimir el ticket y entregárselo.
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    <ul className="divide-y divide-gray-100">
-                                                        {(isHelp ? [] : isBill ? tableOrders.flatMap(o => o.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA')).map(i => ({ ...i, parentOrder: o }))) : order.items.filter(item => item.id !== 'bill-req' && !item.name?.includes('SOLICITUD DE CUENTA') && item.id !== 'help-req' && !item.name?.includes('SOLICITUD DE AYUDA'))).map((item: any, idx) => {
-                                                            // Check if this specific item instance is prepared
-                                                            // If it's a bill request, we check the parent order
-                                                            const targetOrder = isBill ? item.parentOrder : order;
-                                                            const isPrepared = targetOrder?.prepared_items?.some((p: any) => p.itemId === item.id);
-
-                                                            return (
-                                                                <li key={idx} className="py-3 flex justify-between items-start">
-                                                                    <div className="flex gap-3">
-                                                                        <span className="font-bold text-brand-900 w-6 text-center bg-gray-100 rounded text-sm py-0.5">
-                                                                            {item.quantity}x
-                                                                        </span>
-                                                                        <div>
-                                                                            <p className="font-medium text-gray-900 text-sm">{item.name}</p>
-                                                                            {item.ingredients && <p className="text-xs text-gray-500">{item.ingredients}</p>}
-
-                                                                            {/* Item Status Indicator */}
-                                                                            <div className="mt-1 flex items-center gap-1.5">
-                                                                                {isPrepared ? (
-                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-green-50 text-green-700 border border-green-100">
-                                                                                        <Check className="w-3 h-3" />
-                                                                                        Listo para entregar
-                                                                                    </span>
-                                                                                ) : (
-                                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-yellow-50 text-yellow-700 border border-yellow-100">
-                                                                                        <Clock className="w-3 h-3" />
-                                                                                        En preparación
-                                                                                    </span>
-                                                                                )}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                    <span className="text-sm font-medium text-gray-900">
-                                                                        ${((parseFloat(item.price) || 0) * item.quantity).toFixed(2)}
-                                                                    </span>
-                                                                </li>
-                                                            )
-                                                        })}
-                                                    </ul>
-                                                    {isBill && (
-                                                        <div className="mt-4 pt-3 border-t-2 border-dashed border-gray-300">
-                                                            <div className="flex justify-between items-center text-lg font-bold">
-                                                                <span>Total a Cobrar:</span>
-                                                                <span className="text-green-600">${tableTotal.toFixed(2)}</span>
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            )}
-                                        </div>
+                                            order={order}
+                                            tableOrders={tableOrders}
+                                            tableTotal={tableTotal}
+                                            expandedOrder={expandedOrder}
+                                            printingOrderId={printingOrderId}
+                                            onToggleOrder={toggleOrder}
+                                            onPrintOrder={handlePrintOrder}
+                                            onCompleteOrder={handleCompleteOrder}
+                                        />
                                     );
                                 })}
                             </div>
