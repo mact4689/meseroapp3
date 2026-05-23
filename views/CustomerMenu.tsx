@@ -13,6 +13,99 @@ interface CustomerMenuProps {
 // Extends MenuItem but includes cart specific logic
 type CartItem = OrderItem;
 
+interface MenuItemCardProps {
+    item: MenuItem;
+    qty: number;
+    isAvailable: boolean;
+    onImageClick: (item: MenuItem) => void;
+    onAddToCart: (item: MenuItem) => void;
+    onRemoveFromCart: (itemId: string) => void;
+}
+
+const MenuItemCard = React.memo<MenuItemCardProps>(({ item, qty, isAvailable, onImageClick, onAddToCart, onRemoveFromCart }) => {
+    return (
+        <div className={`bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-3 transition-all ${!isAvailable ? 'opacity-70 grayscale' : 'active:scale-[0.99]'}`}>
+            <div
+                className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative cursor-pointer"
+                onClick={() => { if (isAvailable) onImageClick(item); }}
+            >
+                <div className="w-full h-full relative z-10">
+                    {item.image ? (
+                        <img src={item.image} alt={item.name} loading="lazy" width="96" height="96" className="w-full h-full object-cover" />
+                    ) : (item.additional_images && item.additional_images.length > 0) ? (
+                        <img src={item.additional_images[0]} alt={item.name} loading="lazy" width="96" height="96" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                            <Utensils className="w-8 h-8" />
+                        </div>
+                    )}
+                </div>
+                {qty > 0 && isAvailable && (
+                    <div className="absolute inset-0 bg-brand-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
+                        <span className="text-white font-bold text-xl">{qty}</span>
+                    </div>
+                )}
+                {!isAvailable && (
+                    <div className="absolute inset-0 bg-gray-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
+                        <span className="text-[10px] text-white font-bold uppercase border border-white px-1 py-0.5 rounded">Agotado</span>
+                    </div>
+                )}
+                {isAvailable && (item.description || item.ingredients || (item.additional_images && item.additional_images.length > 0)) && (
+                    <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white rounded-full p-0.5 z-20">
+                        <Info className="w-3 h-3" />
+                    </div>
+                )}
+            </div>
+            <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
+                <div
+                    className="cursor-pointer"
+                    onClick={() => { if (isAvailable) onImageClick(item); }}
+                >
+                    <div className="flex justify-between items-start gap-2">
+                        <h3 className={`font-bold line-clamp-2 leading-tight text-sm sm:text-base ${!isAvailable ? 'text-gray-500 line-through' : 'text-brand-900'}`}>{item.name}</h3>
+                        <span className="font-bold text-accent-600 shrink-0">${item.price}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
+                    {item.ingredients && (
+                        <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1 flex items-center gap-1">
+                            <Leaf className="w-3 h-3 text-green-400 shrink-0" />
+                            {item.ingredients}
+                        </p>
+                    )}
+                </div>
+
+                <div className="flex justify-end mt-2">
+                    {!isAvailable ? (
+                        <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-1 rounded-full">No disponible</span>
+                    ) : qty === 0 ? (
+                        <button
+                            onClick={() => onAddToCart(item)}
+                            className="bg-gray-50 hover:bg-brand-900 hover:text-white text-brand-900 p-2 rounded-full transition-colors"
+                        >
+                            <Plus className="w-5 h-5" />
+                        </button>
+                    ) : (
+                        <div className="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
+                            <button
+                                onClick={() => onRemoveFromCart(item.id)}
+                                className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-brand-900 shadow-sm active:scale-90 transition-transform"
+                            >
+                                <Minus className="w-4 h-4" />
+                            </button>
+                            <span className="w-8 text-center font-bold text-sm text-brand-900">{qty}</span>
+                            <button
+                                onClick={() => onAddToCart(item)}
+                                className="w-7 h-7 bg-brand-900 rounded-full flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
+                            >
+                                <Plus className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+});
 
 export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
     const { state } = useAppStore();
@@ -402,6 +495,11 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
         }
     }, []);
 
+    const handleImageClick = useCallback((item: MenuItem) => {
+        setSelectedDetailItem(item);
+        setDetailImageIndex(0);
+    }, []);
+
     const handleSendOrder = async () => {
         if (isAdminPreview) {
             alert("Modo Vista Previa: Las órdenes de prueba no se envían realmente.");
@@ -778,89 +876,15 @@ export const CustomerMenu: React.FC<CustomerMenuProps> = ({ onNavigate }) => {
                                 const isAvailable = item.available !== false;
 
                                 return (
-                                    <div key={item.id} className={`bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-3 transition-all ${!isAvailable ? 'opacity-70 grayscale' : 'active:scale-[0.99]'}`}>
-                                        {/* Image thumbnail - opens detail modal */}
-                                        <div
-                                            className="w-24 h-24 bg-gray-100 rounded-xl shrink-0 overflow-hidden relative cursor-pointer"
-                                            onClick={() => { if (isAvailable) { setSelectedDetailItem(item); setDetailImageIndex(0); } }}
-                                        >
-                                            <div className="w-full h-full relative z-10">
-                                                {item.image ? (
-                                                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                                ) : (item.additional_images && item.additional_images.length > 0) ? (
-                                                    <img src={item.additional_images[0]} alt={item.name} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                        <Utensils className="w-8 h-8" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                            {qty > 0 && isAvailable && (
-                                                <div className="absolute inset-0 bg-brand-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
-                                                    <span className="text-white font-bold text-xl">{qty}</span>
-                                                </div>
-                                            )}
-                                            {!isAvailable && (
-                                                <div className="absolute inset-0 bg-gray-900/60 flex items-center justify-center backdrop-blur-[1px] pointer-events-none z-20">
-                                                    <span className="text-[10px] text-white font-bold uppercase border border-white px-1 py-0.5 rounded">Agotado</span>
-                                                </div>
-                                            )}
-                                            {/* Detail hint icon */}
-                                            {isAvailable && (item.description || item.ingredients || (item.additional_images && item.additional_images.length > 0)) && (
-                                                <div className="absolute top-1 right-1 bg-black/50 backdrop-blur-sm text-white rounded-full p-0.5 z-20">
-                                                    <Info className="w-3 h-3" />
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0 flex flex-col justify-between py-1">
-                                            {/* Tappable info area - opens detail modal */}
-                                            <div
-                                                className="cursor-pointer"
-                                                onClick={() => { if (isAvailable) { setSelectedDetailItem(item); setDetailImageIndex(0); } }}
-                                            >
-                                                <div className="flex justify-between items-start gap-2">
-                                                    <h3 className={`font-bold line-clamp-2 leading-tight text-sm sm:text-base ${!isAvailable ? 'text-gray-500 line-through' : 'text-brand-900'}`}>{item.name}</h3>
-                                                    <span className="font-bold text-accent-600 shrink-0">${item.price}</span>
-                                                </div>
-                                                <p className="text-xs text-gray-500 mt-1 line-clamp-2">{item.description}</p>
-                                                {item.ingredients && (
-                                                    <p className="text-[10px] text-gray-400 mt-0.5 line-clamp-1 flex items-center gap-1">
-                                                        <Leaf className="w-3 h-3 text-green-400 shrink-0" />
-                                                        {item.ingredients}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div className="flex justify-end mt-2">
-                                                {!isAvailable ? (
-                                                    <span className="text-xs font-bold text-red-400 bg-red-50 px-2 py-1 rounded-full">No disponible</span>
-                                                ) : qty === 0 ? (
-                                                    <button
-                                                        onClick={() => handleAddToCart(item)}
-                                                        className="bg-gray-50 hover:bg-brand-900 hover:text-white text-brand-900 p-2 rounded-full transition-colors"
-                                                    >
-                                                        <Plus className="w-5 h-5" />
-                                                    </button>
-                                                ) : (
-                                                    <div className="flex items-center bg-gray-100 rounded-full p-1 shadow-inner">
-                                                        <button
-                                                            onClick={() => removeFromCart(item.id)}
-                                                            className="w-7 h-7 bg-white rounded-full flex items-center justify-center text-brand-900 shadow-sm active:scale-90 transition-transform"
-                                                        >
-                                                            <Minus className="w-4 h-4" />
-                                                        </button>
-                                                        <span className="w-8 text-center font-bold text-sm text-brand-900">{qty}</span>
-                                                        <button
-                                                            onClick={() => handleAddToCart(item)}
-                                                            className="w-7 h-7 bg-brand-900 rounded-full flex items-center justify-center text-white shadow-sm active:scale-90 transition-transform"
-                                                        >
-                                                            <Plus className="w-4 h-4" />
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <MenuItemCard
+                                        key={item.id}
+                                        item={item}
+                                        qty={qty}
+                                        isAvailable={isAvailable}
+                                        onImageClick={handleImageClick}
+                                        onAddToCart={handleAddToCart}
+                                        onRemoveFromCart={removeFromCart}
+                                    />
                                 );
                             })}
                         </div>
