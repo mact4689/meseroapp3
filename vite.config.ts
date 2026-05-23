@@ -119,6 +119,8 @@ export default defineConfig({
         manualChunks: {
           vendor: ['react', 'react-dom'],
           lucide: ['lucide-react'],
+          supabase: ['@supabase/supabase-js'],
+          qrcode: ['qrcode'],
         },
       },
     },

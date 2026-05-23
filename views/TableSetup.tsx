@@ -5,7 +5,6 @@ import { Input } from '../components/Input';
 import { AppView } from '../types';
 import { ArrowLeft, Download, Grid2X2, QrCode, ExternalLink, CheckCircle, ChevronRight, Check, Loader2, ShoppingBag, Receipt } from 'lucide-react';
 import QRCode from 'qrcode';
-import { jsPDF } from 'jspdf';
 import { useAppStore } from '../store/AppContext';
 
 interface TableSetupProps {
@@ -119,7 +118,8 @@ export const TableSetup: React.FC<TableSetupProps> = ({ onNavigate }) => {
     }
   };
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
+    const { jsPDF } = await import('jspdf');
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
 
