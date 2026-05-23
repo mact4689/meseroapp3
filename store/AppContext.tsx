@@ -92,21 +92,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const roleId = params.get('role_id');
       if (!roleId) return null;
 
+      // Usar la función RPC segura get_custom_role_public_info en lugar de select directo,
+      // protegiendo el pin_code y pin_code_hash de accesos anónimos.
       const { data, error } = await supabase
-        .from('custom_roles')
-        .select('permissions, name, requires_pin')
-        .eq('id', roleId)
-        .single();
+        .rpc('get_custom_role_public_info', { provided_role_id: roleId });
 
-      if (error || !data) {
+      if (error || !data || data.length === 0) {
         console.warn('⚠️ Could not fetch custom role:', error?.message);
         return null;
       }
-      console.log('🔐 Custom role data loaded:', { permissions: data.permissions, name: data.name, requires_pin: data.requires_pin });
+
+      const role = data[0];
+      console.log('🔐 Custom role data loaded:', { permissions: role.permissions, name: role.name, requires_pin: role.requires_pin });
       return {
-        permissions: data.permissions as RolePermissions,
-        pin_code: data.requires_pin ? '9999' : '', // Flag placeholder de 4 caracteres para indicar PIN requerido sin fugarlo
-        role_name: data.name
+        permissions: role.permissions as RolePermissions,
+        pin_code: role.requires_pin ? '9999' : '', // Flag placeholder de 4 caracteres para indicar PIN requerido sin fugarlo
+        role_name: role.name
       };
     } catch (e) {
       console.error('Error fetching custom role:', e);
