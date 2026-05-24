@@ -203,7 +203,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
       if (error || !verifiedPermissions) {
-        console.warn("❌ Intento de login fallido por PIN incorrecto");
+        console.warn("❌ Intento de login fallido por PIN incorrecto o error de RPC:", error);
         return false;
       }
 
