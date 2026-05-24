@@ -4,7 +4,6 @@
 -- Ejecuta este script en el editor SQL de Supabase para reparar y verificar 
 -- completamente el funcionamiento de los PINs de seguridad y accesos por QR.
 
-RAISE NOTICE 'Iniciando diagnóstico y reparación de PINs...';
 
 -- 1. Asegurar extensión pgcrypto
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -61,12 +60,12 @@ FOR EACH ROW EXECUTE FUNCTION public.handle_custom_role_pin_hashing();
 
 
 -- 5. SINCRONIZACIÓN Y REPARACIÓN RETROACTIVA DE PINs EXISTENTES
--- Si un rol tiene pin_code pero no tiene pin_code_hash, o si requires_pin está en false, lo arreglamos.
+-- Forzamos la regeneración del hash para todos los que tengan PIN en texto plano
+-- de modo que si existiera un hash corrupto o desincronizado, se corrija de inmediato.
 UPDATE public.custom_roles
 SET pin_code_hash = crypt(pin_code, gen_salt('bf', 8)),
     requires_pin = TRUE
-WHERE pin_code IS NOT NULL AND pin_code <> '' 
-  AND (pin_code_hash IS NULL OR pin_code_hash = '' OR requires_pin = FALSE);
+WHERE pin_code IS NOT NULL AND pin_code <> '';
 
 -- Si un rol no tiene pin_code pero tiene hash o requires_pin activo, limpiamos.
 UPDATE public.custom_roles
@@ -75,11 +74,10 @@ SET pin_code_hash = NULL,
 WHERE (pin_code IS NULL OR pin_code = '') 
   AND (pin_code_hash IS NOT NULL OR requires_pin = TRUE);
 
--- Lo mismo para perfiles KDS
+-- Lo mismo para perfiles KDS (forzamos sincronía)
 UPDATE public.profiles
 SET kds_pin_hash = crypt(kds_pin, gen_salt('bf', 8))
-WHERE kds_pin IS NOT NULL AND kds_pin <> '' 
-  AND (kds_pin_hash IS NULL OR kds_pin_hash = '');
+WHERE kds_pin IS NOT NULL AND kds_pin <> '';
 
 UPDATE public.profiles
 SET kds_pin_hash = NULL
