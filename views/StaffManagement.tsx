@@ -25,6 +25,7 @@ interface CustomRole {
     name: string;
     permissions: RolePermissions;
     pin_code?: string;
+    requires_pin?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -151,10 +152,21 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
 
         try {
             if (editingRole) {
-                // UPDATE
+                // UPDATE - Only include pin_code if it was actually changed by the user
+                const updatePayload: any = {
+                    name: roleName.trim(),
+                    permissions,
+                    updated_at: new Date().toISOString()
+                };
+
+                const originalPin = editingRole.pin_code || '';
+                if (pinCode !== originalPin) {
+                    updatePayload.pin_code = pinCode.length === 4 ? pinCode : null;
+                }
+
                 const { error } = await supabase
                     .from('custom_roles')
-                    .update({ name: roleName.trim(), permissions, pin_code: pinCode.length === 4 ? pinCode : null, updated_at: new Date().toISOString() })
+                    .update(updatePayload)
                     .eq('id', editingRole.id);
                 if (error) throw error;
                 setMessage({ type: 'success', text: `Rol "${roleName}" actualizado correctamente.` });
@@ -411,7 +423,11 @@ export const StaffManagement: React.FC<StaffManagementProps> = ({ onNavigate }) 
                                         {editingRole ? 'Editar Rol' : 'Crear Nuevo Rol'}
                                     </h3>
                                     <p className="text-xs text-gray-400">
-                                        {wizardStep === 'name' ? 'Paso 1: Nombre' : 'Paso 2: Permisos'}
+                                        {wizardStep === 'name' 
+                                            ? 'Paso 1: Nombre' 
+                                            : wizardStep === 'permissions' 
+                                                ? 'Paso 2: Permisos' 
+                                                : 'Paso 3: Seguridad'}
                                     </p>
                                 </div>
                             </div>
